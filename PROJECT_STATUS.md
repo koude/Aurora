@@ -1,6 +1,6 @@
 # Aurora project status
 
-## v0.2.3
+## v0.2.4
 
 Implemented:
 - Jetpack Compose home / nodes / settings UI.

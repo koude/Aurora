@@ -15,7 +15,20 @@ import com.aurora.client.ui.theme.AuroraTheme
 
 class MainActivity : ComponentActivity() {
     private val vpnPermission = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-        if (it.resultCode == RESULT_OK) startVpnSafely() else AppState.setConnection(ConnectionState.ERROR, "VPN 权限未授权")
+        // Some OEM ROMs (including some HyperOS builds) may return a non-standard
+        // activity result even after the user granted VPN consent. Re-check the
+        // platform permission state instead of trusting resultCode alone.
+        runCatching { VpnService.prepare(this) }
+            .onSuccess { pendingIntent ->
+                if (pendingIntent == null) {
+                    startVpnSafely()
+                } else {
+                    AppState.setConnection(ConnectionState.ERROR, "VPN 权限未授权，请在系统授权页面允许 Aurora 建立 VPN")
+                }
+            }
+            .onFailure {
+                AppState.setConnection(ConnectionState.ERROR, it.message ?: "无法确认 VPN 权限状态")
+            }
     }
 
     private val notifications = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
