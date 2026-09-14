@@ -10,6 +10,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import com.koude.aurora.data.AppState
+import com.koude.aurora.data.AppLogger
 import com.koude.aurora.data.ConnectionState
 import com.koude.aurora.service.AuroraVpnService
 import com.koude.aurora.ui.AuroraApp
@@ -24,6 +25,7 @@ class MainActivity : ComponentActivity() {
     // then retry service start only after Android reports RESULT_OK.
     private val vpnConsent = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         AppState.setVpnDiagnostic("VPN 授权页返回 resultCode=${result.resultCode}")
+        AppLogger.i("VPN", "VPN consent resultCode=${result.resultCode}")
         if (result.resultCode == RESULT_OK) {
             startAuroraService()
         } else {
@@ -33,6 +35,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        AppLogger.init(applicationContext)
+        AppLogger.i("UI", "MainActivity created")
         if (Build.VERSION.SDK_INT >= 33 &&
             checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
         ) {
@@ -53,16 +57,19 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun requestVpnAndConnect() {
+        AppLogger.i("VPN", "Connect button tapped")
         runCatching {
             val request = startAuroraService()
             if (request != null) {
                 val component = request.component?.flattenToShortString() ?: "<无 component>"
                 val action = request.action ?: "<无 action>"
                 AppState.setVpnDiagnostic("prepare=Intent；action=$action；component=$component；正在打开系统授权页")
+                AppLogger.i("VPN", "VPN consent required; action=$action component=$component")
                 AppState.setConnection(ConnectionState.CONNECTING, "正在请求系统 VPN 权限")
                 vpnConsent.launch(request)
             }
         }.onFailure {
+            AppLogger.e("VPN", "Unable to launch VPN consent: ${it.javaClass.simpleName}: ${it.message}", it)
             AppState.setVpnDiagnostic("VPN 授权启动异常：${it.javaClass.simpleName}: ${it.message}")
             AppState.setConnection(ConnectionState.ERROR, it.message ?: "无法打开系统 VPN 授权页面")
         }
@@ -77,6 +84,7 @@ class MainActivity : ComponentActivity() {
         if (request != null) return request
 
         AppState.setVpnDiagnostic("prepare=null；VPN 权限已授权，启动 AuroraVpnService")
+        AppLogger.i("VPN", "VPN consent already granted; starting service")
         AuroraVpnService.start(this)
         return null
     }

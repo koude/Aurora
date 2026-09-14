@@ -18,6 +18,7 @@ object ConfigImporter {
             ?: if (hasConfig(context)) "本地配置" else "未导入"
 
     fun importFile(context: Context, uri: Uri): Result<Unit> = runCatching {
+        AppLogger.i("CONFIG", "Importing configuration from local document")
         val temp = File(context.filesDir, "$CONFIG_NAME.tmp")
         context.contentResolver.openInputStream(uri)?.use { input ->
             temp.outputStream().use { output -> input.copyTo(output) }
@@ -25,9 +26,11 @@ object ConfigImporter {
         validate(temp)
         replaceConfig(context, temp)
         saveSource(context, "本地文件")
-    }
+        AppLogger.i("CONFIG", "Local configuration imported; size=${configFile(context).length()}")
+    }.onFailure { AppLogger.e("CONFIG", "Local import failed: ${it.javaClass.simpleName}: ${it.message}", it) }
 
     fun importUrl(context: Context, rawUrl: String): Result<Unit> = runCatching {
+        AppLogger.i("CONFIG", "Importing configuration from URL")
         val url = rawUrl.trim()
         require(url.startsWith("https://") || url.startsWith("http://")) { "仅支持 http/https 链接" }
 
@@ -49,10 +52,11 @@ object ConfigImporter {
             replaceConfig(context, temp)
             val host = runCatching { URI(url).host }.getOrNull().orEmpty()
             saveSource(context, if (host.isBlank()) "链接导入" else "链接 · $host")
+            AppLogger.i("CONFIG", "URL configuration imported; host=${if (host.isBlank()) "<unknown>" else host} size=${configFile(context).length()}")
         } finally {
             connection.disconnect()
         }
-    }
+    }.onFailure { AppLogger.e("CONFIG", "URL import failed: ${it.javaClass.simpleName}: ${it.message}", it) }
 
     private fun validate(file: File) {
         require(file.exists() && file.length() > 0) { "配置内容为空" }

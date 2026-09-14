@@ -1,14 +1,17 @@
 package com.koude.aurora.ui
 
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
-import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
@@ -17,9 +20,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.koude.aurora.data.AppLogger
 import com.koude.aurora.data.AppState
 import com.koude.aurora.data.ConfigImporter
 import com.koude.aurora.data.ConnectionState
@@ -27,7 +32,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-private enum class Page { HOME, NODES, SETTINGS }
+private enum class Page { HOME, NODES, SETTINGS, LOGS }
 
 @Composable
 fun AuroraApp(onConnect: () -> Unit, onDisconnect: () -> Unit) {
@@ -148,10 +153,12 @@ fun AuroraApp(onConnect: () -> Unit, onDisconnect: () -> Unit) {
     Scaffold(
         snackbarHost = { SnackbarHost(snackbar) },
         bottomBar = {
-            NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
-                NavigationBarItem(page == Page.HOME, { page = Page.HOME }, { Icon(Icons.Outlined.Home, null) }, label = { Text("首页") })
-                NavigationBarItem(page == Page.NODES, { page = Page.NODES }, { Icon(Icons.Outlined.Public, null) }, label = { Text("节点") })
-                NavigationBarItem(page == Page.SETTINGS, { page = Page.SETTINGS }, { Icon(Icons.Outlined.Settings, null) }, label = { Text("设置") })
+            if (page != Page.LOGS) {
+                NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
+                    NavigationBarItem(page == Page.HOME, { page = Page.HOME }, { Icon(Icons.Outlined.Home, null) }, label = { Text("首页") })
+                    NavigationBarItem(page == Page.NODES, { page = Page.NODES }, { Icon(Icons.Outlined.Public, null) }, label = { Text("节点") })
+                    NavigationBarItem(page == Page.SETTINGS, { page = Page.SETTINGS }, { Icon(Icons.Outlined.Settings, null) }, label = { Text("设置") })
+                }
             }
         }
     ) { padding ->
@@ -171,7 +178,8 @@ fun AuroraApp(onConnect: () -> Unit, onDisconnect: () -> Unit) {
                     }
                 )
                 Page.NODES -> NodesScreen()
-                Page.SETTINGS -> SettingsScreen(imported, sourceLabel)
+                Page.SETTINGS -> SettingsScreen(imported, sourceLabel, onOpenLogs = { page = Page.LOGS })
+                Page.LOGS -> LogsScreen(onBack = { page = Page.SETTINGS })
             }
         }
     }
@@ -287,25 +295,97 @@ private fun NodesScreen() {
 }
 
 @Composable
-private fun SettingsScreen(imported: Boolean, sourceLabel: String) {
+private fun SettingsScreen(imported: Boolean, sourceLabel: String, onOpenLogs: () -> Unit) {
     val vpnDiagnostic by AppState.vpnDiagnostic.collectAsState()
     var autoStart by remember { mutableStateOf(false) }
     var darkFollow by remember { mutableStateOf(true) }
-    Column(Modifier.fillMaxSize().padding(20.dp)) {
+    Column(Modifier.fillMaxSize().padding(20.dp).verticalScroll(rememberScrollState())) {
         Text("设置", fontSize = 28.sp, fontWeight = FontWeight.SemiBold)
         Spacer(Modifier.height(20.dp))
         SettingSwitch("系统启动后恢复连接", "尚未启用开机自连", autoStart) { autoStart = it }
         SettingSwitch("跟随系统外观", "使用系统深浅色设置", darkFollow) { darkFollow = it }
         SettingRow("配置", if (imported) sourceLabel else "未导入")
         SettingRow("核心", "libmihomo-android 0.3.1")
+        SettingRow("日志", "本机保存 · 最大约 2 MB", onClick = onOpenLogs)
         SettingRow("遥测", "无")
-        SettingRow("版本", "0.2.9")
+        SettingRow("版本", "0.3.0")
         Spacer(Modifier.height(18.dp))
         Text("VPN 授权诊断", fontWeight = FontWeight.SemiBold)
         Spacer(Modifier.height(8.dp))
         Text(vpnDiagnostic, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
         Spacer(Modifier.height(24.dp))
-        Text("Aurora 不包含广告、统计 SDK 或远程日志。当前版本已接入 mihomo 核心，支持本地文件和 http/https 链接导入配置。", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+        Text("Aurora 不包含广告、统计 SDK 或远程日志。诊断日志仅保存在本机，可由你手动复制或导出。", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+    }
+}
+
+@Composable
+private fun LogsScreen(onBack: () -> Unit) {
+    val context = LocalContext.current
+    val lines by AppLogger.lines.collectAsState()
+    val scroll = rememberScrollState()
+
+    val exporter = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/plain")) { uri ->
+        if (uri != null) {
+            runCatching {
+                context.contentResolver.openOutputStream(uri)?.use { out ->
+                    out.write(AppLogger.allText().toByteArray())
+                } ?: error("无法打开导出文件")
+            }.onSuccess {
+                AppState.showMessage("日志已导出")
+                AppLogger.i("UI", "Log exported by user")
+            }.onFailure {
+                AppState.showMessage(it.message ?: "日志导出失败")
+                AppLogger.e("UI", "Log export failed: ${it.message}", it)
+            }
+        }
+    }
+
+    LaunchedEffect(lines.size) {
+        if (lines.isNotEmpty()) scroll.animateScrollTo(scroll.maxValue)
+    }
+
+    Column(Modifier.fillMaxSize().padding(16.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = onBack) { Icon(Icons.Outlined.ArrowBack, "返回") }
+            Text("日志", fontSize = 26.sp, fontWeight = FontWeight.SemiBold)
+            Spacer(Modifier.weight(1f))
+            Text("${lines.size} 行", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+        }
+
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedButton(
+                modifier = Modifier.weight(1f),
+                onClick = {
+                    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                    clipboard.setPrimaryClip(ClipData.newPlainText("Aurora log", AppLogger.allText()))
+                    AppState.showMessage("日志已复制")
+                    AppLogger.i("UI", "Log copied by user")
+                }
+            ) { Icon(Icons.Outlined.ContentCopy, null); Spacer(Modifier.width(6.dp)); Text("复制") }
+            OutlinedButton(
+                modifier = Modifier.weight(1f),
+                onClick = { exporter.launch("Aurora-v0.3.0-log.txt") }
+            ) { Icon(Icons.Outlined.UploadFile, null); Spacer(Modifier.width(6.dp)); Text("导出") }
+            OutlinedButton(
+                modifier = Modifier.weight(1f),
+                onClick = { AppLogger.clear(); AppState.showMessage("日志已清空") }
+            ) { Icon(Icons.Outlined.DeleteOutline, null); Spacer(Modifier.width(6.dp)); Text("清空") }
+        }
+
+        Spacer(Modifier.height(12.dp))
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            shape = RoundedCornerShape(16.dp),
+            color = MaterialTheme.colorScheme.surfaceVariant
+        ) {
+            Text(
+                text = if (lines.isEmpty()) "暂无日志" else lines.joinToString("\n"),
+                modifier = Modifier.padding(12.dp).fillMaxSize().verticalScroll(scroll),
+                fontFamily = FontFamily.Monospace,
+                fontSize = 11.sp,
+                lineHeight = 15.sp
+            )
+        }
     }
 }
 
@@ -322,10 +402,17 @@ private fun SettingSwitch(title: String, subtitle: String, value: Boolean, onCha
 }
 
 @Composable
-private fun SettingRow(title: String, value: String) {
-    Row(Modifier.fillMaxWidth().padding(vertical = 15.dp), verticalAlignment = Alignment.CenterVertically) {
+private fun SettingRow(title: String, value: String, onClick: (() -> Unit)? = null) {
+    Row(
+        Modifier.fillMaxWidth().then(if (onClick != null) Modifier.clickable { onClick() } else Modifier).padding(vertical = 15.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
         Text(title, Modifier.weight(1f), fontWeight = FontWeight.Medium)
         Text(value, color = Color.Gray)
+        if (onClick != null) {
+            Spacer(Modifier.width(6.dp))
+            Icon(Icons.Outlined.ChevronRight, null, tint = Color.Gray)
+        }
     }
     HorizontalDivider()
 }

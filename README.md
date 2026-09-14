@@ -1,29 +1,31 @@
-# Aurora v0.2.9
+# Aurora v0.3.0
 
-Current app version: 0.2.9
+Current app version: 0.3.0
 
 Aurora is a minimal Android VPN client shell around libmihomo-android.
 
-## v0.2.9 changes
+## v0.3.0 changes
 
+- Adds an in-app diagnostic log page under Settings -> Logs.
+- Logs VPN consent, service lifecycle, config import, native core loading, bridge ABI, TUN creation, quickSetup/startTUN and full exception stack traces.
+- Logs are local only, rotated at about 2 MB, and can be copied, exported or cleared by the user.
+- Core load failures now include error code `CORE-LOAD-001` and direct the user to the log page.
 - Application ID remains `com.koude.aurora`.
-- Keeps the Clash Meta-aligned VPN consent flow from v0.2.7.
-- Adds a temporary manual GitHub Actions workflow: `Generate Aurora Keystore`.
-- The workflow generates a fixed `aurora-release.jks` using repository secrets and uploads it as an artifact.
-- The keystore generator is temporary and should be removed after the key is downloaded and backed up.
-- Normal APK build remains artifact-only; no automatic GitHub Release/tagging.
+- Keeps libmihomo-android v0.3.1 and the Clash Meta-aligned VPN consent flow.
+- Removes the temporary keystore-generation workflow after the signing key has been generated.
+- Normal GitHub Actions build now produces a signed Release APK using the fixed Aurora keystore stored in repository secrets.
+- No automatic GitHub Release/tagging.
 
-## Before running Generate Aurora Keystore
+## Required GitHub Actions secrets
 
-Create these repository Actions secrets:
+The build requires:
 
+- `AURORA_KEYSTORE_BASE64`
 - `AURORA_STORE_PASSWORD`
 - `AURORA_KEY_PASSWORD`
 
 The key alias is fixed as `aurora`.
 
-Then open GitHub Actions -> Generate Aurora Keystore -> Run workflow. Download the `aurora-release-keystore` artifact and keep `aurora-release.jks` backed up safely.
-
 ## Build
 
-GitHub Actions uses Java 17, Android SDK 35 and Gradle 8.9. The normal build downloads the pinned libmihomo-android v0.3.1 AAR and packages the arm64-v8a native libraries into the APK.
+GitHub Actions uses Java 17, Android SDK 35 and Gradle 8.9. The build downloads the pinned libmihomo-android v0.3.1 AAR, packages arm64-v8a native libraries, and signs `app-release.apk` with the fixed Aurora key.

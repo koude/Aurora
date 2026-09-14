@@ -14,11 +14,17 @@ import com.koude.aurora.MainActivity
 import com.koude.aurora.R
 import com.koude.aurora.core.MihomoCore
 import com.koude.aurora.data.AppState
+import com.koude.aurora.data.AppLogger
 import com.koude.aurora.data.ConnectionState
 import io.github.oviron.libmihomo.TunInterface
 import java.util.concurrent.Executors
 
 class AuroraVpnService : VpnService() {
+    override fun onCreate() {
+        super.onCreate()
+        AppLogger.init(applicationContext)
+        AppLogger.i("VPN", "AuroraVpnService created")
+    }
     private var tun: ParcelFileDescriptor? = null
     private val worker = Executors.newSingleThreadExecutor()
     private val core by lazy { MihomoCore(applicationContext) }
@@ -37,6 +43,7 @@ class AuroraVpnService : VpnService() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        AppLogger.i("VPN", "onStartCommand action=${intent?.action ?: "<null>"} startId=$startId")
         when (intent?.action) {
             ACTION_STOP -> disconnect()
             else -> worker.execute {
@@ -49,25 +56,31 @@ class AuroraVpnService : VpnService() {
     }
 
     private fun connect() {
-        if (AppState.connection.value == ConnectionState.CONNECTED) return
+        AppLogger.i("VPN", "Connect requested")
+        if (AppState.connection.value == ConnectionState.CONNECTED) {
+            AppLogger.i("VPN", "Already connected; ignoring duplicate connect")
+            return
+        }
 
         createChannel()
         startForeground(NOTIFICATION_ID, notification("正在准备连接"))
         AppState.setConnection(ConnectionState.CONNECTING, "正在加载 mihomo 核心")
 
         val config = filesDir.resolve("config.yaml")
+        AppLogger.i("VPN", "Config check path=${config.absolutePath} exists=${config.exists()} size=${if (config.exists()) config.length() else 0}")
         if (!config.exists()) {
             fail("请先导入配置文件")
             return
         }
 
         if (!core.isAvailable) {
-            fail("Aurora 核心加载失败")
+            fail("Aurora 核心加载失败 [CORE-LOAD-001]，请在设置 > 日志查看详情")
             return
         }
 
         AppState.setConnection(ConnectionState.CONNECTING, "正在创建 VPN 接口")
 
+        AppLogger.i("VPN", "Creating Android VPN interface")
         val fd = Builder()
             .setSession("Aurora")
             .setMtu(1400)
@@ -82,9 +95,11 @@ class AuroraVpnService : VpnService() {
         }
 
         tun = fd
+        AppLogger.i("VPN", "VPN interface established; fd=${fd.fd}")
         AppState.setConnection(ConnectionState.CONNECTING, "正在启动 mihomo TUN")
         core.start(config.absolutePath, fd.fd, tunCallbacks)
             .onSuccess {
+                AppLogger.i("VPN", "Connection established")
                 AppState.setConnection(ConnectionState.CONNECTED)
                 getSystemService(NotificationManager::class.java)
                     .notify(NOTIFICATION_ID, notification("已连接"))
@@ -96,6 +111,7 @@ class AuroraVpnService : VpnService() {
     }
 
     private fun fail(message: String) {
+        AppLogger.e("VPN", "Connection failed: $message")
         runCatching { core.stop() }
         runCatching { tun?.close() }
         tun = null
@@ -106,11 +122,13 @@ class AuroraVpnService : VpnService() {
     }
 
     private fun disconnect() {
+        AppLogger.i("VPN", "Disconnect requested")
         worker.execute {
             runCatching { core.stop() }
             runCatching { tun?.close() }
             tun = null
             AppState.setConnection(ConnectionState.DISCONNECTED)
+            AppLogger.i("VPN", "Disconnected")
             stopForeground(STOP_FOREGROUND_REMOVE)
             stopSelf()
             AuroraTileService.requestRefresh(this)
@@ -118,11 +136,13 @@ class AuroraVpnService : VpnService() {
     }
 
     override fun onRevoke() {
+        AppLogger.w("VPN", "VPN permission revoked by system")
         disconnect()
         super.onRevoke()
     }
 
     override fun onDestroy() {
+        AppLogger.i("VPN", "AuroraVpnService destroyed")
         runCatching { core.stop() }
         runCatching { tun?.close() }
         tun = null

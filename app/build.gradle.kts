@@ -5,6 +5,10 @@ plugins {
 }
 
 val auroraCoreVersion = "0.3.1"
+
+val auroraKeystorePath = System.getenv("AURORA_KEYSTORE_PATH")
+val auroraStorePassword = System.getenv("AURORA_STORE_PASSWORD")
+val auroraKeyPassword = System.getenv("AURORA_KEY_PASSWORD")
 val auroraCoreAar = layout.buildDirectory.file("core/aurora-core-v$auroraCoreVersion.aar")
 
 val downloadAuroraCore = tasks.register("downloadAuroraCore") {
@@ -34,8 +38,8 @@ android {
         applicationId = "com.koude.aurora"
         minSdk = 26
         targetSdk = 35
-        versionCode = 11
-        versionName = "0.2.9"
+        versionCode = 12
+        versionName = "0.3.0"
 
         vectorDrawables.useSupportLibrary = true
 
@@ -49,6 +53,27 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    signingConfigs {
+        if (!auroraKeystorePath.isNullOrBlank() &&
+            !auroraStorePassword.isNullOrBlank() &&
+            !auroraKeyPassword.isNullOrBlank()
+        ) {
+            create("release") {
+                storeFile = file(auroraKeystorePath)
+                storePassword = auroraStorePassword
+                keyAlias = "aurora"
+                keyPassword = auroraKeyPassword
+            }
+        }
+    }
+
+    buildTypes {
+        getByName("release") {
+            isMinifyEnabled = false
+            signingConfigs.findByName("release")?.let { signingConfig = it }
+        }
     }
 
     buildFeatures { compose = true }
