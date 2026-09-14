@@ -1,6 +1,8 @@
 # Aurora project status
 
-## v0.3.2
+## v0.3.3
+
+- Fixed duplicate `android.os.Build` import that blocked release compilation.
 
 - Core loading fix: force native extraction + legacy JNI packaging.
 - Runtime APK extraction fallback for `libclash.so` and `libmihomo-jni.so`.

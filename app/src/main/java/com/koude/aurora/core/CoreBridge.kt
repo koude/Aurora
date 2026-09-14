@@ -2,7 +2,6 @@ package com.koude.aurora.core
 
 import android.content.Context
 import android.os.Build
-import android.os.Build
 import com.koude.aurora.data.AppLogger
 import io.github.oviron.libmihomo.Clash
 import io.github.oviron.libmihomo.TunInterface
