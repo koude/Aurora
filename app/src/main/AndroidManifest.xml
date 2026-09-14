@@ -8,6 +8,7 @@
     <application
         android:name=".AuroraApplication"
         android:allowBackup="false"
+        android:extractNativeLibs="true"
         android:usesCleartextTraffic="true"
         android:icon="@drawable/ic_aurora"
         android:label="Aurora"

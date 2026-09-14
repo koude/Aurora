@@ -308,7 +308,7 @@ private fun SettingsScreen(imported: Boolean, sourceLabel: String, onOpenLogs: (
         SettingRow("核心", "libmihomo-android 0.3.1")
         SettingRow("日志", "本机保存 · 最大约 2 MB", onClick = onOpenLogs)
         SettingRow("遥测", "无")
-        SettingRow("版本", "0.3.0")
+        SettingRow("版本", "0.3.1")
         Spacer(Modifier.height(18.dp))
         Text("VPN 授权诊断", fontWeight = FontWeight.SemiBold)
         Spacer(Modifier.height(8.dp))
@@ -364,7 +364,7 @@ private fun LogsScreen(onBack: () -> Unit) {
             ) { Icon(Icons.Outlined.ContentCopy, null); Spacer(Modifier.width(6.dp)); Text("复制") }
             OutlinedButton(
                 modifier = Modifier.weight(1f),
-                onClick = { exporter.launch("Aurora-v0.3.0-log.txt") }
+                onClick = { exporter.launch("Aurora-v0.3.1-log.txt") }
             ) { Icon(Icons.Outlined.UploadFile, null); Spacer(Modifier.width(6.dp)); Text("导出") }
             OutlinedButton(
                 modifier = Modifier.weight(1f),

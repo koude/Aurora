@@ -1,20 +1,16 @@
-# Aurora v0.3.0
+# Aurora v0.3.1
 
-Current app version: 0.3.0
+Current app version: 0.3.1
 
 Aurora is a minimal Android VPN client shell around libmihomo-android.
 
-## v0.3.0 changes
+## v0.3.1 changes
 
-- Adds an in-app diagnostic log page under Settings -> Logs.
-- Logs VPN consent, service lifecycle, config import, native core loading, bridge ABI, TUN creation, quickSetup/startTUN and full exception stack traces.
-- Logs are local only, rotated at about 2 MB, and can be copied, exported or cleared by the user.
-- Core load failures now include error code `CORE-LOAD-001` and direct the user to the log page.
-- Application ID remains `com.koude.aurora`.
-- Keeps libmihomo-android v0.3.1 and the Clash Meta-aligned VPN consent flow.
-- Removes the temporary keystore-generation workflow after the signing key has been generated.
-- Normal GitHub Actions build now produces a signed Release APK using the fixed Aurora keystore stored in repository secrets.
-- No automatic GitHub Release/tagging.
+- Fixed mihomo native library loading on devices where the installed native library directory is empty.
+- Forces Android to extract packaged native libraries and enables legacy JNI packaging for the release APK.
+- Adds a runtime fallback that extracts `libclash.so` and `libmihomo-jni.so` directly from the APK into Aurora private storage when needed.
+- GitHub Actions now verifies both arm64 native libraries are present in the final APK and fails the build if either is missing.
+- Keystore restore is tolerant of whitespace/newlines in the Base64 secret.
 
 ## Required GitHub Actions secrets
 

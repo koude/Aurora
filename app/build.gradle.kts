@@ -38,8 +38,8 @@ android {
         applicationId = "com.koude.aurora"
         minSdk = 26
         targetSdk = 35
-        versionCode = 12
-        versionName = "0.3.0"
+        versionCode = 13
+        versionName = "0.3.1"
 
         vectorDrawables.useSupportLibrary = true
 
@@ -80,6 +80,7 @@ android {
 
     packaging {
         resources.excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        jniLibs.useLegacyPackaging = true
     }
 }
 

@@ -45,7 +45,8 @@ jobs:
         env:
           KEYSTORE_B64: ${{ secrets.AURORA_KEYSTORE_BASE64 }}
         run: |
-          echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/aurora-release.jks"
+          printf '%s' "$KEYSTORE_B64" | tr -d '\r\n ' | base64 -d > "$RUNNER_TEMP/aurora-release.jks"
+          test -s "$RUNNER_TEMP/aurora-release.jks" || { echo "Restored keystore is empty"; exit 1; }
 
       - name: Build signed Release APK
         env:
@@ -54,8 +55,15 @@ jobs:
           AURORA_KEY_PASSWORD: ${{ secrets.AURORA_KEY_PASSWORD }}
         run: gradle :app:assembleRelease --stacktrace
 
+      - name: Verify mihomo native libraries in APK
+        run: |
+          APK="app/build/outputs/apk/release/app-release.apk"
+          unzip -l "$APK" | tee "$RUNNER_TEMP/apk-contents.txt"
+          grep -q 'lib/arm64-v8a/libclash.so' "$RUNNER_TEMP/apk-contents.txt" || { echo "Missing libclash.so in APK"; exit 1; }
+          grep -q 'lib/arm64-v8a/libmihomo-jni.so' "$RUNNER_TEMP/apk-contents.txt" || { echo "Missing libmihomo-jni.so in APK"; exit 1; }
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Aurora-v0.3.0
+          name: Aurora-v0.3.1
           path: app/build/outputs/apk/release/app-release.apk
