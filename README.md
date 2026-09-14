@@ -1,10 +1,10 @@
-# Aurora v0.3.3
+# Aurora v0.3.5
 
-Current app version: 0.3.3
+Current app version: 0.3.5
 
 Aurora is a minimal Android VPN client shell around libmihomo-android.
 
-## v0.3.3 changes
+## v0.3.5 changes
 
 - Fix Kotlin compile failure caused by duplicate `android.os.Build` import in `CoreBridge.kt`.
 - Keep the v0.3.2 mihomo `home-dir` / `config.yaml` startup fix unchanged.

@@ -78,9 +78,16 @@ class AuroraVpnService : VpnService() {
             return
         }
 
+        AppState.setConnection(ConnectionState.CONNECTING, "正在准备 mihomo 配置")
+        core.prepare(config.absolutePath)
+            .onFailure {
+                fail(it.message ?: "核心配置初始化失败")
+                return
+            }
+
         AppState.setConnection(ConnectionState.CONNECTING, "正在创建 VPN 接口")
 
-        AppLogger.i("VPN", "Creating Android VPN interface")
+        AppLogger.i("VPN", "Creating Android VPN interface after quickSetup")
         val fd = Builder()
             .setSession("Aurora")
             .setMtu(1400)
@@ -97,7 +104,7 @@ class AuroraVpnService : VpnService() {
         tun = fd
         AppLogger.i("VPN", "VPN interface established; fd=${fd.fd}")
         AppState.setConnection(ConnectionState.CONNECTING, "正在启动 mihomo TUN")
-        core.start(config.absolutePath, fd.fd, tunCallbacks)
+        core.startTun(fd.fd, tunCallbacks)
             .onSuccess {
                 AppLogger.i("VPN", "Connection established")
                 AppState.setConnection(ConnectionState.CONNECTED)

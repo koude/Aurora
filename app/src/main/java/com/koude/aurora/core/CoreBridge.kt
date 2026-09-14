@@ -3,6 +3,7 @@ package com.koude.aurora.core
 import android.content.Context
 import android.os.Build
 import com.koude.aurora.data.AppLogger
+import com.koude.aurora.data.GeoDataManager
 import io.github.oviron.libmihomo.Clash
 import io.github.oviron.libmihomo.TunInterface
 import java.io.File
@@ -12,7 +13,8 @@ import java.util.zip.ZipFile
 
 interface CoreBridge {
     val isAvailable: Boolean
-    fun start(configPath: String, tunFd: Int, tunInterface: TunInterface): Result<Unit>
+    fun prepare(configPath: String): Result<Unit>
+    fun startTun(tunFd: Int, tunInterface: TunInterface): Result<Unit>
     fun stop()
 }
 
@@ -65,12 +67,6 @@ class MihomoCore(private val context: Context) : CoreBridge {
         }
     }
 
-    /**
-     * libmihomo-android expects a real filesystem directory containing both native libraries.
-     * Most Android installs expose those through applicationInfo.nativeLibraryDir. If a ROM or
-     * packaging mode keeps them inside the APK instead, extract the current ABI pair into Aurora's
-     * private files directory and load from there.
-     */
     private fun resolveNativeLibraryDir(): String {
         val systemDir = File(context.applicationInfo.nativeLibraryDir)
         if (hasRequiredLibraries(systemDir)) {
@@ -78,19 +74,15 @@ class MihomoCore(private val context: Context) : CoreBridge {
             return systemDir.absolutePath
         }
 
-        AppLogger.w(
-            "CORE",
-            "System native library directory is missing mihomo libraries; attempting APK fallback extraction"
-        )
-
         val apk = File(context.applicationInfo.sourceDir)
-        check(apk.isFile) { "APK source not found: ${apk.absolutePath}" }
+        check(apk.isFile) { "APK path unavailable: ${apk.absolutePath}" }
+        val abi = Build.SUPPORTED_ABIS.firstOrNull { candidate ->
+            ZipFile(apk).use { zip ->
+                REQUIRED_LIBRARIES.all { name -> zip.getEntry("lib/$candidate/$name") != null }
+            }
+        } ?: error("APK does not contain required mihomo libraries for supported ABIs: ${Build.SUPPORTED_ABIS.joinToString()}")
 
         ZipFile(apk).use { zip ->
-            val abi = Build.SUPPORTED_ABIS.firstOrNull { candidate ->
-                REQUIRED_LIBRARIES.all { name -> zip.getEntry("lib/$candidate/$name") != null }
-            } ?: error("APK does not contain mihomo native libraries for supported ABIs: ${Build.SUPPORTED_ABIS.joinToString()}")
-
             val outDir = File(context.filesDir, "native/$abi")
             check(outDir.exists() || outDir.mkdirs()) { "Unable to create native extraction directory: $outDir" }
 
@@ -122,8 +114,8 @@ class MihomoCore(private val context: Context) : CoreBridge {
     private fun hasRequiredLibraries(dir: File): Boolean =
         dir.isDirectory && REQUIRED_LIBRARIES.all { File(dir, it).isFile && File(dir, it).length() > 0L }
 
-    override fun start(configPath: String, tunFd: Int, tunInterface: TunInterface): Result<Unit> = runCatching {
-        AppLogger.i("CORE", "Starting core; config=$configPath tunFd=$tunFd")
+    override fun prepare(configPath: String): Result<Unit> = runCatching {
+        AppLogger.i("CORE", "Preparing core before Android VPN interface; config=$configPath")
         ensureLoaded()
 
         val setupLatch = CountDownLatch(1)
@@ -133,13 +125,12 @@ class MihomoCore(private val context: Context) : CoreBridge {
         val configFile = File(context.filesDir, "config.yaml")
         check(configFile.isFile) { "Core config missing: ${configFile.absolutePath}" }
         AppLogger.i("CORE", "Core home=${context.filesDir.absolutePath}; config=${configFile.absolutePath} size=${configFile.length()}")
+        GeoDataManager.ensureRequired(context, configFile)
 
-        // libmihomo/FlClash core expects `home-dir` (not `homeDir`) and always
-        // loads <home-dir>/config.yaml. SetupParams does not contain a profile path.
         val initJson = """{"home-dir":"$home","version":${Build.VERSION.SDK_INT}}"""
         val setupJson = """{"selected-map":{},"test-url":"https://www.gstatic.com/generate_204"}"""
 
-        AppLogger.i("CORE", "Calling quickSetup with home-dir and SDK=${Build.VERSION.SDK_INT}")
+        AppLogger.i("CORE", "Calling quickSetup before VPN establish; home-dir set; SDK=${Build.VERSION.SDK_INT}")
         Clash.quickSetup(
             initParams = initJson,
             setupParams = setupJson
@@ -148,11 +139,16 @@ class MihomoCore(private val context: Context) : CoreBridge {
             setupLatch.countDown()
         }
 
-        check(setupLatch.await(15, TimeUnit.SECONDS)) { "Core setup timed out" }
+        check(setupLatch.await(30, TimeUnit.SECONDS)) { "Core setup timed out" }
         check(setupError.isNullOrEmpty()) { "Core setup failed: $setupError" }
-        AppLogger.i("CORE", "quickSetup completed")
+        AppLogger.i("CORE", "quickSetup completed before VPN establish")
+    }.onFailure {
+        AppLogger.e("CORE", "Core prepare failed: ${it.javaClass.simpleName}: ${it.message}", it)
+    }
 
-        AppLogger.i("CORE", "Calling startTUN")
+    override fun startTun(tunFd: Int, tunInterface: TunInterface): Result<Unit> = runCatching {
+        ensureLoaded()
+        AppLogger.i("CORE", "Calling startTUN; tunFd=$tunFd")
         Clash.startTUN(
             fd = tunFd,
             cb = tunInterface,
@@ -164,7 +160,7 @@ class MihomoCore(private val context: Context) : CoreBridge {
         )
         AppLogger.i("CORE", "startTUN returned successfully")
     }.onFailure {
-        AppLogger.e("CORE", "Core start failed: ${it.javaClass.simpleName}: ${it.message}", it)
+        AppLogger.e("CORE", "startTUN failed: ${it.javaClass.simpleName}: ${it.message}", it)
     }
 
     override fun stop() {

@@ -1,6 +1,6 @@
 # Aurora project status
 
-## v0.3.3
+## v0.3.5
 
 - Fixed duplicate `android.os.Build` import that blocked release compilation.
 
