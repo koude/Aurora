@@ -27,15 +27,15 @@ val downloadAuroraCore = tasks.register("downloadAuroraCore") {
 }
 
 android {
-    namespace = "com.aurora.client"
+    namespace = "com.koude.aurora"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.aurora.client"
+        applicationId = "com.koude.aurora"
         minSdk = 26
         targetSdk = 35
-        versionCode = 8
-        versionName = "0.2.6"
+        versionCode = 9
+        versionName = "0.2.7"
 
         vectorDrawables.useSupportLibrary = true
 
