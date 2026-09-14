@@ -1,10 +1,10 @@
-# Aurora v0.3.1
+# Aurora v0.3.2
 
-Current app version: 0.3.1
+Current app version: 0.3.2
 
 Aurora is a minimal Android VPN client shell around libmihomo-android.
 
-## v0.3.1 changes
+## v0.3.2 changes
 
 - Fixed mihomo native library loading on devices where the installed native library directory is empty.
 - Forces Android to extract packaged native libraries and enables legacy JNI packaging for the release APK.
@@ -24,4 +24,4 @@ The key alias is fixed as `aurora`.
 
 ## Build
 
-GitHub Actions uses Java 17, Android SDK 35 and Gradle 8.9. The build downloads the pinned libmihomo-android v0.3.1 AAR, packages arm64-v8a native libraries, and signs `app-release.apk` with the fixed Aurora key.
+GitHub Actions uses Java 17, Android SDK 35 and Gradle 8.9. The build downloads the pinned libmihomo-android v0.3.2 AAR, packages arm64-v8a native libraries, and signs `app-release.apk` with the fixed Aurora key.

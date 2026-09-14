@@ -2,6 +2,7 @@ package com.koude.aurora.core
 
 import android.content.Context
 import android.os.Build
+import android.os.Build
 import com.koude.aurora.data.AppLogger
 import io.github.oviron.libmihomo.Clash
 import io.github.oviron.libmihomo.TunInterface
@@ -130,12 +131,19 @@ class MihomoCore(private val context: Context) : CoreBridge {
         var setupError: String? = null
 
         val home = context.filesDir.absolutePath.replace("\\", "\\\\").replace("\"", "\\\"")
-        val profile = configPath.replace("\\", "\\\\").replace("\"", "\\\"")
+        val configFile = File(context.filesDir, "config.yaml")
+        check(configFile.isFile) { "Core config missing: ${configFile.absolutePath}" }
+        AppLogger.i("CORE", "Core home=${context.filesDir.absolutePath}; config=${configFile.absolutePath} size=${configFile.length()}")
 
-        AppLogger.i("CORE", "Calling quickSetup")
+        // libmihomo/FlClash core expects `home-dir` (not `homeDir`) and always
+        // loads <home-dir>/config.yaml. SetupParams does not contain a profile path.
+        val initJson = """{"home-dir":"$home","version":${Build.VERSION.SDK_INT}}"""
+        val setupJson = """{"selected-map":{},"test-url":"https://www.gstatic.com/generate_204"}"""
+
+        AppLogger.i("CORE", "Calling quickSetup with home-dir and SDK=${Build.VERSION.SDK_INT}")
         Clash.quickSetup(
-            initParams = """{"homeDir":"$home"}""",
-            setupParams = """{"profile":"$profile"}"""
+            initParams = initJson,
+            setupParams = setupJson
         ) { result ->
             if (!result.isNullOrEmpty()) setupError = result
             setupLatch.countDown()

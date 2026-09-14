@@ -1,6 +1,6 @@
 # Aurora project status
 
-## v0.3.1
+## v0.3.2
 
 - Core loading fix: force native extraction + legacy JNI packaging.
 - Runtime APK extraction fallback for `libclash.so` and `libmihomo-jni.so`.
