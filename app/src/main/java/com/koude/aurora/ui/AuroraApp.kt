@@ -299,7 +299,7 @@ private fun SettingsScreen(imported: Boolean, sourceLabel: String) {
         SettingRow("配置", if (imported) sourceLabel else "未导入")
         SettingRow("核心", "libmihomo-android 0.3.1")
         SettingRow("遥测", "无")
-        SettingRow("版本", "0.2.7")
+        SettingRow("版本", "0.2.8")
         Spacer(Modifier.height(18.dp))
         Text("VPN 授权诊断", fontWeight = FontWeight.SemiBold)
         Spacer(Modifier.height(8.dp))
