@@ -21,7 +21,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aurora.client.data.AppState
+import com.aurora.client.data.ConfigImporter
 import com.aurora.client.data.ConnectionState
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 private enum class Page { HOME, NODES, SETTINGS }
 
@@ -31,33 +35,123 @@ fun AuroraApp(onConnect: () -> Unit, onDisconnect: () -> Unit) {
     val state by AppState.connection.collectAsState()
     val message by AppState.message.collectAsState()
     val context = LocalContext.current
-    var imported by remember { mutableStateOf(context.filesDir.resolve("config.yaml").exists()) }
+    val scope = rememberCoroutineScope()
+    val snackbar = remember { SnackbarHostState() }
+
+    var imported by remember { mutableStateOf(ConfigImporter.hasConfig(context)) }
+    var sourceLabel by remember { mutableStateOf(ConfigImporter.sourceLabel(context)) }
+    var showImportOptions by remember { mutableStateOf(false) }
+    var showUrlDialog by remember { mutableStateOf(false) }
+    var importingUrl by remember { mutableStateOf(false) }
 
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null) imported = copyConfig(context, uri)
+        if (uri != null) {
+            scope.launch {
+                val result = withContext(Dispatchers.IO) { ConfigImporter.importFile(context, uri) }
+                result.onSuccess {
+                    imported = true
+                    sourceLabel = ConfigImporter.sourceLabel(context)
+                    AppState.showMessage("配置导入成功")
+                }.onFailure {
+                    AppState.showMessage(it.message ?: "配置导入失败")
+                }
+            }
+        }
+    }
+
+    LaunchedEffect(message) {
+        message?.let {
+            snackbar.showSnackbar(it)
+            AppState.clearMessage()
+        }
+    }
+
+    if (showImportOptions) {
+        AlertDialog(
+            onDismissRequest = { showImportOptions = false },
+            title = { Text("导入配置") },
+            text = {
+                Column {
+                    ListItem(
+                        headlineContent = { Text("从文件导入") },
+                        supportingContent = { Text("选择本地 YAML 配置") },
+                        leadingContent = { Icon(Icons.Outlined.FolderOpen, null) },
+                        modifier = Modifier.clickable {
+                            showImportOptions = false
+                            picker.launch(arrayOf("application/x-yaml", "text/yaml", "text/plain", "*/*"))
+                        }
+                    )
+                    ListItem(
+                        headlineContent = { Text("从链接导入") },
+                        supportingContent = { Text("粘贴 http/https 配置或订阅链接") },
+                        leadingContent = { Icon(Icons.Outlined.Link, null) },
+                        modifier = Modifier.clickable {
+                            showImportOptions = false
+                            showUrlDialog = true
+                        }
+                    )
+                }
+            },
+            confirmButton = {},
+            dismissButton = { TextButton(onClick = { showImportOptions = false }) { Text("取消") } }
+        )
+    }
+
+    if (showUrlDialog) {
+        var url by remember { mutableStateOf("") }
+        AlertDialog(
+            onDismissRequest = { if (!importingUrl) showUrlDialog = false },
+            title = { Text("从链接导入") },
+            text = {
+                Column {
+                    OutlinedTextField(
+                        value = url,
+                        onValueChange = { url = it },
+                        singleLine = true,
+                        label = { Text("配置链接") },
+                        placeholder = { Text("https://…") },
+                        enabled = !importingUrl,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    if (importingUrl) {
+                        Spacer(Modifier.height(12.dp))
+                        LinearProgressIndicator(Modifier.fillMaxWidth())
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = url.isNotBlank() && !importingUrl,
+                    onClick = {
+                        importingUrl = true
+                        scope.launch {
+                            val result = withContext(Dispatchers.IO) { ConfigImporter.importUrl(context, url) }
+                            importingUrl = false
+                            result.onSuccess {
+                                imported = true
+                                sourceLabel = ConfigImporter.sourceLabel(context)
+                                showUrlDialog = false
+                                AppState.showMessage("配置下载并导入成功")
+                            }.onFailure {
+                                AppState.showMessage(it.message ?: "链接导入失败")
+                            }
+                        }
+                    }
+                ) { Text("导入") }
+            },
+            dismissButton = {
+                TextButton(enabled = !importingUrl, onClick = { showUrlDialog = false }) { Text("取消") }
+            }
+        )
     }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbar) },
         bottomBar = {
             NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
-                NavigationBarItem(
-                    selected = page == Page.HOME,
-                    onClick = { page = Page.HOME },
-                    icon = { Icon(Icons.Outlined.Home, null) },
-                    label = { Text("首页") }
-                )
-                NavigationBarItem(
-                    selected = page == Page.NODES,
-                    onClick = { page = Page.NODES },
-                    icon = { Icon(Icons.Outlined.Public, null) },
-                    label = { Text("节点") }
-                )
-                NavigationBarItem(
-                    selected = page == Page.SETTINGS,
-                    onClick = { page = Page.SETTINGS },
-                    icon = { Icon(Icons.Outlined.Settings, null) },
-                    label = { Text("设置") }
-                )
+                NavigationBarItem(page == Page.HOME, { page = Page.HOME }, { Icon(Icons.Outlined.Home, null) }, label = { Text("首页") })
+                NavigationBarItem(page == Page.NODES, { page = Page.NODES }, { Icon(Icons.Outlined.Public, null) }, label = { Text("节点") })
+                NavigationBarItem(page == Page.SETTINGS, { page = Page.SETTINGS }, { Icon(Icons.Outlined.Settings, null) }, label = { Text("设置") })
             }
         }
     ) { padding ->
@@ -65,33 +159,29 @@ fun AuroraApp(onConnect: () -> Unit, onDisconnect: () -> Unit) {
             when (page) {
                 Page.HOME -> HomeScreen(
                     state = state,
-                    message = message,
                     imported = imported,
-                    onImport = { picker.launch(arrayOf("application/x-yaml", "text/yaml", "text/plain", "*/*")) },
+                    sourceLabel = sourceLabel,
+                    onImport = { showImportOptions = true },
                     onToggle = {
-                        if (state == ConnectionState.CONNECTED || state == ConnectionState.CONNECTING) onDisconnect()
-                        else onConnect()
+                        when {
+                            state == ConnectionState.CONNECTED || state == ConnectionState.CONNECTING -> onDisconnect()
+                            !imported -> AppState.showMessage("请先导入配置")
+                            else -> onConnect()
+                        }
                     }
                 )
                 Page.NODES -> NodesScreen()
-                Page.SETTINGS -> SettingsScreen(imported)
+                Page.SETTINGS -> SettingsScreen(imported, sourceLabel)
             }
         }
     }
 }
 
-private fun copyConfig(context: Context, uri: Uri): Boolean = runCatching {
-    context.contentResolver.openInputStream(uri)!!.use { input ->
-        context.filesDir.resolve("config.yaml").outputStream().use { output -> input.copyTo(output) }
-    }
-    true
-}.getOrDefault(false)
-
 @Composable
 private fun HomeScreen(
     state: ConnectionState,
-    message: String?,
     imported: Boolean,
+    sourceLabel: String,
     onImport: () -> Unit,
     onToggle: () -> Unit
 ) {
@@ -124,23 +214,19 @@ private fun HomeScreen(
 
         Box(
             Modifier.size(190.dp)
-                .background(
-                    if (active) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
-                    CircleShape
-                )
+                .background(if (active) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant, CircleShape)
                 .clickable(enabled = !connecting) { onToggle() },
             contentAlignment = Alignment.Center
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Icon(
-                    if (active) Icons.Outlined.PowerSettingsNew else Icons.Outlined.PowerSettingsNew,
-                    null,
-                    modifier = Modifier.size(56.dp),
-                    tint = if (active) MaterialTheme.colorScheme.primary else Color.DarkGray
-                )
+                if (connecting) {
+                    CircularProgressIndicator(Modifier.size(48.dp), strokeWidth = 4.dp)
+                } else {
+                    Icon(Icons.Outlined.PowerSettingsNew, null, modifier = Modifier.size(56.dp), tint = if (active) MaterialTheme.colorScheme.primary else Color.DarkGray)
+                }
                 Spacer(Modifier.height(10.dp))
                 Text(statusText, fontWeight = FontWeight.Medium)
-                Text(if (active) "点击断开" else "点击连接", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                Text(if (active) "点击断开" else if (connecting) "正在启动核心" else "点击连接", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
             }
         }
 
@@ -153,27 +239,18 @@ private fun HomeScreen(
                     Spacer(Modifier.width(12.dp))
                     Column(Modifier.weight(1f)) {
                         Text(if (imported) "配置已导入" else "还没有配置", fontWeight = FontWeight.Medium)
-                        Text(
-                            if (imported) "config.yaml · 本地保存" else "导入 Clash/Mihomo YAML 配置",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color.Gray
-                        )
+                        Text(if (imported) "$sourceLabel · config.yaml" else "支持本地 YAML 或配置链接", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
                     }
                     TextButton(onClick = onImport) { Text(if (imported) "更换" else "导入") }
                 }
             }
         }
 
-        if (message != null) {
-            Spacer(Modifier.height(14.dp))
-            Text(message, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-        }
-
         Spacer(Modifier.height(16.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Stat("模式", "Rule")
             Stat("节点", "Auto Select")
-            Stat("延迟", "42 ms")
+            Stat("延迟", "--")
         }
     }
 }
@@ -191,13 +268,10 @@ private fun NodesScreen() {
     var selected by remember { mutableIntStateOf(0) }
     Column(Modifier.fillMaxSize().padding(20.dp)) {
         Text("节点", fontSize = 28.sp, fontWeight = FontWeight.SemiBold)
-        Text("选择出口节点", color = Color.Gray)
+        Text("当前页面仍为演示节点，实时节点读取将在后续版本接入", color = Color.Gray)
         Spacer(Modifier.height(20.dp))
         AppState.nodes.forEachIndexed { index, node ->
-            ElevatedCard(
-                Modifier.fillMaxWidth().padding(bottom = 12.dp).clickable { selected = index },
-                shape = RoundedCornerShape(18.dp)
-            ) {
+            ElevatedCard(Modifier.fillMaxWidth().padding(bottom = 12.dp).clickable { selected = index }, shape = RoundedCornerShape(18.dp)) {
                 Row(Modifier.padding(18.dp), verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Outlined.Language, null, tint = MaterialTheme.colorScheme.primary)
                     Spacer(Modifier.width(14.dp))
@@ -213,24 +287,20 @@ private fun NodesScreen() {
 }
 
 @Composable
-private fun SettingsScreen(imported: Boolean) {
+private fun SettingsScreen(imported: Boolean, sourceLabel: String) {
     var autoStart by remember { mutableStateOf(false) }
     var darkFollow by remember { mutableStateOf(true) }
     Column(Modifier.fillMaxSize().padding(20.dp)) {
         Text("设置", fontSize = 28.sp, fontWeight = FontWeight.SemiBold)
         Spacer(Modifier.height(20.dp))
-        SettingSwitch("系统启动后恢复连接", "需要后续加入开机广播", autoStart) { autoStart = it }
-        SettingSwitch("跟随系统外观", "当前 v0.1 使用浅色主题", darkFollow) { darkFollow = it }
-        SettingRow("本地配置", if (imported) "config.yaml" else "未导入")
-        SettingRow("核心", "mihomo adapter · 待接入")
+        SettingSwitch("系统启动后恢复连接", "尚未启用开机自连", autoStart) { autoStart = it }
+        SettingSwitch("跟随系统外观", "使用系统深浅色设置", darkFollow) { darkFollow = it }
+        SettingRow("配置", if (imported) sourceLabel else "未导入")
+        SettingRow("核心", "libmihomo-android 0.3.1")
         SettingRow("遥测", "无")
-        SettingRow("版本", "0.2.2")
+        SettingRow("版本", "0.2.3")
         Spacer(Modifier.height(24.dp))
-        Text(
-            "Aurora 不包含广告、统计 SDK 或远程日志。v0.1 已完成 Android VPN 控制层与 UI，代理核心通过独立适配层接入。",
-            style = MaterialTheme.typography.bodySmall,
-            color = Color.Gray
-        )
+        Text("Aurora 不包含广告、统计 SDK 或远程日志。当前版本已接入 mihomo 核心，支持本地文件和 http/https 链接导入配置。", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
     }
 }
 

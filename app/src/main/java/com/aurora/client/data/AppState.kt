@@ -26,4 +26,12 @@ object AppState {
         _connection.value = value
         _message.value = message
     }
+
+    fun showMessage(message: String) {
+        _message.value = message
+    }
+
+    fun clearMessage() {
+        _message.value = null
+    }
 }

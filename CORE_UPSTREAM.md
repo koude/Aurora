@@ -1,9 +1,7 @@
 # Core upstream
 
-Pinned Android wrapper: https://github.com/oviron/libmihomo-android
-Pinned wrapper version: v0.3.1
-Bundled mihomo version reported by upstream: v1.19.28
-Bridge ABI: 3
-Upstream mihomo: https://github.com/MetaCubeX/mihomo
+Aurora v0.2.3 uses libmihomo-android v0.3.1 as its Android JNI bridge to mihomo.
 
-Aurora intentionally does not rename the native libraries inside the AAR. `Clash.load(...)` expects the upstream native loading layout. Renaming the AAR file itself is harmless; renaming the `.so` files requires rebuilding/patching the JNI facade and offers little practical privacy benefit.
+The AAR is downloaded at build time and embedded in the resulting APK. Aurora does not download the executable core after installation.
+
+The JNI/native library names are intentionally left as provided by upstream to avoid breaking the library loading chain.

@@ -39,19 +39,21 @@ class AuroraVpnService : VpnService() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_STOP -> disconnect()
-            else -> worker.execute { connect() }
+            else -> worker.execute {
+                runCatching { connect() }.onFailure {
+                    fail(it.message ?: it.javaClass.simpleName ?: "VPN 服务异常")
+                }
+            }
         }
         return START_NOT_STICKY
     }
 
     private fun connect() {
-        if (AppState.connection.value == ConnectionState.CONNECTING ||
-            AppState.connection.value == ConnectionState.CONNECTED
-        ) return
+        if (AppState.connection.value == ConnectionState.CONNECTED) return
 
         createChannel()
         startForeground(NOTIFICATION_ID, notification("正在准备连接"))
-        AppState.setConnection(ConnectionState.CONNECTING)
+        AppState.setConnection(ConnectionState.CONNECTING, "正在加载 mihomo 核心")
 
         val config = filesDir.resolve("config.yaml")
         if (!config.exists()) {
@@ -63,6 +65,8 @@ class AuroraVpnService : VpnService() {
             fail("Aurora 核心加载失败")
             return
         }
+
+        AppState.setConnection(ConnectionState.CONNECTING, "正在创建 VPN 接口")
 
         val fd = Builder()
             .setSession("Aurora")
@@ -78,6 +82,7 @@ class AuroraVpnService : VpnService() {
         }
 
         tun = fd
+        AppState.setConnection(ConnectionState.CONNECTING, "正在启动 mihomo TUN")
         core.start(config.absolutePath, fd.fd, tunCallbacks)
             .onSuccess {
                 AppState.setConnection(ConnectionState.CONNECTED)

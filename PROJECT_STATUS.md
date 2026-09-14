@@ -1,32 +1,20 @@
 # Aurora project status
 
-## v0.2 implemented
+## v0.2.3
 
-- [x] App UI shell
-- [x] Local YAML import
-- [x] Android VPN permission flow
-- [x] VpnService lifecycle
-- [x] Quick Settings tile
-- [x] Foreground notification + disconnect action
-- [x] Real libmihomo Android bridge
-- [x] Core load / bridge ABI validation
-- [x] quickSetup(profile) before TUN start
-- [x] TUN socket protection callback
-- [x] Clean stop path (`stopTun` then close VPN fd)
-- [x] arm64-v8a-only packaging
+Implemented:
+- Jetpack Compose home / nodes / settings UI.
+- Android VpnService and Quick Settings tile.
+- libmihomo-android v0.3.1 core bridge.
+- Local YAML configuration import.
+- http/https configuration URL import.
+- Visible connection progress and failure feedback.
+- arm64-v8a APK target.
+- GitHub Actions debug APK artifact build.
 
-## next useful work
-
-- [ ] Read proxy groups / nodes from the imported profile/core
-- [ ] Real node switching via invokeAction
-- [ ] Live delay test
-- [ ] Live traffic counters
-- [ ] Subscription URL import/update
-- [ ] IPv6 path
-- [ ] Persist UI settings with DataStore
-- [ ] Release signing / GitHub Actions APK build
-
-## v0.2.2
-
-- Aligns Java source/target compatibility with Kotlin at Java 17.
-- Includes `.github/workflows/build.yml` for GitHub Actions debug APK builds.
+Not yet implemented:
+- Live proxy group / node data from mihomo.
+- Real node switching.
+- Latency testing.
+- Boot auto-connect.
+- Automatic GitHub Release publishing.
