@@ -298,7 +298,7 @@ private fun SettingsScreen(imported: Boolean, sourceLabel: String) {
         SettingRow("配置", if (imported) sourceLabel else "未导入")
         SettingRow("核心", "libmihomo-android 0.3.1")
         SettingRow("遥测", "无")
-        SettingRow("版本", "0.2.4")
+        SettingRow("版本", "0.2.5")
         Spacer(Modifier.height(24.dp))
         Text("Aurora 不包含广告、统计 SDK 或远程日志。当前版本已接入 mihomo 核心，支持本地文件和 http/https 链接导入配置。", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
     }

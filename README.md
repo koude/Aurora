@@ -1,10 +1,10 @@
-# Aurora v0.2.4
+# Aurora v0.2.5
 
-Current app version: 0.2.4
+Current app version: 0.2.5
 
 Aurora is a minimal Android VPN client shell around libmihomo-android.
 
-## v0.2.4 changes
+## v0.2.5 changes
 
 - Added local YAML and http/https link import.
 - Link import downloads to a temporary file, validates basic content, then atomically replaces `config.yaml`.
