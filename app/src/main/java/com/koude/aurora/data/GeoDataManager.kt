@@ -28,7 +28,7 @@ object GeoDataManager {
         ),
         Resource(
             "geoip.metadb",
-            Regex("(?im)\\bGEOIP\\s*,|geodata-mode\\s*:\s*false|geoip-format\\s*:\s*meta"),
+            Regex("(?im)\\bGEOIP\\s*,|geodata-mode\\s*:\\s*false|geoip-format\\s*:\\s*meta"),
             listOf(
                 "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/geoip.metadb",
                 "https://cdn.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/geoip.metadb",
