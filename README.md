@@ -1,10 +1,10 @@
-# Aurora v0.2.8
+# Aurora v0.2.9
 
-Current app version: 0.2.8
+Current app version: 0.2.9
 
 Aurora is a minimal Android VPN client shell around libmihomo-android.
 
-## v0.2.8 changes
+## v0.2.9 changes
 
 - Application ID remains `com.koude.aurora`.
 - Keeps the Clash Meta-aligned VPN consent flow from v0.2.7.
