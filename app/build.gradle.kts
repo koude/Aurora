@@ -34,8 +34,8 @@ android {
         applicationId = "com.aurora.client"
         minSdk = 26
         targetSdk = 35
-        versionCode = 2
-        versionName = "0.2.0"
+        versionCode = 3
+        versionName = "0.2.1"
 
         vectorDrawables.useSupportLibrary = true
 
@@ -44,6 +44,11 @@ android {
         ndk {
             abiFilters += "arm64-v8a"
         }
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 
     buildFeatures { compose = true }

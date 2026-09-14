@@ -25,3 +25,8 @@
 - [ ] IPv6 path
 - [ ] Persist UI settings with DataStore
 - [ ] Release signing / GitHub Actions APK build
+
+## v0.2.1 build fix
+
+- Aligns Java source/target compatibility with Kotlin at Java 17.
+- Includes `.github/workflows/build.yml` for GitHub Actions debug APK builds.
