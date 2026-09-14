@@ -224,7 +224,7 @@ private fun SettingsScreen(imported: Boolean) {
         SettingRow("本地配置", if (imported) "config.yaml" else "未导入")
         SettingRow("核心", "mihomo adapter · 待接入")
         SettingRow("遥测", "无")
-        SettingRow("版本", "0.2.0")
+        SettingRow("版本", "0.2.2")
         Spacer(Modifier.height(24.dp))
         Text(
             "Aurora 不包含广告、统计 SDK 或远程日志。v0.1 已完成 Android VPN 控制层与 UI，代理核心通过独立适配层接入。",

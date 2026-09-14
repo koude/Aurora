@@ -1,4 +1,6 @@
-# Aurora v0.2
+# Aurora v0.2.2
+
+Current app version: 0.2.2
 
 Aurora is a small Android VPN client shell with a Compose UI and a real mihomo core bridge.
 

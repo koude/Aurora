@@ -74,7 +74,6 @@ class MihomoCore(private val context: Context) : CoreBridge {
 
     override fun stop() {
         if (runCatching { Clash.isLoaded() }.getOrDefault(false)) {
-            runCatching { Clash.setEventListener(null) }
             runCatching { Clash.stopTun() }
         }
     }
