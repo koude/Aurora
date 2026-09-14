@@ -288,6 +288,7 @@ private fun NodesScreen() {
 
 @Composable
 private fun SettingsScreen(imported: Boolean, sourceLabel: String) {
+    val vpnDiagnostic by AppState.vpnDiagnostic.collectAsState()
     var autoStart by remember { mutableStateOf(false) }
     var darkFollow by remember { mutableStateOf(true) }
     Column(Modifier.fillMaxSize().padding(20.dp)) {
@@ -298,7 +299,11 @@ private fun SettingsScreen(imported: Boolean, sourceLabel: String) {
         SettingRow("配置", if (imported) sourceLabel else "未导入")
         SettingRow("核心", "libmihomo-android 0.3.1")
         SettingRow("遥测", "无")
-        SettingRow("版本", "0.2.5")
+        SettingRow("版本", "0.2.6")
+        Spacer(Modifier.height(18.dp))
+        Text("VPN 授权诊断", fontWeight = FontWeight.SemiBold)
+        Spacer(Modifier.height(8.dp))
+        Text(vpnDiagnostic, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
         Spacer(Modifier.height(24.dp))
         Text("Aurora 不包含广告、统计 SDK 或远程日志。当前版本已接入 mihomo 核心，支持本地文件和 http/https 链接导入配置。", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
     }

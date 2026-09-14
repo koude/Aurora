@@ -15,6 +15,9 @@ object AppState {
     private val _message = MutableStateFlow<String?>(null)
     val message: StateFlow<String?> = _message.asStateFlow()
 
+    private val _vpnDiagnostic = MutableStateFlow("尚未请求 VPN 权限")
+    val vpnDiagnostic: StateFlow<String> = _vpnDiagnostic.asStateFlow()
+
     val nodes = listOf(
         ProxyNode("Auto Select", 42, true),
         ProxyNode("Tokyo 01", 51),
@@ -29,6 +32,10 @@ object AppState {
 
     fun showMessage(message: String) {
         _message.value = message
+    }
+
+    fun setVpnDiagnostic(value: String) {
+        _vpnDiagnostic.value = value
     }
 
     fun clearMessage() {

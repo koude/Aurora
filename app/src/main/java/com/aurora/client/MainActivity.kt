@@ -3,9 +3,11 @@ package com.aurora.client
 import android.Manifest
 import android.app.Activity
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.VpnService
 import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -44,16 +46,33 @@ class MainActivity : ComponentActivity() {
         runCatching {
             val permissionIntent = VpnService.prepare(this)
             if (permissionIntent == null) {
+                AppState.setVpnDiagnostic("prepare=null；系统已授权 Aurora")
                 startVpnSafely()
-            } else {
-                AppState.setConnection(ConnectionState.CONNECTING, "正在请求系统 VPN 授权")
-                // Use the platform's classic startActivityForResult path here instead of
-                // ActivityResultLauncher. Some heavily customized Android ROMs return from
-                // the launcher immediately without ever presenting the VPN consent dialog.
-                @Suppress("DEPRECATION")
-                startActivityForResult(permissionIntent, REQUEST_VPN_PERMISSION)
+                return@runCatching
             }
+
+            val component = permissionIntent.component?.flattenToShortString() ?: "<无 component>"
+            val action = permissionIntent.action ?: "<无 action>"
+            val resolved = packageManager.resolveActivity(permissionIntent, PackageManager.MATCH_DEFAULT_ONLY)
+            val resolvedName = resolved?.activityInfo?.let { "${it.packageName}/${it.name}" } ?: "<无法解析>"
+            AppState.setVpnDiagnostic(
+                "prepare=Intent；action=$action；component=$component；resolved=$resolvedName"
+            )
+
+            if (resolved == null) {
+                AppState.setConnection(
+                    ConnectionState.ERROR,
+                    "系统返回了 VPN 授权 Intent，但没有系统 Activity 可以处理。请打开系统 VPN 设置检查 Aurora。"
+                )
+                openVpnSettingsFallback()
+                return@runCatching
+            }
+
+            AppState.setConnection(ConnectionState.CONNECTING, "正在打开系统 VPN 授权页面")
+            @Suppress("DEPRECATION")
+            startActivityForResult(permissionIntent, REQUEST_VPN_PERMISSION)
         }.onFailure {
+            AppState.setVpnDiagnostic("启动授权页异常：${it.javaClass.simpleName}: ${it.message}")
             AppState.setConnection(ConnectionState.ERROR, it.message ?: "无法打开系统 VPN 授权页面")
         }
     }
@@ -66,16 +85,31 @@ class MainActivity : ComponentActivity() {
         // Do not trust resultCode alone. The platform permission state is authoritative.
         runCatching { VpnService.prepare(this) }
             .onSuccess { pendingIntent ->
+                val resultName = if (resultCode == Activity.RESULT_OK) "RESULT_OK" else "resultCode=$resultCode"
                 if (pendingIntent == null) {
+                    AppState.setVpnDiagnostic("授权页返回 $resultName；再次 prepare=null；授权成功")
                     startVpnSafely()
                 } else {
-                    val suffix = if (resultCode == Activity.RESULT_OK) "系统返回已允许，但权限状态未生效" else "用户未允许或系统未完成授权"
-                    AppState.setConnection(ConnectionState.ERROR, "VPN 权限未授权：$suffix")
+                    val component = pendingIntent.component?.flattenToShortString() ?: "<无 component>"
+                    AppState.setVpnDiagnostic(
+                        "授权页返回 $resultName；再次 prepare 仍为 Intent；component=$component"
+                    )
+                    AppState.setConnection(
+                        ConnectionState.ERROR,
+                        "VPN 权限仍未授权。诊断信息已写入设置页，请截图发我。"
+                    )
                 }
             }
             .onFailure {
+                AppState.setVpnDiagnostic("确认授权状态异常：${it.javaClass.simpleName}: ${it.message}")
                 AppState.setConnection(ConnectionState.ERROR, it.message ?: "无法确认 VPN 权限状态")
             }
+    }
+
+    private fun openVpnSettingsFallback() {
+        runCatching {
+            startActivity(Intent(Settings.ACTION_VPN_SETTINGS))
+        }
     }
 
     private fun startVpnSafely() {
