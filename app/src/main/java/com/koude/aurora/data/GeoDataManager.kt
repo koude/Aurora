@@ -25,6 +25,24 @@ object GeoDataManager {
                 "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/geoip.dat",
                 "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip.dat"
             )
+        ),
+        Resource(
+            "geoip.metadb",
+            Regex("(?im)\\bGEOIP\\s*,|geodata-mode\\s*:\s*false|geoip-format\\s*:\s*meta"),
+            listOf(
+                "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/geoip.metadb",
+                "https://cdn.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/geoip.metadb",
+                "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip.metadb"
+            )
+        ),
+        Resource(
+            "GeoLite2-ASN.mmdb",
+            Regex("(?im)\\bIP-ASN\\s*,|\\bASN\\s*,|asn:"),
+            listOf(
+                "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/GeoLite2-ASN.mmdb",
+                "https://cdn.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/GeoLite2-ASN.mmdb",
+                "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/GeoLite2-ASN.mmdb"
+            )
         )
     )
 

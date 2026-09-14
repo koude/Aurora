@@ -8,3 +8,8 @@
 - Runtime APK extraction fallback for `libclash.so` and `libmihomo-jni.so`.
 - CI verifies both arm64 `.so` files exist inside the signed APK before upload.
 - Logging from v0.3.0 retained for verification on-device.
+
+## v0.3.6
+- Bootstrap `geoip.metadb` before `quickSetup` when GEOIP/MMDB data may be required.
+- Add CDN fallbacks for `geoip.metadb`.
+- Preload `GeoLite2-ASN.mmdb` when ASN rules/config are detected.
