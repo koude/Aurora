@@ -1,39 +1,16 @@
-import java.net.URL
-import java.net.HttpURLConnection
-import java.nio.file.Files
-import java.nio.file.StandardCopyOption
+#!/usr/bin/env python3
+from pathlib import Path
 
-plugins {
-    kotlin("android")
-    kotlin("kapt")
-    id("com.android.application")
-}
+path = Path("app/build.gradle.kts")
+text = path.read_text(encoding="utf-8")
 
-dependencies {
-    compileOnly(project(":hideapi"))
+if "import java.net.HttpURLConnection" not in text:
+    text = text.replace("import java.net.URL\n", "import java.net.URL\nimport java.net.HttpURLConnection\n")
 
-    implementation(project(":core"))
-    implementation(project(":service"))
-    implementation(project(":design"))
-    implementation(project(":common"))
+start = text.index('val geoFilesDownloadDir = "src/main/assets"')
+end = text.index("\nafterEvaluate {", start)
 
-    implementation(libs.kotlin.coroutine)
-    implementation(libs.androidx.core)
-    implementation(libs.androidx.activity)
-    implementation(libs.androidx.fragment)
-    implementation(libs.androidx.appcompat)
-    implementation(libs.androidx.coordinator)
-    implementation(libs.androidx.recyclerview)
-    implementation(libs.google.material)
-    implementation(libs.quickie.bundled)
-    implementation(libs.androidx.activity.ktx)
-}
-
-tasks.getByName("clean", type = Delete::class) {
-    delete(file("release"))
-}
-
-val geoFilesDownloadDir = "src/main/assets"
+replacement = r'''val geoFilesDownloadDir = "src/main/assets"
 
 task("downloadGeoFiles") {
     val geoFilesUrls = mapOf(
@@ -108,17 +85,8 @@ task("downloadGeoFiles") {
         }
     }
 }
+'''
 
-afterEvaluate {
-    val downloadGeoFilesTask = tasks["downloadGeoFiles"]
-
-    tasks.forEach {
-        if (it.name.startsWith("assemble")) {
-            it.dependsOn(downloadGeoFilesTask)
-        }
-    }
-}
-
-tasks.getByName("clean", type = Delete::class) {
-    delete(file(geoFilesDownloadDir))
-}
+text = text[:start] + replacement + text[end:]
+path.write_text(text, encoding="utf-8")
+print("Patched app/build.gradle.kts with retry + official jsDelivr fallbacks.")
