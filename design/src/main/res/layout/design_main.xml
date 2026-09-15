@@ -2,31 +2,14 @@
 <layout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <data>
-        <variable
-            name="self"
-            type="com.github.kr328.clash.design.MainDesign" />
-        <variable
-            name="clashRunning"
-            type="boolean" />
-        <variable
-            name="forwarded"
-            type="String" />
-        <variable
-            name="mode"
-            type="String" />
-        <variable
-            name="profileName"
-            type="String" />
-        <variable
-            name="colorClashStarted"
-            type="int" />
-        <variable
-            name="colorClashStopped"
-            type="int" />
-        <variable
-            name="hasProviders"
-            type="boolean" />
-
+        <variable name="self" type="com.github.kr328.clash.design.MainDesign" />
+        <variable name="clashRunning" type="boolean" />
+        <variable name="forwarded" type="String" />
+        <variable name="mode" type="String" />
+        <variable name="profileName" type="String" />
+        <variable name="colorClashStarted" type="int" />
+        <variable name="colorClashStopped" type="int" />
+        <variable name="hasProviders" type="boolean" />
         <import type="android.view.View" />
         <import type="com.github.kr328.clash.design.MainDesign.Request" />
     </data>
@@ -40,6 +23,7 @@
         <ScrollView
             android:layout_width="match_parent"
             android:layout_height="match_parent"
+            android:fillViewport="true"
             android:scrollbars="none">
 
             <LinearLayout
@@ -49,9 +33,10 @@
                 android:clipToPadding="false"
                 android:orientation="vertical"
                 android:paddingHorizontal="@dimen/main_padding_horizontal"
-                android:paddingTop="@{self.surface.insets.top}"
-                android:paddingBottom="@{self.surface.insets.bottom}">
+                android:paddingTop="@{(float) self.surface.insets.top + 16}"
+                android:paddingBottom="@{(float) self.surface.insets.bottom + 24}">
 
+                <!-- Large, confident M3-style header. -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -59,34 +44,47 @@
                     android:minHeight="@dimen/main_top_banner_height"
                     android:orientation="horizontal">
 
-                    <FrameLayout
-                        android:layout_width="@dimen/large_item_header_layout_size"
-                        android:layout_height="@dimen/large_item_header_layout_size">
-
-                        <View
-                            android:layout_width="@dimen/main_logo_size"
-                            android:layout_height="@dimen/main_logo_size"
-                            android:layout_gravity="center"
-                            android:background="@drawable/ic_clash" />
-                    </FrameLayout>
-
                     <TextView
-                        android:layout_width="wrap_content"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
+                        android:layout_weight="1"
                         android:text="@string/application_name"
-                        android:textAppearance="@style/TextAppearance.MaterialComponents.Headline6" />
+                        android:textAppearance="@style/TextAppearance.MaterialComponents.Headline4"
+                        android:textStyle="bold" />
+
+                    <ImageView
+                        android:layout_width="52dp"
+                        android:layout_height="52dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:clickable="true"
+                        android:contentDescription="@string/settings"
+                        android:focusable="true"
+                        android:onClick="@{() -> self.request(Request.OpenSettings)}"
+                        android:padding="13dp"
+                        android:src="@drawable/ic_baseline_settings" />
                 </LinearLayout>
 
+                <!-- Hero connection state. Existing CMFA actions and data bindings are preserved. -->
                 <com.github.kr328.clash.design.view.LargeActionCard
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginVertical="@dimen/main_card_margin_vertical"
+                    android:layout_marginBottom="10dp"
                     android:onClick="@{() -> self.request(Request.ToggleStatus)}"
                     android:theme="@style/AppThemeDark"
                     app:cardBackgroundColor="@{clashRunning ? colorClashStarted : colorClashStopped}"
                     app:icon="@{clashRunning ? @drawable/ic_outline_check_circle : @drawable/ic_outline_not_interested}"
                     app:subtext="@{clashRunning ? @string/format_traffic_forwarded(forwarded) : @string/tap_to_start}"
                     app:text="@{clashRunning ? @string/running : @string/stopped}" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:layout_marginTop="16dp"
+                    android:layout_marginBottom="8dp"
+                    android:text="@string/aurora_section_connection"
+                    android:textAppearance="@style/TextAppearance.MaterialComponents.Subtitle1"
+                    android:textStyle="bold" />
 
                 <com.github.kr328.clash.design.view.LargeActionCard
                     android:layout_width="match_parent"
@@ -107,13 +105,24 @@
                     app:subtext="@{profileName != null ? @string/format_profile_activated(profileName) : @string/not_selected}"
                     app:text="@string/profile" />
 
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:layout_marginTop="20dp"
+                    android:layout_marginBottom="4dp"
+                    android:text="@string/aurora_section_tools"
+                    android:textAppearance="@style/TextAppearance.MaterialComponents.Subtitle1"
+                    android:textStyle="bold" />
+
                 <com.github.kr328.clash.design.view.LargeActionLabel
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent"
+                    android:layout_height="wrap_content"
                     android:layout_marginVertical="@dimen/main_label_margin_vertical"
                     android:onClick="@{() -> self.request(Request.OpenProviders)}"
                     android:visibility="@{clashRunning &amp;&amp; hasProviders ? View.VISIBLE : View.GONE}"
                     app:icon="@drawable/ic_baseline_swap_vertical_circle"
+                    app:subtext="@string/aurora_providers_summary"
                     app:text="@string/providers" />
 
                 <com.github.kr328.clash.design.view.LargeActionLabel
@@ -122,6 +131,7 @@
                     android:layout_marginVertical="@dimen/main_label_margin_vertical"
                     android:onClick="@{() -> self.request(Request.OpenLogs)}"
                     app:icon="@drawable/ic_baseline_assignment"
+                    app:subtext="@string/aurora_logs_summary"
                     app:text="@string/logs" />
 
                 <com.github.kr328.clash.design.view.LargeActionLabel
@@ -130,6 +140,7 @@
                     android:layout_marginVertical="@dimen/main_label_margin_vertical"
                     android:onClick="@{() -> self.request(Request.OpenSettings)}"
                     app:icon="@drawable/ic_baseline_settings"
+                    app:subtext="@string/aurora_settings_summary"
                     app:text="@string/settings" />
 
                 <com.github.kr328.clash.design.view.LargeActionLabel
@@ -138,6 +149,7 @@
                     android:layout_marginVertical="@dimen/main_label_margin_vertical"
                     android:onClick="@{() -> self.request(Request.OpenHelp)}"
                     app:icon="@drawable/ic_baseline_help_center"
+                    app:subtext="@string/aurora_help_summary"
                     app:text="@string/help" />
 
                 <com.github.kr328.clash.design.view.LargeActionLabel
@@ -146,6 +158,7 @@
                     android:layout_marginVertical="@dimen/main_label_margin_vertical"
                     android:onClick="@{() -> self.request(Request.OpenAbout)}"
                     app:icon="@drawable/ic_baseline_info"
+                    app:subtext="@string/aurora_about_summary"
                     app:text="@string/about" />
             </LinearLayout>
         </ScrollView>

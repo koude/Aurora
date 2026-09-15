@@ -280,4 +280,16 @@
     <string name="shortcut_start_long">启动 Clash 服务</string>
     <string name="shortcut_stop_short">停止 Clash</string>
     <string name="shortcut_stop_long">停止 Clash 服务</string>
+<string name="aurora_section_connection">连接</string>
+    <string name="aurora_section_tools">工具与诊断</string>
+    <string name="aurora_providers_summary">管理代理与规则提供者</string>
+    <string name="aurora_logs_summary">查看运行事件与连接详情</string>
+    <string name="aurora_settings_summary">网络、应用行为与高级选项</string>
+    <string name="aurora_help_summary">使用说明与故障排查</string>
+    <string name="aurora_about_summary">版本、许可证与项目信息</string>
+    <string name="aurora_settings_intro">按功能区域调整设置，底层网络行为保持不变。</string>
+    <string name="aurora_app_settings_summary">应用行为、通知与启动方式</string>
+    <string name="aurora_network_settings_summary">VPN、DNS、路由与访问控制</string>
+    <string name="aurora_override_settings_summary">配置覆写与高级参数</string>
+    <string name="aurora_meta_settings_summary">Meta 内核功能与实验选项</string>
 </resources>

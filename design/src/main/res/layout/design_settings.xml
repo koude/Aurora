@@ -2,10 +2,7 @@
 <layout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <data>
-        <variable
-            name="self"
-            type="com.github.kr328.clash.design.SettingsDesign" />
-
+        <variable name="self" type="com.github.kr328.clash.design.SettingsDesign" />
         <import type="com.github.kr328.clash.design.SettingsDesign.Request" />
     </data>
 
@@ -24,38 +21,56 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:clipToPadding="false"
                 android:orientation="vertical"
-                android:paddingTop="@{(float) self.surface.insets.top + @dimen/toolbar_height}"
-                android:paddingBottom="@{self.surface.insets.bottom}">
+                android:paddingStart="20dp"
+                android:paddingEnd="20dp"
+                android:paddingTop="@{(float) self.surface.insets.top + @dimen/toolbar_height + 18}"
+                android:paddingBottom="@{(float) self.surface.insets.bottom + 24}">
 
-                <com.github.kr328.clash.design.view.ActionLabel
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:layout_marginBottom="10dp"
+                    android:text="@string/aurora_settings_intro"
+                    android:textAppearance="@style/TextAppearance.MaterialComponents.Body1" />
+
+                <com.github.kr328.clash.design.view.LargeActionCard
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_marginVertical="7dp"
                     android:onClick="@{() -> self.request(Request.StartApp)}"
                     app:icon="@drawable/ic_baseline_settings"
+                    app:subtext="@string/aurora_app_settings_summary"
                     app:text="@string/app" />
 
-                <com.github.kr328.clash.design.view.ActionLabel
+                <com.github.kr328.clash.design.view.LargeActionCard
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_marginVertical="7dp"
                     android:onClick="@{() -> self.request(Request.StartNetwork)}"
                     app:icon="@drawable/ic_baseline_dns"
+                    app:subtext="@string/aurora_network_settings_summary"
                     app:text="@string/network" />
 
-                <com.github.kr328.clash.design.view.ActionLabel
+                <com.github.kr328.clash.design.view.LargeActionCard
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_marginVertical="7dp"
                     android:onClick="@{() -> self.request(Request.StartOverride)}"
                     app:icon="@drawable/ic_baseline_extension"
+                    app:subtext="@string/aurora_override_settings_summary"
                     app:text="@string/override" />
 
-                <com.github.kr328.clash.design.view.ActionLabel
+                <com.github.kr328.clash.design.view.LargeActionCard
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_marginVertical="7dp"
                     android:onClick="@{() -> self.request(Request.StartMetaFeature)}"
                     app:icon="@drawable/ic_baseline_meta"
+                    app:subtext="@string/aurora_meta_settings_summary"
                     app:text="@string/meta_features" />
-
             </LinearLayout>
         </com.github.kr328.clash.design.view.ObservableScrollView>
 
@@ -63,11 +78,8 @@
             android:id="@+id/activity_bar_layout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:paddingTop="@{self.surface.insets.top}"
-            android:paddingEnd="@dimen/item_tailing_margin">
-
+            android:paddingTop="@{self.surface.insets.top}">
             <include layout="@layout/common_activity_bar" />
         </com.github.kr328.clash.design.view.ActivityBarLayout>
-
     </androidx.coordinatorlayout.widget.CoordinatorLayout>
 </layout>

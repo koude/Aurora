@@ -371,4 +371,16 @@
     <string name="shortcut_start_long">Start Clash service</string>
     <string name="shortcut_stop_short">Stop Clash</string>
     <string name="shortcut_stop_long">Stop Clash service</string>
+<string name="aurora_section_connection">Connection</string>
+    <string name="aurora_section_tools">Tools &amp; diagnostics</string>
+    <string name="aurora_providers_summary">Manage proxy and rule providers</string>
+    <string name="aurora_logs_summary">Inspect runtime events and connection details</string>
+    <string name="aurora_settings_summary">Network, app behavior and advanced options</string>
+    <string name="aurora_help_summary">Usage guides and troubleshooting</string>
+    <string name="aurora_about_summary">Version, licenses and project information</string>
+    <string name="aurora_settings_intro">Tune the app by area. Core networking behavior remains unchanged.</string>
+    <string name="aurora_app_settings_summary">App behavior, notifications and startup</string>
+    <string name="aurora_network_settings_summary">VPN, DNS, routing and access control</string>
+    <string name="aurora_override_settings_summary">Profile overrides and advanced configuration</string>
+    <string name="aurora_meta_settings_summary">Meta kernel features and experimental options</string>
 </resources>
