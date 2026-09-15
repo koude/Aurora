@@ -1,5 +1,6 @@
 import java.net.URL
 import java.net.HttpURLConnection
+import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 
@@ -84,7 +85,7 @@ task("downloadGeoFiles") {
                         connection.disconnect()
 
                         if (!outputPath.exists() || outputPath.length() == 0L) {
-                            throw java.io.IOException("$outputFileName downloaded as an empty file")
+                            throw IOException("$outputFileName downloaded as an empty file")
                         }
 
                         println("$outputFileName downloaded to $outputPath (${outputPath.length()} bytes)")
