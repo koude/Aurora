@@ -1,12 +1,17 @@
-Aurora CMFA baseline patch
+Aurora CMFA baseline build patch v2
 
-Apply this only after main has been reset to MetaCubeX/ClashMetaForAndroid main and submodules initialized.
-Run:
-  python3 apply_aurora_baseline.py
-Then copy .github/workflows/build-aurora.yml into the repository if this package is not already overlaid.
+Use on the current Aurora main branch after the first CMFA baseline patch has already been applied.
 
-Required GitHub Actions secrets:
-  AURORA_KEYSTORE_BASE64
-  AURORA_STORE_PASSWORD
-  AURORA_KEY_PASSWORD
-The keystore alias is fixed to: aurora
+Changes:
+- Keep only .github/workflows/build-aurora.yml
+- GitHub Actions checkout fetch-depth = 0
+- Fetch all submodule branches/tags before build
+- Make CMFA CMake branch-name detection safe for detached mihomo submodules
+- No VPN/Core runtime behavior changes
+
+Apply:
+  copy this patch over the repository
+  python3 apply_aurora_cmfa_buildfix.py
+  git add .
+  git commit -m "Fix Aurora CMFA build workflow"
+  git push

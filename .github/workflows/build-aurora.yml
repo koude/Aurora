@@ -11,11 +11,18 @@ jobs:
     timeout-minutes: 60
 
     steps:
-      - name: Checkout
+      - name: Checkout full history
         uses: actions/checkout@v4
         with:
           submodules: recursive
-          fetch-depth: 1
+          fetch-depth: 0
+
+      - name: Fetch submodule branches and tags
+        shell: bash
+        run: |
+          git submodule sync --recursive
+          git submodule update --init --recursive
+          git submodule foreach --recursive 'git fetch --prune --tags origin "+refs/heads/*:refs/remotes/origin/*" || true'
 
       - name: Setup Java 21
         uses: actions/setup-java@v4
