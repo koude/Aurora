@@ -5,6 +5,9 @@ on:
   push:
     branches: [ main ]
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -86,7 +89,7 @@ jobs:
           mkdir -p out
           ARM64_APK="$(find app/build/outputs/apk -type f -name '*-arm64-v8a-release.apk' -print -quit)"
           test -n "$ARM64_APK"
-          cp "$ARM64_APK" out/
+          cp "$ARM64_APK" out/Aurora-arm64-v8a.apk
           ls -lh out
 
       - name: Upload APKs
@@ -95,3 +98,29 @@ jobs:
           name: Aurora-CMFA-arm64-v8a
           path: out/*.apk
           if-no-files-found: error
+
+      - name: Publish rolling GitHub Release
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: continuous
+        shell: bash
+        run: |
+          git tag --force "$RELEASE_TAG" "$GITHUB_SHA"
+          git push origin "refs/tags/$RELEASE_TAG" --force
+
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release edit "$RELEASE_TAG" \
+              --target "$GITHUB_SHA" \
+              --title "Aurora Continuous (arm64-v8a)" \
+              --notes "Automatic arm64-v8a build from commit $GITHUB_SHA." \
+              --latest
+          else
+            gh release create "$RELEASE_TAG" \
+              --target "$GITHUB_SHA" \
+              --title "Aurora Continuous (arm64-v8a)" \
+              --notes "Automatic arm64-v8a build from commit $GITHUB_SHA." \
+              --latest
+          fi
+
+          gh release upload "$RELEASE_TAG" out/Aurora-arm64-v8a.apk --clobber
