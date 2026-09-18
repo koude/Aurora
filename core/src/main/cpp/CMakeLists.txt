@@ -1,29 +1,34 @@
 cmake_minimum_required(VERSION 3.0)
 
-# 获取git hash
+# 获取git hash。直接查询 clash 子模块，避免依赖 git-submodule 的 shell 工具。
 
 message(STATUS "CMAKE_CURRENT_SOURCE_DIR= ${CMAKE_CURRENT_SOURCE_DIR}")
+set(CLASH_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../foss/golang/clash")
 execute_process(
-  COMMAND git submodule foreach git log -1 --format=%H   
-  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} 
+  COMMAND git -C ${CLASH_SOURCE_DIR} rev-parse --short=7 HEAD
   OUTPUT_VARIABLE COMMIT_HASH
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+  RESULT_VARIABLE GIT_HASH_RESULT
 )
-string(REPLACE "\n" ";" COMMIT_HASH "${COMMIT_HASH}")
-list(GET COMMIT_HASH 1 COMMIT_HASH)
-string (REGEX REPLACE "[\n\t\r]" "" COMMIT_HASH ${COMMIT_HASH})
-string(SUBSTRING ${COMMIT_HASH} 0 7 COMMIT_HASH)
+if (NOT GIT_HASH_RESULT EQUAL 0 OR COMMIT_HASH STREQUAL "")
+  set(COMMIT_HASH "unknown")
+endif ()
 message(STATUS "git hash= ${COMMIT_HASH}")
 
 # 获取分支名称
 execute_process(
-  COMMAND git submodule foreach git branch -r --contains ${COMMIT_HASH}
-  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} 
+  COMMAND git -C ${CLASH_SOURCE_DIR} branch -r --contains HEAD
   OUTPUT_VARIABLE CURRENT_BRANCH
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+  RESULT_VARIABLE GIT_BRANCH_RESULT
 )
-string(REPLACE "\n" ";" CURRENT_BRANCH "${CURRENT_BRANCH}")
-list(GET CURRENT_BRANCH 1 CURRENT_BRANCH)
-string (REGEX REPLACE "origin/" "" CURRENT_BRANCH ${CURRENT_BRANCH})
-string (REGEX REPLACE "[\n\t\r]" "" CURRENT_BRANCH ${CURRENT_BRANCH})
+if (GIT_BRANCH_RESULT EQUAL 0 AND NOT CURRENT_BRANCH STREQUAL "")
+  string(REPLACE "\n" ";" CURRENT_BRANCH "${CURRENT_BRANCH}")
+  list(GET CURRENT_BRANCH 0 CURRENT_BRANCH)
+  string(REGEX REPLACE "^[ \t]*origin/" "" CURRENT_BRANCH "${CURRENT_BRANCH}")
+else ()
+  set(CURRENT_BRANCH "unknown")
+endif ()
 #string(SUBSTRING ${CURRENT_BRANCH} 0 8 CURRENT_BRANCH)
 message(STATUS "git current branch = ${CURRENT_BRANCH}")
 

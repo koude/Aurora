@@ -12,11 +12,11 @@ buildscript {
         maven("https://raw.githubusercontent.com/MetaCubeX/maven-backup/main/releases")
     }
     dependencies {
-        classpath(libs.build.android)
-        classpath(libs.build.kotlin.common)
-        classpath(libs.build.kotlin.serialization)
-        classpath(libs.build.ksp)
-        classpath(libs.build.golang)
+        classpath("com.android.tools.build:gradle:8.8.0")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.1.0")
+        classpath("org.jetbrains.kotlin:kotlin-serialization:2.1.0")
+        classpath("com.google.devtools.ksp:symbol-processing-gradle-plugin:2.1.0-1.0.29")
+        classpath("com.github.kr328.golang:gradle-plugin:1.0.4")
     }
 }
 
@@ -151,7 +151,10 @@ subprojects {
                         keystore.inputStream().use(this::load)
                     }
 
-                    storeFile = rootProject.file("release.keystore")
+                    storeFile = prop.getProperty("keystore.file")
+                        ?.takeIf(String::isNotBlank)
+                        ?.let(rootProject::file)
+                        ?: rootProject.file("release.keystore")
                     storePassword = prop.getProperty("keystore.password")!!
                     keyAlias = prop.getProperty("key.alias")!!
                     keyPassword = prop.getProperty("key.password")!!

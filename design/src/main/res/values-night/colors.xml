@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Aurora Material 3 semantic color tokens (dark). -->
+    <color name="aurora_primary">#C8BFFF</color>
+    <color name="aurora_on_primary">#2D227B</color>
+    <color name="aurora_primary_container">#443A98</color>
+    <color name="aurora_on_primary_container">#E5DEFF</color>
+    <color name="aurora_secondary">#C9C4DD</color>
+    <color name="aurora_on_secondary">#302E41</color>
+    <color name="aurora_secondary_container">#474459</color>
+    <color name="aurora_on_secondary_container">#E5E0F9</color>
+    <color name="aurora_tertiary">#ECB8CD</color>
+    <color name="aurora_on_tertiary">#482536</color>
+    <color name="aurora_tertiary_container">#613B4D</color>
+    <color name="aurora_on_tertiary_container">#FFD8E8</color>
+    <color name="aurora_background">#1C1B20</color>
+    <color name="aurora_on_background">#E6E1E9</color>
+    <color name="aurora_surface">#1C1B20</color>
+    <color name="aurora_on_surface">#E6E1E9</color>
+    <color name="aurora_surface_variant">#49454F</color>
+    <color name="aurora_on_surface_variant">#CAC4D0</color>
+    <color name="aurora_outline">#948F99</color>
+    <color name="aurora_error">#FFB4AB</color>
+    <color name="aurora_on_error">#690005</color>
+</resources>

@@ -26,6 +26,5 @@
         android:layout_weight="1"
         android:ellipsize="end"
         android:maxLines="1"
-        android:textAppearance="@style/TextAppearance.MaterialComponents.Headline5"
-        android:textStyle="bold" />
+        android:textAppearance="@style/TextAppearance.Aurora.TitleLarge" />
 </LinearLayout>

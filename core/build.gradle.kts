@@ -1,6 +1,7 @@
 import android.databinding.tool.ext.capitalizeUS
 import com.github.kr328.golang.GolangBuildTask
 import com.github.kr328.golang.GolangPlugin
+import java.util.Properties
 
 plugins {
     kotlin("android")
@@ -10,6 +11,9 @@ plugins {
 }
 
 val golangSource = file("src/main/golang/native")
+val goExecutable = rootProject.file("local.properties").takeIf { it.exists() }?.let { file ->
+    Properties().apply { file.inputStream().use(::load) }.getProperty("go.executable")
+}
 
 golang {
     sourceSets {
@@ -51,14 +55,15 @@ android {
 dependencies {
     implementation(project(":common"))
 
-    implementation(libs.androidx.core)
-    implementation(libs.kotlin.coroutine)
-    implementation(libs.kotlin.serialization.json)
+    implementation("androidx.core:core-ktx:1.8.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.3")
 }
 
 afterEvaluate {
     tasks.withType(GolangBuildTask::class.java).forEach {
         it.inputs.dir(golangSource)
+        goExecutable?.takeIf(String::isNotBlank)?.let(it::executable)
     }
 }
 

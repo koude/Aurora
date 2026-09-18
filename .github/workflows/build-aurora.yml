@@ -81,15 +81,17 @@ jobs:
           chmod +x gradlew
           ./gradlew app:assembleAlphaRelease --stacktrace
 
-      - name: Collect APKs
+      - name: Collect arm64-v8a APK
         run: |
           mkdir -p out
-          find app/build/outputs/apk -type f -name '*.apk' -exec cp {} out/ \;
+          ARM64_APK="$(find app/build/outputs/apk -type f -name '*-arm64-v8a-release.apk' -print -quit)"
+          test -n "$ARM64_APK"
+          cp "$ARM64_APK" out/
           ls -lh out
 
       - name: Upload APKs
         uses: actions/upload-artifact@v4
         with:
-          name: Aurora-CMFA-baseline
+          name: Aurora-CMFA-arm64-v8a
           path: out/*.apk
           if-no-files-found: error
