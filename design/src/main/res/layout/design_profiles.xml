@@ -43,42 +43,41 @@
 
                 <FrameLayout
                     android:id="@+id/update_layout"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
                     android:layout_centerVertical="true"
                     android:layout_toStartOf="@id/add_view">
 
-                    <ImageView
+                    <ImageButton
                         android:id="@+id/update_view"
-                        android:layout_width="@dimen/item_tailing_component_size"
-                        android:layout_height="@dimen/item_tailing_component_size"
-                        android:layout_gravity="end|center_vertical"
-                        android:layout_marginStart="@dimen/item_tailing_margin"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:layout_gravity="center"
                         android:background="?attr/selectableItemBackgroundBorderless"
                         android:clickable="true"
-                        android:contentDescription="@string/_new"
+                        android:contentDescription="@string/update_all"
                         android:focusable="true"
                         android:onClick="@{() -> self.requestUpdateAll()}"
-                        android:padding="@dimen/toolbar_image_action_padding"
+                        android:padding="12dp"
                         android:src="@drawable/ic_baseline_sync"
+                        android:tint="@color/aurora_on_surface"
                         android:visibility="gone" />
                 </FrameLayout>
 
-                <ImageView
+                <ImageButton
                     android:id="@+id/add_view"
-                    android:layout_width="@dimen/item_tailing_component_size"
-                    android:layout_height="@dimen/item_tailing_component_size"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
                     android:layout_alignParentEnd="true"
                     android:layout_centerVertical="true"
-                    android:layout_gravity="end|center_vertical"
-                    android:layout_marginStart="@dimen/item_tailing_margin"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:clickable="true"
                     android:contentDescription="@string/_new"
                     android:focusable="true"
                     android:onClick="@{() -> self.requestCreate()}"
-                    android:padding="@dimen/toolbar_image_action_padding"
-                    android:src="@drawable/ic_baseline_add" />
+                    android:padding="12dp"
+                    android:src="@drawable/ic_baseline_add"
+                    android:tint="@color/aurora_on_surface" />
 
             </RelativeLayout>
         </com.github.kr328.clash.design.view.ActivityBarLayout>

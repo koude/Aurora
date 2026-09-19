@@ -411,6 +411,7 @@
     <string name="aurora_profile_usage_placeholder">Usage details will appear here</string>
     <string name="aurora_feature_placeholder">This feature is represented in the new interface and will be connected in a later stage.</string>
     <string name="aurora_mode_unavailable">Start Aurora before changing the proxy mode.</string>
+    <string name="aurora_profile_active">Currently active</string>
     <string name="apple" translatable="false">Apple</string>
     <string name="github" translatable="false">GitHub</string>
     <string name="youtube" translatable="false">YouTube</string>
