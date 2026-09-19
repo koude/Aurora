@@ -10,16 +10,20 @@
     <androidx.coordinatorlayout.widget.CoordinatorLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:background="@color/aurora_surface"
         android:paddingStart="@{self.surface.insets.start}"
         android:paddingEnd="@{self.surface.insets.end}">
 
         <TextView
             android:id="@+id/empty_view"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
+            android:gravity="center"
+            android:paddingHorizontal="32dp"
             android:text="@string/proxy_empty_tips"
-            android:textAppearance="@style/TextAppearance.MaterialComponents.Headline6"
+            android:textAppearance="@style/TextAppearance.Aurora.TitleMedium"
+            android:textColor="@color/aurora_on_surface_variant"
             android:visibility="gone" />
 
         <androidx.viewpager2.widget.ViewPager2
@@ -101,17 +105,17 @@
                 android:id="@+id/tab_layout_view"
                 android:layout_width="match_parent"
                 android:layout_height="@dimen/tab_layout_height"
-                android:alpha="0.96"
-                android:background="?android:windowBackground"
+                android:background="@color/aurora_surface"
                 app:tabBackground="@android:color/transparent"
+                app:tabIndicatorColor="@color/aurora_primary"
+                app:tabIndicatorFullWidth="false"
                 app:tabMode="scrollable" />
 
             <View
                 android:id="@+id/elevation_view"
                 android:layout_width="match_parent"
                 android:layout_height="@dimen/divider_size"
-                android:alpha="0.96"
-                android:background="?android:windowBackground"
+                android:background="@color/aurora_surface_variant"
                 android:elevation="@dimen/tab_layout_elevation" />
         </LinearLayout>
 
@@ -126,9 +130,12 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_margin="@dimen/item_tailing_margin"
+                android:backgroundTint="@color/aurora_primary"
                 android:contentDescription="@string/delay_test"
                 android:onClick="@{() -> self.requestUrlTesting()}"
-                android:src="@drawable/ic_baseline_flash_on" />
+                android:src="@drawable/ic_baseline_flash_on"
+                app:shapeAppearanceOverlay="@style/ShapeAppearance.Aurora.Large"
+                app:tint="@color/aurora_on_primary" />
         </FrameLayout>
     </androidx.coordinatorlayout.widget.CoordinatorLayout>
 </layout>
