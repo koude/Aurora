@@ -58,45 +58,46 @@
 
                     <FrameLayout
                         android:id="@+id/url_test_layout"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
                         android:layout_centerVertical="true"
-                        android:layout_marginStart="@dimen/item_tailing_margin"
                         android:layout_toStartOf="@id/menu_view">
 
-                        <ImageView
+                        <ImageButton
                             android:id="@+id/url_test_view"
-                            android:layout_width="@dimen/item_tailing_component_size"
-                            android:layout_height="@dimen/item_tailing_component_size"
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
                             android:layout_gravity="center"
                             android:background="?attr/selectableItemBackgroundBorderless"
                             android:clickable="true"
                             android:contentDescription="@string/delay_test"
                             android:focusable="true"
                             android:onClick="@{() -> self.requestUrlTesting()}"
-                            android:padding="@dimen/toolbar_image_action_padding"
-                            android:src="@drawable/ic_baseline_flash_on" />
+                            android:padding="12dp"
+                            android:src="@drawable/ic_baseline_flash_on"
+                            android:tint="@color/aurora_on_surface" />
 
                         <ProgressBar
                             android:id="@+id/url_test_progress_view"
-                            android:layout_width="@dimen/item_tailing_component_size"
-                            android:layout_height="@dimen/item_tailing_component_size"
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:layout_gravity="center"
                             android:visibility="gone" />
                     </FrameLayout>
 
-                    <ImageView
+                    <ImageButton
                         android:id="@+id/menu_view"
-                        android:layout_width="@dimen/item_tailing_component_size"
-                        android:layout_height="@dimen/item_tailing_component_size"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
                         android:layout_alignParentEnd="true"
                         android:layout_centerVertical="true"
-                        android:layout_marginStart="@dimen/item_tailing_margin"
                         android:background="?attr/selectableItemBackgroundBorderless"
                         android:clickable="true"
                         android:contentDescription="@string/more"
                         android:focusable="true"
-                        android:padding="@dimen/toolbar_image_action_padding"
-                        android:src="@drawable/ic_baseline_more_vert" />
+                        android:padding="12dp"
+                        android:src="@drawable/ic_baseline_more_vert"
+                        android:tint="@color/aurora_on_surface" />
 
                 </RelativeLayout>
             </com.github.kr328.clash.design.view.ActivityBarLayout>
@@ -105,11 +106,19 @@
                 android:id="@+id/tab_layout_view"
                 android:layout_width="match_parent"
                 android:layout_height="@dimen/tab_layout_height"
+                android:layout_marginHorizontal="12dp"
                 android:background="@color/aurora_surface"
+                app:tabGravity="start"
                 app:tabBackground="@android:color/transparent"
-                app:tabIndicatorColor="@color/aurora_primary"
-                app:tabIndicatorFullWidth="false"
-                app:tabMode="scrollable" />
+                app:tabIndicator="@drawable/bg_aurora_tab_indicator"
+                app:tabIndicatorColor="@color/aurora_secondary_container"
+                app:tabIndicatorFullWidth="true"
+                app:tabIndicatorGravity="center"
+                app:tabIndicatorHeight="36dp"
+                app:tabMode="scrollable"
+                app:tabRippleColor="@android:color/transparent"
+                app:tabSelectedTextColor="@color/aurora_on_secondary_container"
+                app:tabTextColor="@color/aurora_on_surface_variant" />
 
             <View
                 android:id="@+id/elevation_view"
@@ -118,25 +127,6 @@
                 android:background="@color/aurora_surface_variant"
                 android:elevation="@dimen/tab_layout_elevation" />
         </LinearLayout>
-
-        <FrameLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="end|bottom"
-            android:paddingBottom="@{(float) self.surface.insets.bottom + @dimen/main_navigation_height}">
-
-            <com.google.android.material.floatingactionbutton.FloatingActionButton
-                android:id="@+id/url_test_float_view"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_margin="@dimen/item_tailing_margin"
-                android:backgroundTint="@color/aurora_primary"
-                android:contentDescription="@string/delay_test"
-                android:onClick="@{() -> self.requestUrlTesting()}"
-                android:src="@drawable/ic_baseline_flash_on"
-                app:shapeAppearanceOverlay="@style/ShapeAppearance.Aurora.Large"
-                app:tint="@color/aurora_on_primary" />
-        </FrameLayout>
 
         <FrameLayout
             android:layout_width="match_parent"

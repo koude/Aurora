@@ -66,14 +66,14 @@
     <dimen name="main_navigation_height">72dp</dimen>
 
     <!--  Proxy Design -->
-    <dimen name="proxy_layout_padding">3dp</dimen>
-    <dimen name="proxy_content_padding">15dp</dimen>
+    <dimen name="proxy_layout_padding">6dp</dimen>
+    <dimen name="proxy_content_padding">16dp</dimen>
     <dimen name="proxy_content_padding_grid3">12dp</dimen>
     <dimen name="proxy_text_margin">10dp</dimen>
     <dimen name="proxy_text_margin_grid3">5dp</dimen>
     <dimen name="proxy_text_size">12sp</dimen>
     <dimen name="proxy_text_size_grid3">11sp</dimen>
-    <dimen name="proxy_card_radius">16dp</dimen>
+    <dimen name="proxy_card_radius">12dp</dimen>
     <dimen name="proxy_card_offset">0dp</dimen>
 
     <!-- Properties Design -->

@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Path
+import android.graphics.Typeface
 import android.view.View
 import com.github.kr328.clash.common.compat.getDrawableCompat
 import com.github.kr328.clash.design.store.UiStore
@@ -75,34 +76,30 @@ class ProxyView(
 
         // draw background
         canvas.apply {
-            if (state.config.proxyLine==1) {
-                drawRect(0f, 0f, width, height, paint)
-            } else {
-                val path = state.path
+            val path = state.path
 
-                path.reset()
+            path.reset()
 
-                path.addRoundRect(
-                    state.config.layoutPadding,
-                    state.config.layoutPadding,
-                    width - state.config.layoutPadding,
-                    height - state.config.layoutPadding,
-                    state.config.cardRadius,
-                    state.config.cardRadius,
-                    Path.Direction.CW,
-                )
+            path.addRoundRect(
+                state.config.layoutPadding,
+                state.config.layoutPadding,
+                width - state.config.layoutPadding,
+                height - state.config.layoutPadding,
+                state.config.cardRadius,
+                state.config.cardRadius,
+                Path.Direction.CW,
+            )
 
-                paint.setShadowLayer(
-                    state.config.cardRadius,
-                    state.config.cardOffset,
-                    state.config.cardOffset,
-                    state.config.shadow
-                )
+            paint.setShadowLayer(
+                state.config.cardRadius,
+                state.config.cardOffset,
+                state.config.cardOffset,
+                state.config.shadow
+            )
 
-                drawPath(path, paint)
+            drawPath(path, paint)
 
-                clipPath(path)
-            }
+            clipPath(path)
         }
 
         super.draw(canvas)
@@ -165,6 +162,7 @@ class ProxyView(
         paint.textSize = state.config.textSize
         paint.isAntiAlias = true
         paint.color = state.controls
+        paint.typeface = Typeface.DEFAULT_BOLD
 
         // draw delay
         canvas.apply {
@@ -184,6 +182,8 @@ class ProxyView(
         }
 
         // draw subtitle
+        paint.typeface = Typeface.DEFAULT
+        paint.alpha = 190
         canvas.apply {
             val x = state.config.layoutPadding + state.config.contentPadding
             val y = state.config.layoutPadding +

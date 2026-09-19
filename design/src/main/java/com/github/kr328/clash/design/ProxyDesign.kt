@@ -1,7 +1,6 @@
 package com.github.kr328.clash.design
 
 import android.content.Context
-import android.content.res.ColorStateList
 import android.view.View
 import android.widget.Toast
 import androidx.viewpager2.widget.ViewPager2
@@ -18,7 +17,6 @@ import com.github.kr328.clash.design.util.applyFrom
 import com.github.kr328.clash.design.util.configureMainNavigation
 import com.github.kr328.clash.design.util.layoutInflater
 import com.github.kr328.clash.design.util.MainNavigationDestination
-import com.github.kr328.clash.design.util.resolveThemedColor
 import com.github.kr328.clash.design.util.root
 import com.google.android.material.tabs.TabLayoutMediator
 import kotlinx.coroutines.Dispatchers
@@ -57,9 +55,6 @@ class ProxyDesign(
     private val adapter: ProxyPageAdapter
         get() = binding.pagesView.adapter!! as ProxyPageAdapter
 
-    private var horizontalScrolling = false
-    private val verticalBottomScrolled: Boolean
-        get() = adapter.states[binding.pagesView.currentItem].bottom
     private var urlTesting: Boolean
         get() = adapter.states[binding.pagesView.currentItem].urlTesting
         set(value) {
@@ -119,12 +114,7 @@ class ProxyDesign(
             binding.tabLayoutView.visibility = View.GONE
             binding.elevationView.visibility = View.GONE
             binding.pagesView.visibility = View.GONE
-            binding.urlTestFloatView.visibility = View.GONE
         } else {
-            binding.urlTestFloatView.supportImageTintList = ColorStateList.valueOf(
-                context.resolveThemedColor(com.google.android.material.R.attr.colorOnPrimary)
-            )
-
             binding.pagesView.apply {
                 adapter = ProxyPageAdapter(
                     surface,
@@ -140,12 +130,6 @@ class ProxyDesign(
                 }
 
                 registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
-                    override fun onPageScrollStateChanged(state: Int) {
-                        horizontalScrolling = state != ViewPager2.SCROLL_STATE_IDLE
-
-                        updateUrlTestButtonStatus()
-                    }
-
                     override fun onPageSelected(position: Int) {
                         uiStore.proxyLastGroup = groupNames[position]
                     }
@@ -174,12 +158,6 @@ class ProxyDesign(
     }
 
     private fun updateUrlTestButtonStatus() {
-        if (verticalBottomScrolled || horizontalScrolling || urlTesting) {
-            binding.urlTestFloatView.hide()
-        } else {
-            binding.urlTestFloatView.show()
-        }
-
         if (urlTesting) {
             binding.urlTestView.visibility = View.GONE
             binding.urlTestProgressView.visibility = View.VISIBLE

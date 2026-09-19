@@ -58,7 +58,7 @@ class ProxyViewState(
 
         if (delay != proxy.delay) {
             delay = proxy.delay
-            delayText = if (proxy.delay in 0..Short.MAX_VALUE) proxy.delay.toString() else ""
+            delayText = if (proxy.delay in 0..Short.MAX_VALUE) "${proxy.delay} ms" else ""
         }
 
         if (parentNow !== parent.now) {

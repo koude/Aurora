@@ -2,27 +2,26 @@ package com.github.kr328.clash.design.component
 
 import android.content.Context
 import android.graphics.Color
+import androidx.core.content.ContextCompat
 import com.github.kr328.clash.design.R
 import com.github.kr328.clash.design.util.getPixels
-import com.github.kr328.clash.design.util.resolveThemedColor
 import com.github.kr328.clash.design.util.resolveThemedResourceId
 
 class ProxyViewConfig(val context: Context, var proxyLine: Int) {
-    private val colorSurfaceVariant =
-        context.resolveThemedColor(com.google.android.material.R.attr.colorSurfaceVariant)
+    private val colorSurfaceContainer = ContextCompat.getColor(context, R.color.aurora_surface_container)
 
     val clickableBackground =
         context.resolveThemedResourceId(android.R.attr.selectableItemBackground)
 
     val selectedControl =
-        context.resolveThemedColor(com.google.android.material.R.attr.colorOnPrimaryContainer)
+        ContextCompat.getColor(context, R.color.aurora_on_secondary_container)
     val selectedBackground =
-        context.resolveThemedColor(com.google.android.material.R.attr.colorPrimaryContainer)
+        ContextCompat.getColor(context, R.color.aurora_secondary_container)
 
     val unselectedControl =
-        context.resolveThemedColor(com.google.android.material.R.attr.colorOnSurfaceVariant)
+        ContextCompat.getColor(context, R.color.aurora_on_surface)
     val unselectedBackground: Int
-        get() = if (proxyLine == 1) Color.TRANSPARENT else colorSurfaceVariant
+        get() = colorSurfaceContainer
 
     val layoutPadding = context.getPixels(R.dimen.proxy_layout_padding).toFloat()
     val contentPadding
