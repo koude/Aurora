@@ -280,7 +280,8 @@
     <string name="shortcut_start_long">启动 Clash 服务</string>
     <string name="shortcut_stop_short">停止 Clash</string>
     <string name="shortcut_stop_long">停止 Clash 服务</string>
-<string name="aurora_section_connection">连接</string>
+    <string name="aurora_home">首页</string>
+    <string name="aurora_section_connection">连接</string>
     <string name="aurora_section_tools">工具与诊断</string>
     <string name="aurora_providers_summary">管理代理与规则提供者</string>
     <string name="aurora_logs_summary">查看运行事件与连接详情</string>

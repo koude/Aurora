@@ -371,7 +371,8 @@
     <string name="shortcut_start_long">Start Clash service</string>
     <string name="shortcut_stop_short">Stop Clash</string>
     <string name="shortcut_stop_long">Stop Clash service</string>
-<string name="aurora_section_connection">Connection</string>
+    <string name="aurora_home">Home</string>
+    <string name="aurora_section_connection">Connection</string>
     <string name="aurora_section_tools">Tools &amp; diagnostics</string>
     <string name="aurora_providers_summary">Manage proxy and rule providers</string>
     <string name="aurora_logs_summary">Inspect runtime events and connection details</string>

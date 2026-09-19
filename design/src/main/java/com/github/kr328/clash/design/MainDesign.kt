@@ -40,6 +40,9 @@ class MainDesign(context: Context) : Design<MainDesign.Request>(context) {
     suspend fun setClashRunning(running: Boolean) {
         withContext(Dispatchers.Main) {
             binding.clashRunning = running
+            binding.navigation.menu
+                .findItem(R.id.navigation_proxy)
+                .isEnabled = running
         }
     }
 
@@ -83,6 +86,26 @@ class MainDesign(context: Context) : Design<MainDesign.Request>(context) {
 
         binding.colorClashStarted = context.resolveThemedColor(com.google.android.material.R.attr.colorPrimary)
         binding.colorClashStopped = context.resolveThemedColor(R.attr.colorClashStopped)
+
+        binding.navigation.selectedItemId = R.id.navigation_home
+        binding.navigation.setOnItemSelectedListener { item ->
+            when (item.itemId) {
+                R.id.navigation_home -> true
+                R.id.navigation_proxy -> {
+                    request(Request.OpenProxy)
+                    false
+                }
+                R.id.navigation_profiles -> {
+                    request(Request.OpenProfiles)
+                    false
+                }
+                R.id.navigation_settings -> {
+                    request(Request.OpenSettings)
+                    false
+                }
+                else -> false
+            }
+        }
     }
 
     fun request(request: Request) {

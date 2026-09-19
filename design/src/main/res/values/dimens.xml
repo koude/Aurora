@@ -62,6 +62,7 @@
     <dimen name="main_padding_horizontal">20dp</dimen>
     <dimen name="main_logo_size">50dp</dimen>
     <dimen name="main_top_banner_height">112dp</dimen>
+    <dimen name="main_navigation_height">80dp</dimen>
 
     <!--  Proxy Design -->
     <dimen name="proxy_layout_padding">3dp</dimen>

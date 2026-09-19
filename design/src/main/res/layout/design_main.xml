@@ -34,7 +34,7 @@
                 android:orientation="vertical"
                 android:paddingHorizontal="@dimen/main_padding_horizontal"
                 android:paddingTop="@{(float) self.surface.insets.top + 16}"
-                android:paddingBottom="@{(float) self.surface.insets.bottom + 24}">
+                android:paddingBottom="@{(float) self.surface.insets.bottom + 104}">
 
                 <!-- Large, confident M3-style header. -->
                 <LinearLayout
@@ -159,5 +159,17 @@
                     app:text="@string/about" />
             </LinearLayout>
         </ScrollView>
+
+        <com.google.android.material.bottomnavigation.BottomNavigationView
+            android:id="@+id/navigation"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            android:background="@color/aurora_surface"
+            android:elevation="3dp"
+            android:minHeight="@dimen/main_navigation_height"
+            android:paddingBottom="@{self.surface.insets.bottom}"
+            app:labelVisibilityMode="labeled"
+            app:menu="@menu/menu_main_navigation" />
     </androidx.coordinatorlayout.widget.CoordinatorLayout>
 </layout>
