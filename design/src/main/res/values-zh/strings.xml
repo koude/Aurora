@@ -289,6 +289,11 @@
     <string name="aurora_help_summary">使用说明与故障排查</string>
     <string name="aurora_about_summary">版本、许可证与项目信息</string>
     <string name="aurora_settings_intro">按功能区域调整设置，底层网络行为保持不变。</string>
+    <string name="aurora_settings_network_engine">网络引擎</string>
+    <string name="aurora_settings_behavior">运行行为</string>
+    <string name="aurora_settings_maintenance">维护</string>
+    <string name="aurora_tun_and_routing">TUN 与路由</string>
+    <string name="aurora_dns_settings_summary">Fake-IP、DNS 劫持与上游服务器</string>
     <string name="aurora_app_settings_summary">应用行为、通知与启动方式</string>
     <string name="aurora_network_settings_summary">VPN、DNS、路由与访问控制</string>
     <string name="aurora_override_settings_summary">配置覆写与高级参数</string>

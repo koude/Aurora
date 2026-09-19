@@ -5,7 +5,7 @@
     android:gravity="center_vertical"
     android:minHeight="@dimen/main_top_app_bar_height"
     android:orientation="horizontal"
-    android:paddingStart="20dp">
+    android:paddingStart="16dp">
 
     <TextView
         android:id="@+id/activity_bar_title_view"
@@ -14,6 +14,6 @@
         android:layout_weight="1"
         android:ellipsize="end"
         android:maxLines="1"
-        android:textAppearance="@style/TextAppearance.Aurora.TitleLarge"
+        android:textAppearance="@style/TextAppearance.Aurora.TopLevelTitle"
         android:textColor="@color/aurora_on_surface" />
 </LinearLayout>

@@ -47,7 +47,7 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:text="@string/aurora_connection_center"
-                        android:textAppearance="@style/TextAppearance.Aurora.TitleLarge"
+                        android:textAppearance="@style/TextAppearance.Aurora.TopLevelTitle"
                         android:textColor="@color/aurora_on_surface" />
 
                     <com.google.android.material.button.MaterialButton

@@ -24,55 +24,126 @@
                 android:layout_height="wrap_content"
                 android:clipToPadding="false"
                 android:orientation="vertical"
-                android:paddingStart="20dp"
-                android:paddingEnd="20dp"
-                android:paddingTop="@{(float) self.surface.insets.top + @dimen/main_top_app_bar_height + 12}"
-                android:paddingBottom="@{(float) self.surface.insets.bottom + 104}">
+                android:paddingStart="16dp"
+                android:paddingTop="@{(float) self.surface.insets.top + @dimen/main_top_app_bar_height + 8}"
+                android:paddingEnd="16dp"
+                android:paddingBottom="@{(float) self.surface.insets.bottom + 96}">
 
                 <TextView
+                    style="@style/TextAppearance.Aurora.SectionLabel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="8dp"
-                    android:layout_marginBottom="10dp"
-                    android:text="@string/aurora_settings_intro"
-                    android:textAppearance="@style/TextAppearance.Aurora.BodyLarge"
-                    android:textColor="@color/aurora_on_surface_variant" />
+                    android:layout_marginBottom="8dp"
+                    android:text="@string/aurora_settings_network_engine" />
 
-                <com.github.kr328.clash.design.view.LargeActionCard
+                <com.google.android.material.card.MaterialCardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginVertical="7dp"
-                    android:onClick="@{() -> self.request(Request.StartApp)}"
-                    app:icon="@drawable/ic_baseline_settings"
-                    app:subtext="@string/aurora_app_settings_summary"
-                    app:text="@string/app" />
+                    app:cardBackgroundColor="@color/aurora_surface_container"
+                    app:cardCornerRadius="22dp"
+                    app:cardElevation="0dp">
 
-                <com.github.kr328.clash.design.view.LargeActionCard
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+
+                        <com.github.kr328.clash.design.view.AuroraSettingsRow
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:onClick="@{() -> self.request(Request.StartNetwork)}"
+                            app:icon="@drawable/ic_baseline_vpn_lock"
+                            app:subtext="@string/aurora_network_settings_summary"
+                            app:text="@string/aurora_tun_and_routing" />
+
+                        <View style="@style/Widget.Aurora.SettingsDivider" />
+
+                        <com.github.kr328.clash.design.view.AuroraSettingsRow
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:onClick="@{() -> self.request(Request.StartNetwork)}"
+                            app:icon="@drawable/ic_baseline_dns"
+                            app:subtext="@string/aurora_dns_settings_summary"
+                            app:text="@string/dns" />
+
+                        <View style="@style/Widget.Aurora.SettingsDivider" />
+
+                        <com.github.kr328.clash.design.view.AuroraSettingsRow
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:onClick="@{() -> self.request(Request.StartApp)}"
+                            app:icon="@drawable/ic_baseline_apps"
+                            app:subtext="@string/access_control_packages_summary"
+                            app:text="@string/access_control_packages" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <TextView
+                    style="@style/TextAppearance.Aurora.SectionLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:layout_marginTop="20dp"
+                    android:layout_marginBottom="8dp"
+                    android:text="@string/aurora_settings_behavior" />
+
+                <com.google.android.material.card.MaterialCardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginVertical="7dp"
-                    android:onClick="@{() -> self.request(Request.StartNetwork)}"
-                    app:icon="@drawable/ic_baseline_dns"
-                    app:subtext="@string/aurora_network_settings_summary"
-                    app:text="@string/network" />
+                    app:cardBackgroundColor="@color/aurora_surface_container"
+                    app:cardCornerRadius="22dp"
+                    app:cardElevation="0dp">
 
-                <com.github.kr328.clash.design.view.LargeActionCard
+                    <com.github.kr328.clash.design.view.AuroraSettingsRow
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:onClick="@{() -> self.request(Request.StartApp)}"
+                        app:icon="@drawable/ic_baseline_settings"
+                        app:subtext="@string/aurora_app_settings_summary"
+                        app:text="@string/app" />
+                </com.google.android.material.card.MaterialCardView>
+
+                <TextView
+                    style="@style/TextAppearance.Aurora.SectionLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:layout_marginTop="20dp"
+                    android:layout_marginBottom="8dp"
+                    android:text="@string/aurora_settings_maintenance" />
+
+                <com.google.android.material.card.MaterialCardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginVertical="7dp"
-                    android:onClick="@{() -> self.request(Request.StartOverride)}"
-                    app:icon="@drawable/ic_baseline_extension"
-                    app:subtext="@string/aurora_override_settings_summary"
-                    app:text="@string/override" />
+                    app:cardBackgroundColor="@color/aurora_surface_container"
+                    app:cardCornerRadius="22dp"
+                    app:cardElevation="0dp">
 
-                <com.github.kr328.clash.design.view.LargeActionCard
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginVertical="7dp"
-                    android:onClick="@{() -> self.request(Request.StartMetaFeature)}"
-                    app:icon="@drawable/ic_baseline_meta"
-                    app:subtext="@string/aurora_meta_settings_summary"
-                    app:text="@string/meta_features" />
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+
+                        <com.github.kr328.clash.design.view.AuroraSettingsRow
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:onClick="@{() -> self.request(Request.StartMetaFeature)}"
+                            app:icon="@drawable/ic_baseline_meta"
+                            app:subtext="@string/aurora_meta_settings_summary"
+                            app:text="@string/meta_features" />
+
+                        <View style="@style/Widget.Aurora.SettingsDivider" />
+
+                        <com.github.kr328.clash.design.view.AuroraSettingsRow
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:onClick="@{() -> self.request(Request.StartOverride)}"
+                            app:icon="@drawable/ic_baseline_extension"
+                            app:subtext="@string/aurora_override_settings_summary"
+                            app:text="@string/override" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
             </LinearLayout>
         </com.github.kr328.clash.design.view.ObservableScrollView>
 

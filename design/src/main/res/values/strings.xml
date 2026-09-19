@@ -380,6 +380,11 @@
     <string name="aurora_help_summary">Usage guides and troubleshooting</string>
     <string name="aurora_about_summary">Version, licenses and project information</string>
     <string name="aurora_settings_intro">Tune the app by area. Core networking behavior remains unchanged.</string>
+    <string name="aurora_settings_network_engine">Network engine</string>
+    <string name="aurora_settings_behavior">App behavior</string>
+    <string name="aurora_settings_maintenance">Maintenance</string>
+    <string name="aurora_tun_and_routing">TUN &amp; routing</string>
+    <string name="aurora_dns_settings_summary">Fake-IP, DNS hijacking and upstream servers</string>
     <string name="aurora_app_settings_summary">App behavior, notifications and startup</string>
     <string name="aurora_network_settings_summary">VPN, DNS, routing and access control</string>
     <string name="aurora_override_settings_summary">Profile overrides and advanced configuration</string>
