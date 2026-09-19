@@ -7,5 +7,6 @@
         android:paddingVertical="@dimen/item_padding_vertical"
         android:paddingStart="@{@dimen/item_header_component_size + @dimen/item_header_margin * 2}"
         android:paddingEnd="@dimen/item_tailing_margin"
-        android:textColor="?attr/colorControlActivated" />
+        android:textAppearance="@style/TextAppearance.Aurora.TitleMedium"
+        android:textColor="@color/aurora_primary" />
 </layout>
