@@ -34,12 +34,21 @@ class ProfilesActivity : BaseActivity<ProfilesDesign>() {
                     when (it) {
                         Event.ActivityStart, Event.ProfileChanged -> {
                             design.fetch()
+                            design.setClashRunning(clashRunning)
                         }
+                        Event.ClashStart, Event.ClashStop ->
+                            design.setClashRunning(clashRunning)
                         else -> Unit
                     }
                 }
                 design.requests.onReceive {
                     when (it) {
+                        ProfilesDesign.Request.OpenHome ->
+                            navigateTopLevel(MainActivity::class)
+                        ProfilesDesign.Request.OpenProxy ->
+                            navigateTopLevel(ProxyActivity::class)
+                        ProfilesDesign.Request.OpenSettings ->
+                            navigateTopLevel(SettingsActivity::class)
                         ProfilesDesign.Request.Create ->
                             startActivity(NewProfileActivity::class.intent)
                         ProfilesDesign.Request.UpdateAll ->

@@ -20,6 +20,9 @@ class ProfilesDesign(context: Context) : Design<ProfilesDesign.Request>(context)
     sealed class Request {
         object UpdateAll : Request()
         object Create : Request()
+        object OpenHome : Request()
+        object OpenProxy : Request()
+        object OpenSettings : Request()
         data class Active(val profile: Profile) : Request()
         data class Update(val profile: Profile) : Request()
         data class Edit(val profile: Profile) : Request()
@@ -72,9 +75,24 @@ class ProfilesDesign(context: Context) : Design<ProfilesDesign.Request>(context)
 
         binding.activityBarLayout.applyFrom(context)
 
+        binding.navigation.configureMainNavigation(MainNavigationDestination.Profiles) {
+            when (it) {
+                MainNavigationDestination.Home -> requests.trySend(Request.OpenHome)
+                MainNavigationDestination.Proxy -> requests.trySend(Request.OpenProxy)
+                MainNavigationDestination.Profiles -> Unit
+                MainNavigationDestination.Settings -> requests.trySend(Request.OpenSettings)
+            }
+        }
+
         binding.mainList.recyclerList.also {
             it.bindAppBarElevation(binding.activityBarLayout)
             it.applyLinearAdapter(context, adapter)
+        }
+    }
+
+    suspend fun setClashRunning(running: Boolean) {
+        withContext(Dispatchers.Main) {
+            binding.navigation.setProxyNavigationEnabled(running)
         }
     }
 

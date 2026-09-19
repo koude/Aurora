@@ -9,6 +9,9 @@ import com.github.kr328.clash.design.databinding.DesignAboutBinding
 import com.github.kr328.clash.design.databinding.DesignMainBinding
 import com.github.kr328.clash.design.util.layoutInflater
 import com.github.kr328.clash.design.util.resolveThemedColor
+import com.github.kr328.clash.design.util.MainNavigationDestination
+import com.github.kr328.clash.design.util.configureMainNavigation
+import com.github.kr328.clash.design.util.setProxyNavigationEnabled
 import com.github.kr328.clash.design.util.root
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -40,9 +43,7 @@ class MainDesign(context: Context) : Design<MainDesign.Request>(context) {
     suspend fun setClashRunning(running: Boolean) {
         withContext(Dispatchers.Main) {
             binding.clashRunning = running
-            binding.navigation.menu
-                .findItem(R.id.navigation_proxy)
-                .isEnabled = running
+            binding.navigation.setProxyNavigationEnabled(running)
         }
     }
 
@@ -87,23 +88,12 @@ class MainDesign(context: Context) : Design<MainDesign.Request>(context) {
         binding.colorClashStarted = context.resolveThemedColor(com.google.android.material.R.attr.colorPrimary)
         binding.colorClashStopped = context.resolveThemedColor(R.attr.colorClashStopped)
 
-        binding.navigation.selectedItemId = R.id.navigation_home
-        binding.navigation.setOnItemSelectedListener { item ->
-            when (item.itemId) {
-                R.id.navigation_home -> true
-                R.id.navigation_proxy -> {
-                    request(Request.OpenProxy)
-                    false
-                }
-                R.id.navigation_profiles -> {
-                    request(Request.OpenProfiles)
-                    false
-                }
-                R.id.navigation_settings -> {
-                    request(Request.OpenSettings)
-                    false
-                }
-                else -> false
+        binding.navigation.configureMainNavigation(MainNavigationDestination.Home) {
+            when (it) {
+                MainNavigationDestination.Home -> Unit
+                MainNavigationDestination.Proxy -> request(Request.OpenProxy)
+                MainNavigationDestination.Profiles -> request(Request.OpenProfiles)
+                MainNavigationDestination.Settings -> request(Request.OpenSettings)
             }
         }
     }

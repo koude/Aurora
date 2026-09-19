@@ -11,13 +11,25 @@ class SettingsActivity : BaseActivity<SettingsDesign>() {
 
         setContentDesign(design)
 
+        design.setClashRunning(clashRunning)
+
         while (isActive) {
             select<Unit> {
                 events.onReceive {
-
+                    when (it) {
+                        Event.ClashStart, Event.ClashStop ->
+                            design.setClashRunning(clashRunning)
+                        else -> Unit
+                    }
                 }
                 design.requests.onReceive {
                     when (it) {
+                        SettingsDesign.Request.OpenHome ->
+                            navigateTopLevel(MainActivity::class)
+                        SettingsDesign.Request.OpenProxy ->
+                            navigateTopLevel(ProxyActivity::class)
+                        SettingsDesign.Request.OpenProfiles ->
+                            navigateTopLevel(ProfilesActivity::class)
                         SettingsDesign.Request.StartApp ->
                             startActivity(AppSettingsActivity::class.intent)
                         SettingsDesign.Request.StartNetwork ->

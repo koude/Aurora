@@ -19,6 +19,7 @@
         <include
             android:id="@+id/main_list"
             layout="@layout/common_recycler_list"
+            app:bottomPadding="@{@dimen/main_navigation_height}"
             app:insets="@{self.surface.insets}" />
 
         <com.github.kr328.clash.design.view.ActivityBarLayout
@@ -81,5 +82,17 @@
 
             </RelativeLayout>
         </com.github.kr328.clash.design.view.ActivityBarLayout>
+
+        <com.google.android.material.bottomnavigation.BottomNavigationView
+            android:id="@+id/navigation"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            android:background="@color/aurora_surface"
+            android:elevation="3dp"
+            android:minHeight="@dimen/main_navigation_height"
+            android:paddingBottom="@{self.surface.insets.bottom}"
+            app:labelVisibilityMode="labeled"
+            app:menu="@menu/menu_main_navigation" />
     </androidx.coordinatorlayout.widget.CoordinatorLayout>
 </layout>

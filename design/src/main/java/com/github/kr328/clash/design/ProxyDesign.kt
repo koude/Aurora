@@ -15,7 +15,9 @@ import com.github.kr328.clash.design.databinding.DesignProxyBinding
 import com.github.kr328.clash.design.model.ProxyState
 import com.github.kr328.clash.design.store.UiStore
 import com.github.kr328.clash.design.util.applyFrom
+import com.github.kr328.clash.design.util.configureMainNavigation
 import com.github.kr328.clash.design.util.layoutInflater
+import com.github.kr328.clash.design.util.MainNavigationDestination
 import com.github.kr328.clash.design.util.resolveThemedColor
 import com.github.kr328.clash.design.util.root
 import com.google.android.material.tabs.TabLayoutMediator
@@ -31,6 +33,9 @@ class ProxyDesign(
     sealed class Request {
         object ReloadAll : Request()
         object ReLaunch : Request()
+        object OpenHome : Request()
+        object OpenProfiles : Request()
+        object OpenSettings : Request()
 
         data class PatchMode(val mode: TunnelState.Mode?) : Request()
         data class Reload(val index: Int) : Request()
@@ -93,6 +98,15 @@ class ProxyDesign(
         binding.self = this
 
         binding.activityBarLayout.applyFrom(context)
+
+        binding.navigation.configureMainNavigation(MainNavigationDestination.Proxy) {
+            when (it) {
+                MainNavigationDestination.Home -> requests.trySend(Request.OpenHome)
+                MainNavigationDestination.Proxy -> Unit
+                MainNavigationDestination.Profiles -> requests.trySend(Request.OpenProfiles)
+                MainNavigationDestination.Settings -> requests.trySend(Request.OpenSettings)
+            }
+        }
 
         binding.menuView.setOnClickListener {
             menu.show()

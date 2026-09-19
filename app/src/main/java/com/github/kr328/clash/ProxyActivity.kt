@@ -51,6 +51,12 @@ class ProxyActivity : BaseActivity<ProxyDesign>() {
                 }
                 design.requests.onReceive {
                     when (it) {
+                        ProxyDesign.Request.OpenHome ->
+                            navigateTopLevel(MainActivity::class)
+                        ProxyDesign.Request.OpenProfiles ->
+                            navigateTopLevel(ProfilesActivity::class)
+                        ProxyDesign.Request.OpenSettings ->
+                            navigateTopLevel(SettingsActivity::class)
                         ProxyDesign.Request.ReLaunch -> {
                             startActivity(ProxyActivity::class.intent)
 
