@@ -49,7 +49,7 @@
                     android:paddingEnd="@dimen/item_tailing_margin">
 
                     <include
-                        layout="@layout/common_activity_bar"
+                        layout="@layout/common_top_level_bar"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_alignParentStart="true"
@@ -143,8 +143,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="bottom"
-            android:background="@color/aurora_surface"
-            android:elevation="3dp"
+            android:background="@color/aurora_surface_container"
+            android:elevation="0dp"
             android:minHeight="@dimen/main_navigation_height"
             android:paddingBottom="@{self.surface.insets.bottom}"
             app:labelVisibilityMode="labeled"

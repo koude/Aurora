@@ -61,9 +61,9 @@ class MainActivity : BaseActivity<MainDesign>() {
                                 design.startClash()
                         }
                         MainDesign.Request.OpenProxy ->
-                            startActivity(ProxyActivity::class.intent)
+                            navigateTopLevel(ProxyActivity::class)
                         MainDesign.Request.OpenProfiles ->
-                            startActivity(ProfilesActivity::class.intent)
+                            navigateTopLevel(ProfilesActivity::class)
                         MainDesign.Request.OpenProviders ->
                             startActivity(ProvidersActivity::class.intent)
                         MainDesign.Request.OpenLogs -> {
@@ -74,7 +74,7 @@ class MainActivity : BaseActivity<MainDesign>() {
                             }
                         }
                         MainDesign.Request.OpenSettings ->
-                            startActivity(SettingsActivity::class.intent)
+                            navigateTopLevel(SettingsActivity::class)
                         MainDesign.Request.OpenHelp ->
                             startActivity(HelpActivity::class.intent)
                         MainDesign.Request.OpenAbout ->
@@ -137,7 +137,7 @@ class MainActivity : BaseActivity<MainDesign>() {
         if (active == null || !active.imported) {
             showToast(DesignR.string.no_profile_selected, ToastDuration.Long) {
                 setAction(DesignR.string.profiles) {
-                    startActivity(ProfilesActivity::class.intent)
+                    navigateTopLevel(ProfilesActivity::class)
                 }
             }
 

@@ -26,7 +26,7 @@
                 android:orientation="vertical"
                 android:paddingStart="20dp"
                 android:paddingEnd="20dp"
-                android:paddingTop="@{(float) self.surface.insets.top + @dimen/toolbar_height + 18}"
+                android:paddingTop="@{(float) self.surface.insets.top + @dimen/main_top_app_bar_height + 12}"
                 android:paddingBottom="@{(float) self.surface.insets.bottom + 104}">
 
                 <TextView
@@ -81,7 +81,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:paddingTop="@{self.surface.insets.top}">
-            <include layout="@layout/common_activity_bar" />
+            <include layout="@layout/common_top_level_bar" />
         </com.github.kr328.clash.design.view.ActivityBarLayout>
 
         <com.google.android.material.bottomnavigation.BottomNavigationView
@@ -89,8 +89,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="bottom"
-            android:background="@color/aurora_surface"
-            android:elevation="3dp"
+            android:background="@color/aurora_surface_container"
+            android:elevation="0dp"
             android:minHeight="@dimen/main_navigation_height"
             android:paddingBottom="@{self.surface.insets.bottom}"
             app:labelVisibilityMode="labeled"
