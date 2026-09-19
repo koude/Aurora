@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <data>
+        <variable name="siteName" type="String" />
+    </data>
+
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="0dp"
+        android:layout_height="56dp"
+        android:layout_margin="4dp"
+        android:layout_weight="1"
+        app:cardBackgroundColor="@android:color/transparent"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="0dp"
+        app:strokeColor="@color/aurora_outline_variant"
+        app:strokeWidth="1dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="12dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:maxLines="1"
+                android:text="@{siteName}"
+                android:textAppearance="@style/TextAppearance.Aurora.BodyMedium"
+                android:textColor="@color/aurora_on_surface" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/aurora_latency_placeholder"
+                android:textAppearance="@style/TextAppearance.Aurora.BodyMedium"
+                android:textColor="@color/aurora_primary" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+</layout>

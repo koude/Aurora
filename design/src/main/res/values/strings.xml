@@ -384,4 +384,30 @@
     <string name="aurora_network_settings_summary">VPN, DNS, routing and access control</string>
     <string name="aurora_override_settings_summary">Profile overrides and advanced configuration</string>
     <string name="aurora_meta_settings_summary">Meta kernel features and experimental options</string>
+    <string name="aurora_connection_center">Connection center</string>
+    <string name="aurora_notifications">Notifications</string>
+    <string name="aurora_download">Download</string>
+    <string name="aurora_upload">Upload</string>
+    <string name="aurora_speed_placeholder">-- B/s</string>
+    <string name="aurora_mode_rule">Rule</string>
+    <string name="aurora_mode_global">Global</string>
+    <string name="aurora_mode_direct">Direct</string>
+    <string name="aurora_connected">Connected</string>
+    <string name="aurora_disconnected">Disconnected</string>
+    <string name="aurora_site_latency">Website latency</string>
+    <string name="aurora_site_latency_summary">HTTP connectivity probe</string>
+    <string name="aurora_test_all">Test all</string>
+    <string name="aurora_latency_placeholder">-- ms</string>
+    <string name="aurora_quick_tools">Quick tools</string>
+    <string name="aurora_connections">Connections</string>
+    <string name="aurora_route_test">Route test</string>
+    <string name="aurora_current_profile">Current profile</string>
+    <string name="aurora_profile_placeholder">No profile selected</string>
+    <string name="aurora_profile_usage_placeholder">Usage details will appear here</string>
+    <string name="aurora_feature_placeholder">This feature is represented in the new interface and will be connected in a later stage.</string>
+    <string name="aurora_mode_unavailable">Start Aurora before changing the proxy mode.</string>
+    <string name="apple" translatable="false">Apple</string>
+    <string name="github" translatable="false">GitHub</string>
+    <string name="youtube" translatable="false">YouTube</string>
+    <string name="google" translatable="false">Google</string>
 </resources>

@@ -18,6 +18,9 @@
     <color name="aurora_surface">#1C1B20</color>
     <color name="aurora_on_surface">#E6E1E9</color>
     <color name="aurora_surface_variant">#49454F</color>
+    <color name="aurora_surface_container">#211F26</color>
+    <color name="aurora_surface_container_high">#2B2930</color>
+    <color name="aurora_outline_variant">#49454F</color>
     <color name="aurora_on_surface_variant">#CAC4D0</color>
     <color name="aurora_outline">#948F99</color>
     <color name="aurora_error">#FFB4AB</color>

@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
+
     <data>
         <variable name="self" type="com.github.kr328.clash.design.MainDesign" />
         <variable name="clashRunning" type="boolean" />
         <variable name="forwarded" type="String" />
         <variable name="mode" type="String" />
         <variable name="profileName" type="String" />
-        <variable name="colorClashStarted" type="int" />
-        <variable name="colorClashStopped" type="int" />
+        <variable name="downloadSpeed" type="String" />
+        <variable name="uploadSpeed" type="String" />
         <variable name="hasProviders" type="boolean" />
-        <import type="android.view.View" />
         <import type="com.github.kr328.clash.design.MainDesign.Request" />
     </data>
 
@@ -29,134 +29,288 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:animateLayoutChanges="true"
                 android:clipToPadding="false"
                 android:orientation="vertical"
-                android:paddingHorizontal="@dimen/main_padding_horizontal"
-                android:paddingTop="@{(float) self.surface.insets.top + 16}"
+                android:paddingStart="16dp"
+                android:paddingTop="@{(float) self.surface.insets.top + 8}"
+                android:paddingEnd="16dp"
                 android:paddingBottom="@{(float) self.surface.insets.bottom + 104}">
 
-                <!-- Large, confident M3-style header. -->
                 <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
+                    android:layout_height="64dp"
                     android:gravity="center_vertical"
-                    android:minHeight="@dimen/main_top_banner_height"
                     android:orientation="horizontal">
 
                     <TextView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="@string/application_name"
-                        android:textAppearance="@style/TextAppearance.Aurora.DisplaySmall" />
+                        android:text="@string/aurora_connection_center"
+                        android:textAppearance="@style/TextAppearance.Aurora.TitleLarge"
+                        android:textColor="@color/aurora_on_surface" />
 
-                    <ImageView
-                        android:layout_width="52dp"
-                        android:layout_height="52dp"
-                        android:background="?attr/selectableItemBackgroundBorderless"
-                        android:clickable="true"
-                        android:contentDescription="@string/settings"
-                        android:focusable="true"
-                        android:onClick="@{() -> self.request(Request.OpenSettings)}"
-                        android:padding="13dp"
-                        android:src="@drawable/ic_baseline_settings" />
+                    <com.google.android.material.button.MaterialButton
+                        style="@style/Widget.MaterialComponents.Button.TextButton"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:contentDescription="@string/aurora_notifications"
+                        android:onClick="@{() -> self.request(Request.Placeholder)}"
+                        android:text=""
+                        app:cornerRadius="24dp"
+                        app:icon="@drawable/ic_baseline_notifications_none"
+                        app:iconGravity="textStart"
+                        app:iconPadding="0dp"
+                        app:iconTint="@color/aurora_on_surface" />
                 </LinearLayout>
 
-                <!-- Hero connection state. Existing CMFA actions and data bindings are preserved. -->
-                <com.github.kr328.clash.design.view.LargeActionCard
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="horizontal">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/aurora_download"
+                                android:textAppearance="@style/TextAppearance.Aurora.BodyMedium"
+                                android:textColor="@color/aurora_on_surface_variant" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:maxLines="1"
+                                android:text="@{downloadSpeed}"
+                                android:textAppearance="@style/TextAppearance.Aurora.TitleMedium"
+                                android:textColor="@color/aurora_on_surface" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/aurora_upload"
+                                android:textAppearance="@style/TextAppearance.Aurora.BodyMedium"
+                                android:textColor="@color/aurora_on_surface_variant" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:maxLines="1"
+                                android:text="@{uploadSpeed}"
+                                android:textAppearance="@style/TextAppearance.Aurora.TitleMedium"
+                                android:textColor="@color/aurora_on_surface" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/mode_button"
+                        style="@style/Widget.Aurora.Button.Tonal"
+                        android:layout_width="wrap_content"
+                        android:layout_height="40dp"
+                        android:layout_marginHorizontal="8dp"
+                        android:text="@{mode}"
+                        app:icon="@drawable/ic_baseline_arrow_drop_down"
+                        app:iconGravity="textEnd"
+                        app:iconTint="@color/aurora_on_secondary_container" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/connection_button"
+                        style="@style/Widget.Aurora.Button.Icon.Filled"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:contentDescription="@{clashRunning ? @string/aurora_connected : @string/aurora_disconnected}"
+                        android:onClick="@{() -> self.request(Request.ToggleStatus)}"
+                        android:text=""
+                        app:backgroundTint="@color/aurora_surface_variant"
+                        app:icon="@drawable/ic_baseline_power_settings_new"
+                        app:iconTint="@color/aurora_on_primary" />
+                </LinearLayout>
+
+                <com.google.android.material.card.MaterialCardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="10dp"
-                    android:onClick="@{() -> self.request(Request.ToggleStatus)}"
-                    android:theme="@style/AppThemeDark"
-                    app:cardBackgroundColor="@{clashRunning ? colorClashStarted : colorClashStopped}"
-                    app:icon="@{clashRunning ? @drawable/ic_outline_check_circle : @drawable/ic_outline_not_interested}"
-                    app:subtext="@{clashRunning ? @string/format_traffic_forwarded(forwarded) : @string/tap_to_start}"
-                    app:text="@{clashRunning ? @string/running : @string/stopped}" />
+                    android:layout_marginTop="8dp"
+                    app:cardBackgroundColor="@color/aurora_surface_container"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="0dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/aurora_site_latency"
+                                    android:textAppearance="@style/TextAppearance.Aurora.TitleMedium"
+                                    android:textColor="@color/aurora_on_surface" />
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/aurora_site_latency_summary"
+                                    android:textAppearance="@style/TextAppearance.Aurora.BodyMedium"
+                                    android:textColor="@color/aurora_on_surface_variant" />
+                            </LinearLayout>
+
+                            <com.google.android.material.button.MaterialButton
+                                style="@style/Widget.Aurora.Button.Tonal"
+                                android:layout_width="wrap_content"
+                                android:layout_height="40dp"
+                                android:onClick="@{() -> self.request(Request.Placeholder)}"
+                                android:text="@string/aurora_test_all"
+                                app:icon="@drawable/ic_baseline_replay"
+                                app:iconTint="@color/aurora_on_secondary_container" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="12dp"
+                            android:orientation="horizontal">
+                            <include layout="@layout/item_home_latency" app:siteName="@{@string/apple}" />
+                            <include layout="@layout/item_home_latency" app:siteName="@{@string/github}" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal">
+                            <include layout="@layout/item_home_latency" app:siteName="@{@string/youtube}" />
+                            <include layout="@layout/item_home_latency" app:siteName="@{@string/google}" />
+                        </LinearLayout>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:layout_marginTop="16dp"
-                    android:layout_marginBottom="8dp"
-                    android:text="@string/aurora_section_connection"
-                    android:textAppearance="@style/TextAppearance.Aurora.TitleMedium" />
-
-                <com.github.kr328.clash.design.view.LargeActionCard
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginVertical="@dimen/main_card_margin_vertical"
-                    android:onClick="@{() -> self.request(Request.OpenProxy)}"
-                    android:visibility="@{clashRunning ? View.VISIBLE : View.GONE}"
-                    app:icon="@drawable/ic_baseline_apps"
-                    app:subtext="@{mode}"
-                    app:text="@string/proxy" />
-
-                <com.github.kr328.clash.design.view.LargeActionCard
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginVertical="@dimen/main_card_margin_vertical"
-                    android:onClick="@{() -> self.request(Request.OpenProfiles)}"
-                    app:icon="@drawable/ic_baseline_view_list"
-                    app:subtext="@{profileName != null ? @string/format_profile_activated(profileName) : @string/not_selected}"
-                    app:text="@string/profile" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
                     android:layout_marginTop="20dp"
-                    android:layout_marginBottom="4dp"
-                    android:text="@string/aurora_section_tools"
-                    android:textAppearance="@style/TextAppearance.Aurora.TitleMedium" />
+                    android:layout_marginBottom="8dp"
+                    android:text="@string/aurora_quick_tools"
+                    android:textAppearance="@style/TextAppearance.Aurora.BodyMedium"
+                    android:textColor="@color/aurora_on_surface_variant" />
 
-                <com.github.kr328.clash.design.view.LargeActionLabel
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginVertical="@dimen/main_label_margin_vertical"
-                    android:onClick="@{() -> self.request(Request.OpenProviders)}"
-                    android:visibility="@{clashRunning &amp;&amp; hasProviders ? View.VISIBLE : View.GONE}"
-                    app:icon="@drawable/ic_baseline_swap_vertical_circle"
-                    app:subtext="@string/aurora_providers_summary"
-                    app:text="@string/providers" />
+                    android:orientation="horizontal">
 
-                <com.github.kr328.clash.design.view.LargeActionLabel
+                    <com.google.android.material.button.MaterialButton
+                        style="@style/Widget.Aurora.Button.Tool"
+                        android:layout_width="0dp"
+                        android:layout_height="76dp"
+                        android:layout_weight="1"
+                        android:onClick="@{() -> self.request(Request.Placeholder)}"
+                        android:text="@string/aurora_connections"
+                        app:icon="@drawable/ic_baseline_apps" />
+
+                    <com.google.android.material.button.MaterialButton
+                        style="@style/Widget.Aurora.Button.Tool"
+                        android:layout_width="0dp"
+                        android:layout_height="76dp"
+                        android:layout_weight="1"
+                        android:onClick="@{() -> self.request(Request.OpenLogs)}"
+                        android:text="@string/logs"
+                        app:icon="@drawable/ic_baseline_assignment" />
+
+                    <com.google.android.material.button.MaterialButton
+                        style="@style/Widget.Aurora.Button.Tool"
+                        android:layout_width="0dp"
+                        android:layout_height="76dp"
+                        android:layout_weight="1"
+                        android:onClick="@{() -> self.request(Request.Placeholder)}"
+                        android:text="@string/aurora_route_test"
+                        app:icon="@drawable/ic_baseline_swap_vertical_circle" />
+
+                    <com.google.android.material.button.MaterialButton
+                        style="@style/Widget.Aurora.Button.Tool"
+                        android:layout_width="0dp"
+                        android:layout_height="76dp"
+                        android:layout_weight="1"
+                        android:onClick="@{() -> self.request(Request.Placeholder)}"
+                        android:text="@string/dns"
+                        app:icon="@drawable/ic_baseline_dns" />
+                </LinearLayout>
+
+                <com.google.android.material.card.MaterialCardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginVertical="@dimen/main_label_margin_vertical"
-                    android:onClick="@{() -> self.request(Request.OpenLogs)}"
-                    app:icon="@drawable/ic_baseline_assignment"
-                    app:subtext="@string/aurora_logs_summary"
-                    app:text="@string/logs" />
+                    android:layout_marginTop="12dp"
+                    app:cardBackgroundColor="@color/aurora_surface_container"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="0dp">
 
-                <com.github.kr328.clash.design.view.LargeActionLabel
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginVertical="@dimen/main_label_margin_vertical"
-                    android:onClick="@{() -> self.request(Request.OpenSettings)}"
-                    app:icon="@drawable/ic_baseline_settings"
-                    app:subtext="@string/aurora_settings_summary"
-                    app:text="@string/settings" />
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:padding="16dp">
 
-                <com.github.kr328.clash.design.view.LargeActionLabel
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginVertical="@dimen/main_label_margin_vertical"
-                    android:onClick="@{() -> self.request(Request.OpenHelp)}"
-                    app:icon="@drawable/ic_baseline_help_center"
-                    app:subtext="@string/aurora_help_summary"
-                    app:text="@string/help" />
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
 
-                <com.github.kr328.clash.design.view.LargeActionLabel
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginVertical="@dimen/main_label_margin_vertical"
-                    android:onClick="@{() -> self.request(Request.OpenAbout)}"
-                    app:icon="@drawable/ic_baseline_info"
-                    app:subtext="@string/aurora_about_summary"
-                    app:text="@string/about" />
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@{profileName != null ? profileName : @string/aurora_profile_placeholder}"
+                                android:textAppearance="@style/TextAppearance.Aurora.TitleMedium"
+                                android:textColor="@color/aurora_on_surface" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="3dp"
+                                android:text="@string/aurora_profile_usage_placeholder"
+                                android:textAppearance="@style/TextAppearance.Aurora.BodyMedium"
+                                android:textColor="@color/aurora_on_surface_variant" />
+                        </LinearLayout>
+
+                        <com.google.android.material.button.MaterialButton
+                            style="@style/Widget.Aurora.Button.Tonal"
+                            android:layout_width="wrap_content"
+                            android:layout_height="40dp"
+                            android:onClick="@{() -> self.request(Request.OpenProfiles)}"
+                            android:text="@string/profiles" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
             </LinearLayout>
         </ScrollView>
 
@@ -165,8 +319,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="bottom"
-            android:background="@color/aurora_surface"
-            android:elevation="3dp"
+            android:background="@color/aurora_surface_container"
+            android:elevation="0dp"
             android:minHeight="@dimen/main_navigation_height"
             android:paddingBottom="@{self.surface.insets.bottom}"
             app:labelVisibilityMode="labeled"

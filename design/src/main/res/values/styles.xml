@@ -58,4 +58,40 @@
         <item name="android:textSize">14sp</item>
         <item name="android:letterSpacing">0.02</item>
     </style>
+
+    <style name="Widget.Aurora.Button.Tonal" parent="Widget.MaterialComponents.Button">
+        <item name="android:minHeight">40dp</item>
+        <item name="android:minWidth">64dp</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="backgroundTint">@color/aurora_secondary_container</item>
+        <item name="android:textColor">@color/aurora_on_secondary_container</item>
+        <item name="cornerRadius">20dp</item>
+        <item name="android:textAllCaps">false</item>
+    </style>
+
+    <style name="Widget.Aurora.Button.Icon.Filled" parent="Widget.MaterialComponents.Button">
+        <item name="android:minHeight">48dp</item>
+        <item name="android:minWidth">48dp</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="iconPadding">0dp</item>
+        <item name="iconGravity">textStart</item>
+        <item name="cornerRadius">24dp</item>
+    </style>
+
+    <style name="Widget.Aurora.Button.Tool" parent="Widget.MaterialComponents.Button.TextButton">
+        <item name="android:minHeight">76dp</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:paddingLeft">2dp</item>
+        <item name="android:paddingRight">2dp</item>
+        <item name="android:textColor">@color/aurora_on_surface</item>
+        <item name="iconTint">@color/aurora_primary</item>
+        <item name="iconGravity">textTop</item>
+        <item name="iconPadding">6dp</item>
+        <item name="cornerRadius">12dp</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:textSize">12sp</item>
+    </style>
 </resources>

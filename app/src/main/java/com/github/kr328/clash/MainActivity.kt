@@ -17,6 +17,8 @@ import com.github.kr328.clash.common.util.intent
 import com.github.kr328.clash.common.util.ticker
 import com.github.kr328.clash.design.MainDesign
 import com.github.kr328.clash.design.ui.ToastDuration
+import com.github.kr328.clash.core.Clash
+import com.github.kr328.clash.core.model.TunnelState
 import com.github.kr328.clash.util.startClashService
 import com.github.kr328.clash.util.stopClashService
 import com.github.kr328.clash.util.withClash
@@ -77,6 +79,14 @@ class MainActivity : BaseActivity<MainDesign>() {
                             startActivity(HelpActivity::class.intent)
                         MainDesign.Request.OpenAbout ->
                             design.showAbout(queryAppVersionName())
+                        MainDesign.Request.SetModeRule ->
+                            design.patchMode(TunnelState.Mode.Rule)
+                        MainDesign.Request.SetModeGlobal ->
+                            design.patchMode(TunnelState.Mode.Global)
+                        MainDesign.Request.SetModeDirect ->
+                            design.patchMode(TunnelState.Mode.Direct)
+                        MainDesign.Request.Placeholder ->
+                            design.showToast(DesignR.string.aurora_feature_placeholder, ToastDuration.Short)
                     }
                 }
                 if (clashRunning) {
@@ -110,6 +120,15 @@ class MainActivity : BaseActivity<MainDesign>() {
         withClash {
             setForwarded(queryTrafficTotal())
         }
+    }
+
+    private suspend fun MainDesign.patchMode(mode: TunnelState.Mode) {
+        withClash {
+            val override = queryOverride(Clash.OverrideSlot.Session)
+            override.mode = mode
+            patchOverride(Clash.OverrideSlot.Session, override)
+        }
+        setMode(mode)
     }
 
     private suspend fun MainDesign.startClash() {

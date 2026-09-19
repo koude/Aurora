@@ -293,4 +293,26 @@
     <string name="aurora_network_settings_summary">VPN、DNS、路由与访问控制</string>
     <string name="aurora_override_settings_summary">配置覆写与高级参数</string>
     <string name="aurora_meta_settings_summary">Meta 内核功能与实验选项</string>
+    <string name="aurora_connection_center">连接中心</string>
+    <string name="aurora_notifications">通知</string>
+    <string name="aurora_download">下载</string>
+    <string name="aurora_upload">上传</string>
+    <string name="aurora_speed_placeholder">-- B/s</string>
+    <string name="aurora_mode_rule">规则</string>
+    <string name="aurora_mode_global">全局</string>
+    <string name="aurora_mode_direct">直连</string>
+    <string name="aurora_connected">已连接</string>
+    <string name="aurora_disconnected">未连接</string>
+    <string name="aurora_site_latency">网站延迟</string>
+    <string name="aurora_site_latency_summary">HTTP 连通性探测</string>
+    <string name="aurora_test_all">全部检测</string>
+    <string name="aurora_latency_placeholder">-- ms</string>
+    <string name="aurora_quick_tools">快捷工具</string>
+    <string name="aurora_connections">连接</string>
+    <string name="aurora_route_test">路由测试</string>
+    <string name="aurora_current_profile">当前配置</string>
+    <string name="aurora_profile_placeholder">尚未选择配置</string>
+    <string name="aurora_profile_usage_placeholder">流量详情将在这里显示</string>
+    <string name="aurora_feature_placeholder">该功能已在新版界面中占位，后续阶段接入。</string>
+    <string name="aurora_mode_unavailable">请先启动 Aurora，再切换代理模式。</string>
 </resources>
