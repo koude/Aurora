@@ -86,12 +86,10 @@
 
         <com.google.android.material.bottomnavigation.BottomNavigationView
             android:id="@+id/navigation"
+            style="@style/Widget.Aurora.BottomNavigation"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="bottom"
-            android:background="@color/aurora_surface_container"
-            android:elevation="0dp"
-            android:minHeight="@dimen/main_navigation_height"
             android:paddingBottom="@{self.surface.insets.bottom}"
             app:labelVisibilityMode="labeled"
             app:menu="@menu/menu_main_navigation" />
