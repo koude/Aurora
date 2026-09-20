@@ -390,6 +390,7 @@
     <string name="aurora_override_settings_summary">Profile overrides and advanced configuration</string>
     <string name="aurora_meta_settings_summary">Meta kernel features and experimental options</string>
     <string name="aurora_connection_center">Connection center</string>
+    <string name="aurora_brand_name" translatable="false">Aurora</string>
     <string name="aurora_notifications">Notifications</string>
     <string name="aurora_download">Download</string>
     <string name="aurora_upload">Upload</string>
@@ -405,7 +406,11 @@
     <string name="aurora_latency_placeholder">-- ms</string>
     <string name="aurora_quick_tools">Quick tools</string>
     <string name="aurora_connections">Connections</string>
+    <string name="aurora_connections_summary">Active sessions</string>
+    <string name="aurora_logs_live">Live</string>
     <string name="aurora_route_test">Route test</string>
+    <string name="aurora_route_preview">Preview node</string>
+    <string name="aurora_dns_diagnostic">Diagnostic</string>
     <string name="aurora_current_profile">Current profile</string>
     <string name="aurora_profile_placeholder">No profile selected</string>
     <string name="aurora_profile_usage_placeholder">Usage details will appear here</string>

@@ -314,7 +314,11 @@
     <string name="aurora_latency_placeholder">-- ms</string>
     <string name="aurora_quick_tools">快捷工具</string>
     <string name="aurora_connections">连接</string>
+    <string name="aurora_connections_summary">活动会话</string>
+    <string name="aurora_logs_live">实时</string>
     <string name="aurora_route_test">路由测试</string>
+    <string name="aurora_route_preview">预判节点</string>
+    <string name="aurora_dns_diagnostic">诊断</string>
     <string name="aurora_current_profile">当前配置</string>
     <string name="aurora_profile_placeholder">尚未选择配置</string>
     <string name="aurora_profile_usage_placeholder">流量详情将在这里显示</string>

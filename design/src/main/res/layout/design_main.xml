@@ -17,6 +17,7 @@
     <androidx.coordinatorlayout.widget.CoordinatorLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:background="@color/aurora_surface"
         android:paddingStart="@{self.surface.insets.start}"
         android:paddingEnd="@{self.surface.insets.end}">
 
@@ -42,13 +43,26 @@
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
 
-                    <TextView
+                    <LinearLayout
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="@string/aurora_connection_center"
-                        android:textAppearance="@style/TextAppearance.Aurora.TopLevelTitle"
-                        android:textColor="@color/aurora_on_surface" />
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/aurora_brand_name"
+                            android:textAllCaps="true"
+                            android:textAppearance="@style/TextAppearance.Aurora.SectionLabel" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/aurora_connection_center"
+                            android:textAppearance="@style/TextAppearance.Aurora.TopLevelTitle"
+                            android:textColor="@color/aurora_on_surface" />
+                    </LinearLayout>
 
                     <com.google.android.material.button.MaterialButton
                         style="@style/Widget.MaterialComponents.Button.TextButton"
@@ -80,44 +94,74 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:orientation="vertical">
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
 
-                            <TextView
+                            <ImageView
+                                android:layout_width="18dp"
+                                android:layout_height="18dp"
+                                android:layout_marginEnd="6dp"
+                                android:contentDescription="@null"
+                                android:src="@drawable/ic_aurora_arrow_down"
+                                android:tint="@color/aurora_primary" />
+
+                            <LinearLayout
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="@string/aurora_download"
-                                android:textAppearance="@style/TextAppearance.Aurora.BodyMedium"
-                                android:textColor="@color/aurora_on_surface_variant" />
+                                android:orientation="vertical">
 
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:maxLines="1"
-                                android:text="@{downloadSpeed}"
-                                android:textAppearance="@style/TextAppearance.Aurora.TitleMedium"
-                                android:textColor="@color/aurora_on_surface" />
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/aurora_download"
+                                    android:textAppearance="@style/TextAppearance.Aurora.BodyMedium"
+                                    android:textColor="@color/aurora_on_surface_variant" />
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:maxLines="1"
+                                    android:text="@{downloadSpeed}"
+                                    android:textAppearance="@style/TextAppearance.Aurora.TitleMedium"
+                                    android:textColor="@color/aurora_on_surface" />
+                            </LinearLayout>
                         </LinearLayout>
 
                         <LinearLayout
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:orientation="vertical">
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
 
-                            <TextView
+                            <ImageView
+                                android:layout_width="18dp"
+                                android:layout_height="18dp"
+                                android:layout_marginEnd="6dp"
+                                android:contentDescription="@null"
+                                android:src="@drawable/ic_aurora_arrow_up"
+                                android:tint="@color/aurora_primary" />
+
+                            <LinearLayout
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="@string/aurora_upload"
-                                android:textAppearance="@style/TextAppearance.Aurora.BodyMedium"
-                                android:textColor="@color/aurora_on_surface_variant" />
+                                android:orientation="vertical">
 
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:maxLines="1"
-                                android:text="@{uploadSpeed}"
-                                android:textAppearance="@style/TextAppearance.Aurora.TitleMedium"
-                                android:textColor="@color/aurora_on_surface" />
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/aurora_upload"
+                                    android:textAppearance="@style/TextAppearance.Aurora.BodyMedium"
+                                    android:textColor="@color/aurora_on_surface_variant" />
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:maxLines="1"
+                                    android:text="@{uploadSpeed}"
+                                    android:textAppearance="@style/TextAppearance.Aurora.TitleMedium"
+                                    android:textColor="@color/aurora_on_surface" />
+                            </LinearLayout>
                         </LinearLayout>
                     </LinearLayout>
 
@@ -229,41 +273,33 @@
                     android:layout_height="wrap_content"
                     android:orientation="horizontal">
 
-                    <com.google.android.material.button.MaterialButton
-                        style="@style/Widget.Aurora.Button.Tool"
-                        android:layout_width="0dp"
-                        android:layout_height="76dp"
-                        android:layout_weight="1"
-                        android:onClick="@{() -> self.request(Request.Placeholder)}"
-                        android:text="@string/aurora_connections"
-                        app:icon="@drawable/ic_baseline_apps" />
+                    <include
+                        layout="@layout/item_home_tool"
+                        app:clicked="@{() -> self.request(Request.Placeholder)}"
+                        app:icon="@{@drawable/ic_baseline_apps}"
+                        app:subtitle="@{@string/aurora_connections_summary}"
+                        app:title="@{@string/aurora_connections}" />
 
-                    <com.google.android.material.button.MaterialButton
-                        style="@style/Widget.Aurora.Button.Tool"
-                        android:layout_width="0dp"
-                        android:layout_height="76dp"
-                        android:layout_weight="1"
-                        android:onClick="@{() -> self.request(Request.OpenLogs)}"
-                        android:text="@string/logs"
-                        app:icon="@drawable/ic_baseline_assignment" />
+                    <include
+                        layout="@layout/item_home_tool"
+                        app:clicked="@{() -> self.request(Request.OpenLogs)}"
+                        app:icon="@{@drawable/ic_baseline_assignment}"
+                        app:subtitle="@{@string/aurora_logs_live}"
+                        app:title="@{@string/logs}" />
 
-                    <com.google.android.material.button.MaterialButton
-                        style="@style/Widget.Aurora.Button.Tool"
-                        android:layout_width="0dp"
-                        android:layout_height="76dp"
-                        android:layout_weight="1"
-                        android:onClick="@{() -> self.request(Request.Placeholder)}"
-                        android:text="@string/aurora_route_test"
-                        app:icon="@drawable/ic_baseline_swap_vertical_circle" />
+                    <include
+                        layout="@layout/item_home_tool"
+                        app:clicked="@{() -> self.request(Request.Placeholder)}"
+                        app:icon="@{@drawable/ic_outline_route}"
+                        app:subtitle="@{@string/aurora_route_preview}"
+                        app:title="@{@string/aurora_route_test}" />
 
-                    <com.google.android.material.button.MaterialButton
-                        style="@style/Widget.Aurora.Button.Tool"
-                        android:layout_width="0dp"
-                        android:layout_height="76dp"
-                        android:layout_weight="1"
-                        android:onClick="@{() -> self.request(Request.Placeholder)}"
-                        android:text="@string/dns"
-                        app:icon="@drawable/ic_baseline_dns" />
+                    <include
+                        layout="@layout/item_home_tool"
+                        app:clicked="@{() -> self.request(Request.Placeholder)}"
+                        app:icon="@{@drawable/ic_baseline_dns}"
+                        app:subtitle="@{@string/aurora_dns_diagnostic}"
+                        app:title="@{@string/dns}" />
                 </LinearLayout>
 
                 <com.google.android.material.card.MaterialCardView
