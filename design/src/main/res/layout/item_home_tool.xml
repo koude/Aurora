@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <data>
-        <variable name="icon" type="int" />
+        <variable name="icon" type="android.graphics.drawable.Drawable" />
         <variable name="title" type="String" />
         <variable name="subtitle" type="String" />
         <variable name="clicked" type="android.view.View.OnClickListener" />
