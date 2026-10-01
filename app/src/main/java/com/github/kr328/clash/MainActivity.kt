@@ -5,6 +5,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.os.PersistableBundle
+import android.os.SystemClock
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.result.contract.ActivityResultContracts.RequestPermission
 import androidx.core.app.ActivityCompat
@@ -25,13 +26,23 @@ import com.github.kr328.clash.util.withClash
 import com.github.kr328.clash.util.withProfile
 import com.github.kr328.clash.core.bridge.*
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.selects.select
 import kotlinx.coroutines.withContext
+import java.io.IOException
+import java.net.HttpURLConnection
+import java.net.URL
 import java.util.concurrent.TimeUnit
 import com.github.kr328.clash.design.R as DesignR
 
 class MainActivity : BaseActivity<MainDesign>() {
+    private var latencyTestJob: Job? = null
+
     override suspend fun main() {
         val design = MainDesign(this)
 
@@ -85,6 +96,13 @@ class MainActivity : BaseActivity<MainDesign>() {
                             design.patchMode(TunnelState.Mode.Global)
                         MainDesign.Request.SetModeDirect ->
                             design.patchMode(TunnelState.Mode.Direct)
+                        MainDesign.Request.TestSiteLatency -> {
+                            if (latencyTestJob?.isActive != true) {
+                                latencyTestJob = launch {
+                                    design.testSiteLatency()
+                                }
+                            }
+                        }
                         MainDesign.Request.Placeholder ->
                             design.showToast(DesignR.string.aurora_feature_placeholder, ToastDuration.Short)
                     }
@@ -129,6 +147,52 @@ class MainActivity : BaseActivity<MainDesign>() {
             patchOverride(Clash.OverrideSlot.Session, override)
         }
         setMode(mode)
+    }
+
+    private suspend fun MainDesign.testSiteLatency() {
+        val targets = listOf(
+            MainDesign.LatencySite.Apple to "https://www.apple.com/library/test/success.html",
+            MainDesign.LatencySite.GitHub to "https://github.com/",
+            MainDesign.LatencySite.YouTube to "https://www.youtube.com/generate_204",
+            MainDesign.LatencySite.Google to "https://www.google.com/generate_204",
+        )
+
+        setLatencyTesting(true)
+        try {
+            coroutineScope {
+                targets.map { (site, url) ->
+                    async(Dispatchers.IO) {
+                        site to measureHttpLatency(url)
+                    }
+                }.awaitAll()
+            }.forEach { (site, latency) ->
+                setSiteLatency(site, latency)
+            }
+        } finally {
+            setLatencyTesting(false)
+        }
+    }
+
+    private fun measureHttpLatency(url: String): Long? {
+        val connection = (URL(url).openConnection() as HttpURLConnection).apply {
+            connectTimeout = 6_000
+            readTimeout = 6_000
+            instanceFollowRedirects = false
+            requestMethod = "GET"
+            useCaches = false
+            setRequestProperty("User-Agent", "Aurora connectivity check")
+        }
+
+        return try {
+            val startedAt = SystemClock.elapsedRealtime()
+            connection.connect()
+            connection.responseCode
+            SystemClock.elapsedRealtime() - startedAt
+        } catch (_: IOException) {
+            null
+        } finally {
+            connection.disconnect()
+        }
     }
 
     private suspend fun MainDesign.startClash() {

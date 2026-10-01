@@ -11,6 +11,11 @@
         <variable name="downloadSpeed" type="String" />
         <variable name="uploadSpeed" type="String" />
         <variable name="hasProviders" type="boolean" />
+        <variable name="latencyTesting" type="boolean" />
+        <variable name="appleLatency" type="String" />
+        <variable name="githubLatency" type="String" />
+        <variable name="youtubeLatency" type="String" />
+        <variable name="googleLatency" type="String" />
         <import type="com.github.kr328.clash.design.MainDesign.Request" />
     </data>
 
@@ -234,8 +239,9 @@
                                 style="@style/Widget.Aurora.Button.Tonal"
                                 android:layout_width="wrap_content"
                                 android:layout_height="40dp"
-                                android:onClick="@{() -> self.request(Request.Placeholder)}"
-                                android:text="@string/aurora_test_all"
+                                android:enabled="@{!latencyTesting}"
+                                android:onClick="@{() -> self.request(Request.TestSiteLatency)}"
+                                android:text="@{latencyTesting ? @string/aurora_testing : @string/aurora_test_all}"
                                 app:icon="@drawable/ic_baseline_replay"
                                 app:iconTint="@color/aurora_on_secondary_container" />
                         </LinearLayout>
@@ -245,16 +251,28 @@
                             android:layout_height="wrap_content"
                             android:layout_marginTop="12dp"
                             android:orientation="horizontal">
-                            <include layout="@layout/item_home_latency" app:siteName="@{@string/apple}" />
-                            <include layout="@layout/item_home_latency" app:siteName="@{@string/github}" />
+                            <include
+                                layout="@layout/item_home_latency"
+                                app:latency="@{appleLatency}"
+                                app:siteName="@{@string/apple}" />
+                            <include
+                                layout="@layout/item_home_latency"
+                                app:latency="@{githubLatency}"
+                                app:siteName="@{@string/github}" />
                         </LinearLayout>
 
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:orientation="horizontal">
-                            <include layout="@layout/item_home_latency" app:siteName="@{@string/youtube}" />
-                            <include layout="@layout/item_home_latency" app:siteName="@{@string/google}" />
+                            <include
+                                layout="@layout/item_home_latency"
+                                app:latency="@{youtubeLatency}"
+                                app:siteName="@{@string/youtube}" />
+                            <include
+                                layout="@layout/item_home_latency"
+                                app:latency="@{googleLatency}"
+                                app:siteName="@{@string/google}" />
                         </LinearLayout>
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>

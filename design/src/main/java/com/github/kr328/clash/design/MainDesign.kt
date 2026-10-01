@@ -31,7 +31,15 @@ class MainDesign(context: Context) : Design<MainDesign.Request>(context) {
         SetModeRule,
         SetModeGlobal,
         SetModeDirect,
+        TestSiteLatency,
         Placeholder,
+    }
+
+    enum class LatencySite {
+        Apple,
+        GitHub,
+        YouTube,
+        Google,
     }
 
     private var currentMode = TunnelState.Mode.Rule
@@ -76,6 +84,35 @@ class MainDesign(context: Context) : Design<MainDesign.Request>(context) {
                 TunnelState.Mode.Global -> context.getString(R.string.aurora_mode_global)
                 TunnelState.Mode.Rule -> context.getString(R.string.aurora_mode_rule)
                 else -> context.getString(R.string.aurora_mode_rule)
+            }
+        }
+    }
+
+    suspend fun setLatencyTesting(testing: Boolean) {
+        withContext(Dispatchers.Main) {
+            binding.latencyTesting = testing
+
+            if (testing) {
+                val pending = context.getString(R.string.aurora_latency_testing)
+                binding.appleLatency = pending
+                binding.githubLatency = pending
+                binding.youtubeLatency = pending
+                binding.googleLatency = pending
+            }
+        }
+    }
+
+    suspend fun setSiteLatency(site: LatencySite, latencyMillis: Long?) {
+        withContext(Dispatchers.Main) {
+            val value = latencyMillis?.let {
+                context.getString(R.string.aurora_latency_value, it)
+            } ?: context.getString(R.string.aurora_latency_timeout)
+
+            when (site) {
+                LatencySite.Apple -> binding.appleLatency = value
+                LatencySite.GitHub -> binding.githubLatency = value
+                LatencySite.YouTube -> binding.youtubeLatency = value
+                LatencySite.Google -> binding.googleLatency = value
             }
         }
     }
@@ -125,6 +162,11 @@ class MainDesign(context: Context) : Design<MainDesign.Request>(context) {
         binding.downloadSpeed = context.getString(R.string.aurora_speed_placeholder)
         binding.uploadSpeed = context.getString(R.string.aurora_speed_placeholder)
         binding.mode = context.getString(R.string.aurora_mode_rule)
+        binding.latencyTesting = false
+        binding.appleLatency = context.getString(R.string.aurora_latency_placeholder)
+        binding.githubLatency = context.getString(R.string.aurora_latency_placeholder)
+        binding.youtubeLatency = context.getString(R.string.aurora_latency_placeholder)
+        binding.googleLatency = context.getString(R.string.aurora_latency_placeholder)
         binding.modeButton.setOnClickListener { showModeMenu() }
 
         binding.navigation.configureMainNavigation(MainNavigationDestination.Home) {

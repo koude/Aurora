@@ -312,6 +312,10 @@
     <string name="aurora_site_latency_summary">HTTP 连通性探测</string>
     <string name="aurora_test_all">全部检测</string>
     <string name="aurora_latency_placeholder">-- ms</string>
+    <string name="aurora_latency_testing">…</string>
+    <string name="aurora_latency_value">%1$d ms</string>
+    <string name="aurora_latency_timeout">超时</string>
+    <string name="aurora_testing">检测中</string>
     <string name="aurora_quick_tools">快捷工具</string>
     <string name="aurora_connections">连接</string>
     <string name="aurora_connections_summary">活动会话</string>
