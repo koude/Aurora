@@ -1,6 +1,7 @@
 .gradle
 build/
 /outputs/
+/.tools/
 /app/foss/release
 /app/premium/release
 /captures
