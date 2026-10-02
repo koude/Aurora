@@ -5,7 +5,11 @@ import android.content.ComponentName
 import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
+import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.github.kr328.clash.common.constants.Intents
 import com.github.kr328.clash.common.util.intent
 import com.github.kr328.clash.common.util.setUUID
@@ -19,6 +23,9 @@ import com.github.kr328.clash.remote.FilesClient
 import com.github.kr328.clash.service.model.Profile
 import com.github.kr328.clash.util.fileName
 import com.github.kr328.clash.util.withProfile
+import com.koude.aurora.designsystem.theme.AuroraTheme
+import com.koude.aurora.ui.profiles.ProfilesScreen
+import com.koude.aurora.ui.profiles.ProfilesViewModel
 import io.github.g00fy2.quickie.QRResult
 import io.github.g00fy2.quickie.QRResult.QRError
 import io.github.g00fy2.quickie.QRResult.QRMissingPermission
@@ -36,11 +43,34 @@ import java.util.concurrent.TimeUnit
 
 class ProfilesActivity : BaseActivity<ProfilesDesign>() {
     private val scanLauncher = registerForActivityResult(ScanQRCode(), ::scanResultHandler)
+    private val profilesViewModel: ProfilesViewModel by viewModels { ProfilesViewModel.Factory }
 
     override suspend fun main() {
         val design = ProfilesDesign(this)
 
         setContentDesign(design)
+        setContent {
+            val state by profilesViewModel.uiState.collectAsStateWithLifecycle()
+
+            AuroraTheme {
+                ProfilesScreen(
+                    state = state,
+                    onAddProfile = {
+                        launch { design.showCreateDialog(queryProfileProviders()) }
+                    },
+                    onOpenProfile = { uuid ->
+                        launch {
+                            withProfile { queryByUUID(uuid) }?.let(design::showMenu)
+                        }
+                    },
+                    onActivateProfile = profilesViewModel::activate,
+                    onUpdateAll = design::requestUpdateAll,
+                    onOpenHome = { navigateTopLevel(MainActivity::class) },
+                    onOpenProxy = { navigateTopLevel(ProxyActivity::class) },
+                    onOpenSettings = { navigateTopLevel(SettingsActivity::class) },
+                )
+            }
+        }
 
         val ticker = ticker(TimeUnit.MINUTES.toMillis(1))
 

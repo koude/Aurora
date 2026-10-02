@@ -107,7 +107,7 @@ class ProfilesDesign(context: Context) : Design<ProfilesDesign.Request>(context)
         }
     }
 
-    private fun showMenu(profile: Profile) {
+    fun showMenu(profile: Profile) {
         val dialog = AppBottomSheetDialog(context)
 
         val binding = DialogProfilesMenuBinding
