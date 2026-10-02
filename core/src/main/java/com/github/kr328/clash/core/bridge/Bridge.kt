@@ -16,6 +16,7 @@ object Bridge {
     external fun nativeQueryTunnelState(): String
     external fun nativeQueryTrafficNow(): Long
     external fun nativeQueryTrafficTotal(): Long
+    external fun nativeQueryRoutePreview(target: String): String
     external fun nativeNotifyDnsChanged(dnsList: String)
     external fun nativeNotifyTimeZoneChanged(name: String, offset: Int)
     external fun nativeNotifyInstalledAppChanged(uidList: String)

@@ -307,7 +307,7 @@
 
                     <include
                         layout="@layout/item_home_tool"
-                        app:clicked="@{() -> self.request(Request.Placeholder)}"
+                        app:clicked="@{() -> self.request(Request.OpenRouteTest)}"
                         app:icon="@{@drawable/ic_outline_route}"
                         app:subtitle="@{@string/aurora_route_preview}"
                         app:title="@{@string/aurora_route_test}" />

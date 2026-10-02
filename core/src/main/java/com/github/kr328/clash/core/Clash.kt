@@ -50,6 +50,13 @@ object Clash {
         return Bridge.nativeQueryTrafficTotal()
     }
 
+    fun queryRoutePreview(target: String): RoutePreview {
+        return Json.Default.decodeFromString(
+            RoutePreview.serializer(),
+            Bridge.nativeQueryRoutePreview(target)
+        )
+    }
+
     fun notifyDnsChanged(dns: List<String>) {
         Bridge.nativeNotifyDnsChanged(dns.toSet().joinToString(separator = ","))
     }

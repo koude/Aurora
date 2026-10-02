@@ -103,8 +103,17 @@ class MainActivity : BaseActivity<MainDesign>() {
                                 }
                             }
                         }
+                        MainDesign.Request.OpenRouteTest ->
+                            design.showRouteTest()
                         MainDesign.Request.Placeholder ->
                             design.showToast(DesignR.string.aurora_feature_placeholder, ToastDuration.Short)
+                    }
+                }
+                design.routePreviewRequests.onReceive { target ->
+                    try {
+                        design.setRoutePreview(withClash { queryRoutePreview(target) })
+                    } catch (_: Exception) {
+                        design.setRoutePreviewError()
                     }
                 }
                 if (clashRunning) {

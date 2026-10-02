@@ -26,6 +26,10 @@ class ClashManager(private val context: Context) : IClashManager,
         return Clash.queryTrafficTotal()
     }
 
+    override fun queryRoutePreview(target: String): RoutePreview {
+        return Clash.queryRoutePreview(target)
+    }
+
     override fun queryProxyGroupNames(excludeNotSelectable: Boolean): List<String> {
         return Clash.queryGroupNames(excludeNotSelectable)
     }
