@@ -1,0 +1,33 @@
+package com.koude.aurora.designsystem.theme
+
+import androidx.compose.ui.graphics.Color
+
+internal val AuroraPrimary = Color(0xFF5B4DB2)
+internal val AuroraOnPrimary = Color(0xFFFFFFFF)
+internal val AuroraPrimaryContainer = Color(0xFFE5DEFF)
+internal val AuroraOnPrimaryContainer = Color(0xFF170B65)
+internal val AuroraSecondary = Color(0xFF625B71)
+internal val AuroraOnSecondary = Color(0xFFFFFFFF)
+internal val AuroraSecondaryContainer = Color(0xFFE8DEF8)
+internal val AuroraOnSecondaryContainer = Color(0xFF1D192B)
+internal val AuroraSurface = Color(0xFFFFF8FF)
+internal val AuroraSurfaceContainer = Color(0xFFF3EDF7)
+internal val AuroraOnSurface = Color(0xFF1D1B20)
+internal val AuroraOnSurfaceVariant = Color(0xFF49454F)
+internal val AuroraOutline = Color(0xFF79747E)
+internal val AuroraOutlineVariant = Color(0xFFCAC4D0)
+
+internal val AuroraDarkPrimary = Color(0xFFC8BFFF)
+internal val AuroraDarkOnPrimary = Color(0xFF2D217D)
+internal val AuroraDarkPrimaryContainer = Color(0xFF443A98)
+internal val AuroraDarkOnPrimaryContainer = Color(0xFFE5DEFF)
+internal val AuroraDarkSecondary = Color(0xFFCCC2DC)
+internal val AuroraDarkOnSecondary = Color(0xFF332D41)
+internal val AuroraDarkSecondaryContainer = Color(0xFF4A4458)
+internal val AuroraDarkOnSecondaryContainer = Color(0xFFE8DEF8)
+internal val AuroraDarkSurface = Color(0xFF141218)
+internal val AuroraDarkSurfaceContainer = Color(0xFF211F26)
+internal val AuroraDarkOnSurface = Color(0xFFE6E0E9)
+internal val AuroraDarkOnSurfaceVariant = Color(0xFFCAC4D0)
+internal val AuroraDarkOutline = Color(0xFF938F99)
+internal val AuroraDarkOutlineVariant = Color(0xFF49454F)

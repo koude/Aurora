@@ -8,6 +8,7 @@ import java.util.*
 buildscript {
     repositories {
         mavenCentral()
+        maven("https://maven.aliyun.com/repository/google")
         google()
         maven("https://raw.githubusercontent.com/MetaCubeX/maven-backup/main/releases")
     }
@@ -15,6 +16,7 @@ buildscript {
         classpath("com.android.tools.build:gradle:8.8.0")
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.1.0")
         classpath("org.jetbrains.kotlin:kotlin-serialization:2.1.0")
+        classpath("org.jetbrains.kotlin:compose-compiler-gradle-plugin:2.1.0")
         classpath("com.google.devtools.ksp:symbol-processing-gradle-plugin:2.1.0-1.0.29")
         classpath("com.github.kr328.golang:gradle-plugin:1.0.4")
     }
@@ -23,6 +25,7 @@ buildscript {
 subprojects {
     repositories {
         mavenCentral()
+        maven("https://maven.aliyun.com/repository/google")
         google()
         maven("https://raw.githubusercontent.com/MetaCubeX/maven-backup/main/releases")
     }

@@ -7,7 +7,14 @@ import java.nio.file.StandardCopyOption
 plugins {
     kotlin("android")
     kotlin("kapt")
+    id("org.jetbrains.kotlin.plugin.compose")
     id("com.android.application")
+}
+
+android {
+    buildFeatures {
+        compose = true
+    }
 }
 
 dependencies {
@@ -17,6 +24,7 @@ dependencies {
     implementation(project(":service"))
     implementation(project(":design"))
     implementation(project(":common"))
+    implementation(project(":designsystem"))
 
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.1")
     implementation("androidx.core:core-ktx:1.8.0")
@@ -28,6 +36,10 @@ dependencies {
     implementation("com.google.android.material:material:1.6.1")
     implementation("io.github.g00fy2.quickie:quickie-bundled:1.11.0")
     implementation("androidx.activity:activity-ktx:1.9.0")
+    implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.navigation.compose)
 }
 
 tasks.getByName("clean", type = Delete::class) {
