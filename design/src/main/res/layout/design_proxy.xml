@@ -46,7 +46,7 @@
                 <RelativeLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:paddingEnd="@dimen/item_tailing_margin">
+                    android:paddingEnd="8dp">
 
                     <include
                         layout="@layout/common_top_level_bar"
@@ -63,19 +63,20 @@
                         android:layout_centerVertical="true"
                         android:layout_toStartOf="@id/menu_view">
 
-                        <ImageButton
+                        <com.google.android.material.button.MaterialButton
                             android:id="@+id/url_test_view"
+                            style="@style/Widget.MaterialComponents.Button.TextButton"
                             android:layout_width="48dp"
                             android:layout_height="48dp"
                             android:layout_gravity="center"
-                            android:background="?attr/selectableItemBackgroundBorderless"
-                            android:clickable="true"
                             android:contentDescription="@string/delay_test"
-                            android:focusable="true"
                             android:onClick="@{() -> self.requestUrlTesting()}"
-                            android:padding="12dp"
-                            android:src="@drawable/ic_baseline_flash_on"
-                            android:tint="@color/aurora_on_surface" />
+                            android:text=""
+                            app:cornerRadius="24dp"
+                            app:icon="@drawable/ic_baseline_flash_on"
+                            app:iconGravity="textStart"
+                            app:iconPadding="0dp"
+                            app:iconTint="@color/aurora_on_surface" />
 
                         <ProgressBar
                             android:id="@+id/url_test_progress_view"
@@ -85,19 +86,20 @@
                             android:visibility="gone" />
                     </FrameLayout>
 
-                    <ImageButton
+                    <com.google.android.material.button.MaterialButton
                         android:id="@+id/menu_view"
+                        style="@style/Widget.MaterialComponents.Button.TextButton"
                         android:layout_width="48dp"
                         android:layout_height="48dp"
                         android:layout_alignParentEnd="true"
                         android:layout_centerVertical="true"
-                        android:background="?attr/selectableItemBackgroundBorderless"
-                        android:clickable="true"
                         android:contentDescription="@string/more"
-                        android:focusable="true"
-                        android:padding="12dp"
-                        android:src="@drawable/ic_baseline_more_vert"
-                        android:tint="@color/aurora_on_surface" />
+                        android:text=""
+                        app:cornerRadius="24dp"
+                        app:icon="@drawable/ic_baseline_more_vert"
+                        app:iconGravity="textStart"
+                        app:iconPadding="0dp"
+                        app:iconTint="@color/aurora_on_surface" />
 
                 </RelativeLayout>
             </com.github.kr328.clash.design.view.ActivityBarLayout>
@@ -118,14 +120,14 @@
                 app:tabMode="scrollable"
                 app:tabRippleColor="@android:color/transparent"
                 app:tabSelectedTextColor="@color/aurora_on_secondary_container"
+                app:tabTextAppearance="@style/TextAppearance.Aurora.Tab"
                 app:tabTextColor="@color/aurora_on_surface_variant" />
 
             <View
                 android:id="@+id/elevation_view"
                 android:layout_width="match_parent"
                 android:layout_height="@dimen/divider_size"
-                android:background="@color/aurora_surface_variant"
-                android:elevation="@dimen/tab_layout_elevation" />
+                android:background="@android:color/transparent" />
         </LinearLayout>
 
         <FrameLayout

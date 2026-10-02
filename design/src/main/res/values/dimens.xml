@@ -69,12 +69,21 @@
     <dimen name="proxy_layout_padding">6dp</dimen>
     <dimen name="proxy_content_padding">16dp</dimen>
     <dimen name="proxy_content_padding_grid3">12dp</dimen>
-    <dimen name="proxy_text_margin">10dp</dimen>
-    <dimen name="proxy_text_margin_grid3">5dp</dimen>
-    <dimen name="proxy_text_size">12sp</dimen>
-    <dimen name="proxy_text_size_grid3">11sp</dimen>
-    <dimen name="proxy_card_radius">12dp</dimen>
+    <dimen name="proxy_text_margin">4dp</dimen>
+    <dimen name="proxy_text_margin_grid3">3dp</dimen>
+    <dimen name="proxy_title_text_size">14sp</dimen>
+    <dimen name="proxy_title_text_size_grid3">12sp</dimen>
+    <dimen name="proxy_subtitle_text_size">12sp</dimen>
+    <dimen name="proxy_subtitle_text_size_grid3">11sp</dimen>
+    <dimen name="proxy_delay_text_size">12sp</dimen>
+    <dimen name="proxy_card_min_height">76dp</dimen>
+    <dimen name="proxy_card_min_height_grid3">68dp</dimen>
+    <dimen name="proxy_card_radius">16dp</dimen>
     <dimen name="proxy_card_offset">0dp</dimen>
+    <dimen name="proxy_card_stroke">1dp</dimen>
+    <dimen name="proxy_selected_indicator_width">4dp</dimen>
+    <dimen name="proxy_delay_padding_horizontal">8dp</dimen>
+    <dimen name="proxy_delay_padding_vertical">4dp</dimen>
 
     <!-- Properties Design -->
     <dimen name="properties_element_margin_vertical">2.5dp</dimen>

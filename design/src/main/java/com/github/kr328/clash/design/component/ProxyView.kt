@@ -2,6 +2,7 @@ package com.github.kr328.clash.design.component
 
 import android.content.Context
 import android.graphics.Canvas
+import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.Typeface
@@ -34,23 +35,28 @@ class ProxyView(
 
         state.paint.apply {
             reset()
-
-            textSize = state.config.textSize
-
-            getTextBounds("Stub!", 0, 1, state.rect)
+            textSize = state.config.titleTextSize
         }
 
-        val textHeight = state.rect.height()
-        val exceptHeight = (state.config.layoutPadding * 2 +
+        val titleMetrics = state.paint.fontMetrics
+        val titleHeight = titleMetrics.descent - titleMetrics.ascent
+        state.paint.textSize = state.config.subtitleTextSize
+        val subtitleMetrics = state.paint.fontMetrics
+        val subtitleHeight = subtitleMetrics.descent - subtitleMetrics.ascent
+        val expectedHeight = (state.config.layoutPadding * 2 +
                 state.config.contentPadding * 2 +
-                textHeight * 2 +
-                state.config.textMargin).toInt()
+                titleHeight + subtitleHeight +
+                state.config.textMargin)
+            .coerceAtLeast(state.config.cardMinHeight)
+            .toInt()
 
         val height = when (MeasureSpec.getMode(heightMeasureSpec)) {
             MeasureSpec.UNSPECIFIED ->
-                exceptHeight
-            MeasureSpec.AT_MOST, MeasureSpec.EXACTLY ->
-                exceptHeight.coerceAtMost(MeasureSpec.getSize(heightMeasureSpec))
+                expectedHeight
+            MeasureSpec.AT_MOST ->
+                expectedHeight.coerceAtMost(MeasureSpec.getSize(heightMeasureSpec))
+            MeasureSpec.EXACTLY ->
+                MeasureSpec.getSize(heightMeasureSpec)
             else ->
                 throw IllegalArgumentException("invalid measure spec")
         }
@@ -71,8 +77,11 @@ class ProxyView(
 
         paint.reset()
 
-        paint.color = state.background
-        paint.style = Paint.Style.FILL
+        paint.apply {
+            isAntiAlias = true
+            color = state.background
+            style = Paint.Style.FILL
+        }
 
         // draw background
         canvas.apply {
@@ -99,6 +108,18 @@ class ProxyView(
 
             drawPath(path, paint)
 
+            paint.apply {
+                clearShadowLayer()
+                color = if (state.selected) {
+                    state.config.selectedOutline
+                } else {
+                    state.config.unselectedOutline
+                }
+                style = Paint.Style.STROKE
+                strokeWidth = state.config.cardStroke
+            }
+            drawPath(path, paint)
+
             clipPath(path)
         }
 
@@ -115,30 +136,30 @@ class ProxyView(
         val width = width.toFloat()
         val height = height.toFloat()
 
-        paint.textSize = state.config.textSize
+        paint.apply {
+            reset()
+            isAntiAlias = true
+            textSize = state.config.delayTextSize
+            typeface = Typeface.DEFAULT_BOLD
+        }
 
-        // measure delay text bounds
-        val delayCount = paint.breakText(
-            state.delayText,
-            false,
-            (width - state.config.layoutPadding * 2 - state.config.contentPadding * 2)
-                .coerceAtLeast(0f),
-            null
-        )
+        val delayTextWidth = paint.measureText(state.delayText)
+        val delayMetrics = paint.fontMetrics
+        val delayTextHeight = delayMetrics.descent - delayMetrics.ascent
+        val delayPillWidth = if (state.delayText.isEmpty()) 0f else {
+            delayTextWidth + state.config.delayPaddingHorizontal * 2
+        }
+        val delayPillHeight = delayTextHeight + state.config.delayPaddingVertical * 2
+        val contentLeft = state.config.layoutPadding + state.config.contentPadding
+        val contentRight = width - state.config.layoutPadding - state.config.contentPadding
+        val delayBlockWidth = if (state.delayText.isEmpty()) 0f else {
+            delayPillWidth + state.config.textMargin
+        }
 
-        state.paint.getTextBounds(state.delayText, 0, delayCount, state.rect)
-
-        val delayWidth = state.rect.width()
-
-        val mainTextWidth = (width -
-                state.config.layoutPadding * 2 -
-                state.config.contentPadding * 2 -
-                delayWidth -
-                state.config.textMargin * 2
-                )
+        val mainTextWidth = (contentRight - contentLeft - delayBlockWidth)
             .coerceAtLeast(0f)
 
-        // measure title text bounds
+        paint.textSize = state.config.titleTextSize
         val titleCount = paint.breakText(
             state.title,
             false,
@@ -146,7 +167,7 @@ class ProxyView(
             null,
         )
 
-        // measure subtitle text bounds
+        paint.textSize = state.config.subtitleTextSize
         val subtitleCount = paint.breakText(
             state.subtitle,
             false,
@@ -154,42 +175,101 @@ class ProxyView(
             null,
         )
 
-        // text draw measure
-        val textOffset = (paint.descent() + paint.ascent()) / 2
-
-        paint.reset()
-
-        paint.textSize = state.config.textSize
-        paint.isAntiAlias = true
-        paint.color = state.controls
-        paint.typeface = Typeface.DEFAULT_BOLD
-
-        // draw delay
-        canvas.apply {
-            val x = width - state.config.layoutPadding - state.config.contentPadding - delayWidth
-            val y = height / 2f - textOffset
-
-            drawText(state.delayText, 0, delayCount, x, y, paint)
+        if (state.selected) {
+            paint.apply {
+                color = state.config.selectedOutline
+                style = Paint.Style.FILL
+            }
+            val indicatorLeft = state.config.layoutPadding + state.config.cardStroke * 2
+            val indicatorTop = height * 0.27f
+            canvas.drawRoundRect(
+                indicatorLeft,
+                indicatorTop,
+                indicatorLeft + state.config.selectedIndicatorWidth,
+                height - indicatorTop,
+                state.config.selectedIndicatorWidth / 2,
+                state.config.selectedIndicatorWidth / 2,
+                paint,
+            )
         }
 
-        // draw title
-        canvas.apply {
-            val x = state.config.layoutPadding + state.config.contentPadding
-            val y = state.config.layoutPadding +
-                    (height - state.config.layoutPadding * 2) / 3f - textOffset
+        if (state.delayText.isNotEmpty()) {
+            val delayColor = when (state.delay) {
+                in 1..399 -> state.config.delayGood
+                in 400..799 -> state.config.delayMedium
+                else -> state.config.delayBad
+            }
+            val pillLeft = contentRight - delayPillWidth
+            val pillTop = (height - delayPillHeight) / 2f
 
-            drawText(state.title, 0, titleCount, x, y, paint)
+            paint.apply {
+                color = Color.argb(
+                    if (state.selected) 48 else 28,
+                    Color.red(delayColor),
+                    Color.green(delayColor),
+                    Color.blue(delayColor),
+                )
+                style = Paint.Style.FILL
+            }
+            canvas.drawRoundRect(
+                pillLeft,
+                pillTop,
+                contentRight,
+                pillTop + delayPillHeight,
+                delayPillHeight / 2,
+                delayPillHeight / 2,
+                paint,
+            )
+
+            paint.apply {
+                color = delayColor
+                textSize = state.config.delayTextSize
+                typeface = Typeface.DEFAULT_BOLD
+            }
+            canvas.drawText(
+                state.delayText,
+                pillLeft + state.config.delayPaddingHorizontal,
+                height / 2f - (delayMetrics.ascent + delayMetrics.descent) / 2f,
+                paint,
+            )
         }
 
-        // draw subtitle
-        paint.typeface = Typeface.DEFAULT
-        paint.alpha = 190
-        canvas.apply {
-            val x = state.config.layoutPadding + state.config.contentPadding
-            val y = state.config.layoutPadding +
-                    (height - state.config.layoutPadding * 2) / 3f * 2 - textOffset
+        paint.apply {
+            textSize = state.config.titleTextSize
+            typeface = Typeface.DEFAULT_BOLD
+        }
+        val titleMetrics = paint.fontMetrics
+        val titleHeight = titleMetrics.descent - titleMetrics.ascent
+        paint.textSize = state.config.subtitleTextSize
+        val subtitleMetrics = paint.fontMetrics
+        val subtitleHeight = subtitleMetrics.descent - subtitleMetrics.ascent
+        val textHeight = titleHeight + state.config.textMargin + subtitleHeight
+        val textTop = (height - textHeight) / 2f
 
-            drawText(state.subtitle, 0, subtitleCount, x, y, paint)
+        paint.apply {
+            color = state.controls
+            textSize = state.config.titleTextSize
+            typeface = Typeface.DEFAULT_BOLD
+        }
+        canvas.apply {
+            val y = textTop - titleMetrics.ascent
+
+            drawText(state.title, 0, titleCount, contentLeft, y, paint)
+        }
+
+        paint.apply {
+            color = if (state.selected) {
+                state.config.selectedControl
+            } else {
+                state.config.unselectedSubtitle
+            }
+            textSize = state.config.subtitleTextSize
+            typeface = Typeface.DEFAULT
+        }
+        canvas.apply {
+            val y = textTop + titleHeight + state.config.textMargin - subtitleMetrics.ascent
+
+            drawText(state.subtitle, 0, subtitleCount, contentLeft, y, paint)
         }
     }
 }
