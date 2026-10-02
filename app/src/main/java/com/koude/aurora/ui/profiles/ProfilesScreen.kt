@@ -36,17 +36,23 @@ import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.Button
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -66,10 +72,14 @@ import com.koude.aurora.model.ProfileKind
 import com.koude.aurora.model.ProfileSummary
 import java.util.UUID
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfilesScreen(
     state: ProfilesUiState,
-    onAddProfile: () -> Unit,
+    onImportFile: () -> Unit,
+    onImportUrl: (name: String, url: String) -> Unit,
+    onScanQrCode: () -> Unit,
+    onOpenMoreSources: () -> Unit,
     onOpenProfile: (UUID) -> Unit,
     onActivateProfile: (UUID) -> Unit,
     onUpdateAll: () -> Unit,
@@ -78,6 +88,8 @@ fun ProfilesScreen(
     onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    var addSheetVisible by rememberSaveable { mutableStateOf(false) }
+
     Scaffold(
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.surface,
@@ -91,7 +103,7 @@ fun ProfilesScreen(
         floatingActionButton = {
             ExtendedFloatingActionButton(
                 modifier = Modifier.height(54.dp),
-                onClick = onAddProfile,
+                onClick = { addSheetVisible = true },
                 icon = { Icon(Icons.Default.Add, contentDescription = null) },
                 text = { Text("添加配置") },
                 containerColor = MaterialTheme.colorScheme.primaryContainer,
@@ -104,7 +116,7 @@ fun ProfilesScreen(
             state.loading -> LoadingContent(Modifier.padding(padding))
             state.profiles.isEmpty() -> EmptyContent(
                 modifier = Modifier.padding(padding),
-                onAddProfile = onAddProfile,
+                onAddProfile = { addSheetVisible = true },
             )
             else -> ProfileList(
                 profiles = state.profiles,
@@ -120,6 +132,28 @@ fun ProfilesScreen(
                 ),
             )
         }
+    }
+
+    if (addSheetVisible) {
+        AddProfileSheet(
+            onDismiss = { addSheetVisible = false },
+            onImportFile = {
+                addSheetVisible = false
+                onImportFile()
+            },
+            onImportUrl = { name, url ->
+                addSheetVisible = false
+                onImportUrl(name, url)
+            },
+            onScanQrCode = {
+                addSheetVisible = false
+                onScanQrCode()
+            },
+            onOpenMoreSources = {
+                addSheetVisible = false
+                onOpenMoreSources()
+            },
+        )
     }
 }
 
@@ -243,6 +277,160 @@ private fun ProfilesHeader(onUpdateAll: () -> Unit) {
                     },
                 )
             }
+        }
+    }
+}
+
+private enum class AddProfileSheetMode {
+    Sources,
+    Url,
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AddProfileSheet(
+    onDismiss: () -> Unit,
+    onImportFile: () -> Unit,
+    onImportUrl: (name: String, url: String) -> Unit,
+    onScanQrCode: () -> Unit,
+    onOpenMoreSources: () -> Unit,
+) {
+    var mode by remember { mutableStateOf(AddProfileSheetMode.Sources) }
+    var name by rememberSaveable { mutableStateOf("") }
+    var url by rememberSaveable { mutableStateOf("") }
+    val urlValid = url.startsWith("https://") || url.startsWith("http://")
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = MaterialTheme.colorScheme.surface,
+        shape = RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 20.dp, end = 20.dp, bottom = 28.dp),
+        ) {
+            Text(
+                text = if (mode == AddProfileSheetMode.Sources) "添加配置" else "订阅 URL",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Medium,
+            )
+            Spacer(Modifier.height(6.dp))
+            Text(
+                text = if (mode == AddProfileSheetMode.Sources) {
+                    "选择来源，下一步只显示必要信息。"
+                } else {
+                    "为订阅填写名称和完整地址。"
+                },
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(20.dp))
+
+            if (mode == AddProfileSheetMode.Sources) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    ProfileSourceButton(
+                        modifier = Modifier.weight(1f),
+                        icon = Icons.AutoMirrored.Filled.List,
+                        label = "本地文件",
+                        onClick = onImportFile,
+                    )
+                    ProfileSourceButton(
+                        modifier = Modifier.weight(1f),
+                        icon = Icons.Default.Menu,
+                        label = "订阅 URL",
+                        onClick = { mode = AddProfileSheetMode.Url },
+                    )
+                    ProfileSourceButton(
+                        modifier = Modifier.weight(1f),
+                        icon = Icons.Default.Add,
+                        label = "二维码",
+                        onClick = onScanQrCode,
+                    )
+                }
+                Spacer(Modifier.height(12.dp))
+                TextButton(
+                    modifier = Modifier.align(Alignment.End),
+                    onClick = onOpenMoreSources,
+                ) {
+                    Text("更多来源")
+                }
+            } else {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("名称") },
+                    singleLine = true,
+                    shape = MaterialTheme.shapes.medium,
+                )
+                Spacer(Modifier.height(12.dp))
+                OutlinedTextField(
+                    value = url,
+                    onValueChange = { url = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("订阅地址") },
+                    placeholder = { Text("https://example.com/profile") },
+                    singleLine = true,
+                    isError = url.isNotBlank() && !urlValid,
+                    supportingText = if (url.isNotBlank() && !urlValid) {
+                        { Text("请输入以 http:// 或 https:// 开头的地址") }
+                    } else {
+                        null
+                    },
+                    shape = MaterialTheme.shapes.medium,
+                )
+                Spacer(Modifier.height(18.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    TextButton(onClick = { mode = AddProfileSheetMode.Sources }) {
+                        Text("返回")
+                    }
+                    Spacer(Modifier.size(8.dp))
+                    Button(
+                        enabled = name.isNotBlank() && urlValid,
+                        onClick = { onImportUrl(name.trim(), url.trim()) },
+                    ) {
+                        Text("添加")
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProfileSourceButton(
+    icon: ImageVector,
+    label: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier.height(94.dp),
+        onClick = onClick,
+        shape = RoundedCornerShape(20.dp),
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        contentColor = MaterialTheme.colorScheme.onSurface,
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(24.dp),
+                tint = MaterialTheme.colorScheme.primary,
+            )
+            Spacer(Modifier.height(9.dp))
+            Text(label, style = MaterialTheme.typography.labelMedium)
         }
     }
 }
@@ -579,7 +767,10 @@ private fun ProfilesScreenPreview() {
                     ProfileSummary(UUID(0, 3), "出差模式", ProfileKind.Url, false, true, 0),
                 ),
             ),
-            onAddProfile = {},
+            onImportFile = {},
+            onImportUrl = { _, _ -> },
+            onScanQrCode = {},
+            onOpenMoreSources = {},
             onOpenProfile = {},
             onActivateProfile = {},
             onUpdateAll = {},

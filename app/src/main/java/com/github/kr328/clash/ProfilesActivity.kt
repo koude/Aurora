@@ -55,7 +55,14 @@ class ProfilesActivity : BaseActivity<ProfilesDesign>() {
             AuroraTheme {
                 ProfilesScreen(
                     state = state,
-                    onAddProfile = {
+                    onImportFile = {
+                        launch { createProfile(ProfileProvider.File(this@ProfilesActivity)) }
+                    },
+                    onImportUrl = { name, url ->
+                        launch { importProfile(Profile.Type.Url, name, url) }
+                    },
+                    onScanQrCode = { scanLauncher.launch(null) },
+                    onOpenMoreSources = {
                         launch { design.showCreateDialog(queryProfileProviders()) }
                     },
                     onOpenProfile = { uuid ->
