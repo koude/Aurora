@@ -9,6 +9,7 @@
         <import type="android.view.View" />
         <import type="com.github.kr328.clash.design.util.I18nKt" />
         <import type="com.github.kr328.clash.design.util.IntervalKt" />
+        <import type="com.github.kr328.clash.service.model.Profile.Type" />
     </data>
 
     <com.google.android.material.card.MaterialCardView
@@ -23,9 +24,10 @@
         android:minHeight="112dp"
         android:onClick="@{clicked}"
         app:cardBackgroundColor="@{profile.active ? @color/aurora_secondary_container : @color/aurora_surface_container}"
-        app:cardCornerRadius="12dp"
+        app:cardCornerRadius="20dp"
         app:cardElevation="0dp"
-        app:strokeWidth="0dp">
+        app:strokeColor="@{profile.active ? @color/aurora_primary : @color/aurora_outline_variant}"
+        app:strokeWidth="1dp">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -52,7 +54,7 @@
                         android:layout_height="24dp"
                         android:layout_gravity="center"
                         android:contentDescription="@null"
-                        android:src="@drawable/ic_baseline_cloud_download"
+                        android:src="@{profile.type == Type.File ? @drawable/ic_outline_files : (profile.type == Type.External ? @drawable/ic_baseline_extension : @drawable/ic_baseline_cloud_download)}"
                         android:tint="@color/aurora_on_secondary_container" />
                 </FrameLayout>
 
@@ -78,44 +80,47 @@
                         android:layout_marginTop="2dp"
                         android:ellipsize="end"
                         android:maxLines="1"
-                        android:text="@{profile.active ? @string/aurora_profile_active : (profile.pending ? @string/format_type_unsaved(I18nKt.toString(profile.type, context)) : I18nKt.toString(profile.type, context))}"
+                        android:text="@{profile.pending ? @string/format_type_unsaved(I18nKt.toString(profile.type, context)) : I18nKt.toString(profile.type, context)}"
                         android:textAppearance="@style/TextAppearance.Aurora.BodyMedium"
                         android:textColor="@color/aurora_on_surface_variant" />
                 </LinearLayout>
 
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
+                <TextView
+                    style="@style/Widget.Aurora.StatusChip"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
                     android:layout_marginStart="8dp"
-                    android:contentDescription="@string/aurora_profile_active"
-                    android:src="@drawable/ic_outline_check_circle"
-                    android:tint="@color/aurora_primary"
+                    android:text="@string/aurora_profile_active"
                     android:visibility="@{profile.active ? View.VISIBLE : View.GONE}" />
 
-                <ImageButton
+                <com.google.android.material.button.MaterialButton
                     android:id="@+id/menu_view"
+                    style="@style/Widget.MaterialComponents.Button.TextButton"
                     android:layout_width="48dp"
                     android:layout_height="48dp"
-                    android:background="?attr/selectableItemBackgroundBorderless"
                     android:contentDescription="@string/more"
                     android:onClick="@{menu}"
-                    android:padding="12dp"
-                    android:src="@drawable/ic_baseline_more_vert"
-                    android:tint="@color/aurora_on_surface_variant" />
+                    android:text=""
+                    app:cornerRadius="24dp"
+                    app:icon="@drawable/ic_baseline_more_vert"
+                    app:iconGravity="textStart"
+                    app:iconPadding="0dp"
+                    app:iconTint="@color/aurora_on_surface_variant" />
             </LinearLayout>
 
-            <ProgressBar
-                style="?android:attr/progressBarStyleHorizontal"
+            <com.google.android.material.progressindicator.LinearProgressIndicator
                 android:layout_width="match_parent"
-                android:layout_height="4dp"
+                android:layout_height="wrap_content"
                 android:layout_marginStart="54dp"
                 android:layout_marginTop="14dp"
                 android:layout_marginEnd="8dp"
                 android:max="1000"
                 android:progress="@{profile.total > 1 ? I18nKt.toProgress((profile.download + profile.upload) / (profile.total / 1000)) : 0}"
-                android:progressBackgroundTint="@color/aurora_outline_variant"
-                android:progressTint="@color/aurora_primary"
-                android:visibility="@{profile.total &lt; 2 ? View.GONE : View.VISIBLE}" />
+                android:visibility="@{profile.total &lt; 2 ? View.GONE : View.VISIBLE}"
+                app:indicatorColor="@color/aurora_primary"
+                app:trackColor="@color/aurora_outline_variant"
+                app:trackCornerRadius="3dp"
+                app:trackThickness="6dp" />
 
             <LinearLayout
                 android:layout_width="match_parent"

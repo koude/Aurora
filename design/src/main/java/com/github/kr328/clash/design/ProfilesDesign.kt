@@ -7,11 +7,18 @@ import android.view.ViewGroup
 import android.view.animation.Animation
 import android.view.animation.AnimationUtils
 import com.github.kr328.clash.design.adapter.ProfileAdapter
+import com.github.kr328.clash.design.adapter.ProfileProviderAdapter
 import com.github.kr328.clash.design.databinding.DesignProfilesBinding
+import com.github.kr328.clash.design.databinding.DialogCreateUrlProfileBinding
+import com.github.kr328.clash.design.databinding.DialogProfileProvidersBinding
 import com.github.kr328.clash.design.databinding.DialogProfilesMenuBinding
 import com.github.kr328.clash.design.dialog.AppBottomSheetDialog
+import com.github.kr328.clash.design.dialog.ModelProgressBarConfigure
+import com.github.kr328.clash.design.dialog.withModelProgressBar
+import com.github.kr328.clash.design.model.ProfileProvider
 import com.github.kr328.clash.design.ui.ToastDuration
 import com.github.kr328.clash.design.util.*
+import com.github.kr328.clash.core.model.FetchStatus
 import com.github.kr328.clash.service.model.Profile
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -23,6 +30,9 @@ class ProfilesDesign(context: Context) : Design<ProfilesDesign.Request>(context)
         object OpenHome : Request()
         object OpenProxy : Request()
         object OpenSettings : Request()
+        data class CreateProfile(val provider: ProfileProvider) : Request()
+        data class CreateUrl(val name: String, val url: String) : Request()
+        data class OpenProviderDetail(val provider: ProfileProvider.External) : Request()
         data class Active(val profile: Profile) : Request()
         data class Update(val profile: Profile) : Request()
         data class Edit(val profile: Profile) : Request()
@@ -55,6 +65,7 @@ class ProfilesDesign(context: Context) : Design<ProfilesDesign.Request>(context)
 
         withContext(Dispatchers.Main) {
             binding.updateView.visibility = if (updatable) View.VISIBLE else View.GONE
+            binding.emptyView.visibility = if (profiles.isEmpty()) View.VISIBLE else View.GONE
         }
     }
 
@@ -108,6 +119,103 @@ class ProfilesDesign(context: Context) : Design<ProfilesDesign.Request>(context)
 
         dialog.setContentView(binding.root)
         dialog.show()
+    }
+
+    fun showCreateDialog(providers: List<ProfileProvider>) {
+        val dialog = AppBottomSheetDialog(context)
+        val binding = DialogProfileProvidersBinding.inflate(context.layoutInflater)
+        val providerAdapter = ProfileProviderAdapter(
+            context,
+            select = { provider ->
+                requests.trySend(Request.CreateProfile(provider))
+                dialog.dismiss()
+            },
+            detail = { provider ->
+                if (provider is ProfileProvider.External) {
+                    requests.trySend(Request.OpenProviderDetail(provider))
+                    dialog.dismiss()
+                    true
+                } else {
+                    false
+                }
+            },
+        ).apply {
+            this.providers = providers
+        }
+
+        binding.providersList.applyLinearAdapter(context, providerAdapter)
+        dialog.setContentView(binding.root)
+        dialog.show()
+    }
+
+    fun showCreateUrlDialog() {
+        val dialog = AppBottomSheetDialog(context)
+        val binding = DialogCreateUrlProfileBinding.inflate(context.layoutInflater)
+
+        binding.createButton.setOnClickListener {
+            val name = binding.nameField.text?.toString()?.trim().orEmpty()
+            val url = binding.urlField.text?.toString()?.trim().orEmpty()
+            var valid = true
+
+            if (name.isBlank()) {
+                binding.nameLayout.error = context.getString(R.string.should_not_be_blank)
+                valid = false
+            } else {
+                binding.nameLayout.error = null
+            }
+
+            if (!url.startsWith("http://") && !url.startsWith("https://")) {
+                binding.urlLayout.error = context.getString(R.string.accept_http_content)
+                valid = false
+            } else {
+                binding.urlLayout.error = null
+            }
+
+            if (valid) {
+                requests.trySend(Request.CreateUrl(name, url))
+                dialog.dismiss()
+            }
+        }
+        binding.cancelButton.setOnClickListener { dialog.dismiss() }
+
+        dialog.setContentView(binding.root)
+        dialog.show()
+        binding.urlField.requestFocus()
+    }
+
+    suspend fun withProcessing(executeTask: suspend (suspend (FetchStatus) -> Unit) -> Unit) {
+        context.withModelProgressBar {
+            configure {
+                isIndeterminate = true
+                text = context.getString(R.string.initializing)
+            }
+
+            executeTask { status ->
+                configure { applyFrom(status) }
+            }
+        }
+    }
+
+    private fun ModelProgressBarConfigure.applyFrom(status: FetchStatus) {
+        when (status.action) {
+            FetchStatus.Action.FetchConfiguration -> {
+                text = context.getString(R.string.format_fetching_configuration, status.args[0])
+                isIndeterminate = true
+            }
+            FetchStatus.Action.FetchProviders -> {
+                text = context.getString(R.string.format_fetching_provider, status.args[0])
+                isIndeterminate = false
+                max = status.max
+                progress = status.progress
+            }
+            FetchStatus.Action.SubscriptionInfo -> Unit
+            FetchStatus.Action.Verifying -> {
+                text = context.getString(R.string.verifying)
+                isIndeterminate = false
+                max = status.max
+                progress = status.progress
+            }
+        }
     }
 
     fun requestUpdateAll() {

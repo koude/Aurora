@@ -43,6 +43,7 @@
     <string name="url">URL</string>
     <string name="qr" translatable="false">QR Code</string>
     <string name="import_from_url">Import from URL</string>
+    <string name="aurora_url_profile_summary">Enter a subscription URL to import and verify it now.</string>
     <string name="import_from_qr">Import from QR Code</string>
     <string name="external">External</string>
     <string name="format_type_unsaved">%s (Unsaved)</string>
@@ -433,6 +434,9 @@
     <string name="aurora_feature_placeholder">This feature is represented in the new interface and will be connected in a later stage.</string>
     <string name="aurora_mode_unavailable">Start Aurora before changing the proxy mode.</string>
     <string name="aurora_profile_active">Currently active</string>
+    <string name="aurora_profiles_empty_title">No profiles yet</string>
+    <string name="aurora_profiles_empty_summary">Use the add button to import or create a profile.</string>
+    <string name="aurora_profile_source_summary">Choose where the new profile comes from.</string>
     <string name="apple" translatable="false">Apple</string>
     <string name="github" translatable="false">GitHub</string>
     <string name="youtube" translatable="false">YouTube</string>

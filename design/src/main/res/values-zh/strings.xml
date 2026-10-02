@@ -44,6 +44,7 @@
     <string name="history">历史</string>
     <string name="import_from_file">从文件导入</string>
     <string name="import_from_url">从 URL 导入</string>
+    <string name="aurora_url_profile_summary">输入订阅地址，立即导入并校验配置。</string>
     <string name="import_from_qr">从二维码导入</string>
     <string name="interface_">界面</string>
     <string name="invalid_url">无效的 URL</string>
@@ -341,4 +342,7 @@
     <string name="aurora_feature_placeholder">该功能已在新版界面中占位，后续阶段接入。</string>
     <string name="aurora_mode_unavailable">请先启动 Aurora，再切换代理模式。</string>
     <string name="aurora_profile_active">当前启用</string>
+    <string name="aurora_profiles_empty_title">还没有配置</string>
+    <string name="aurora_profiles_empty_summary">点击右上角添加按钮，导入或创建配置。</string>
+    <string name="aurora_profile_source_summary">选择新配置的来源。</string>
 </resources>
