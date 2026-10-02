@@ -76,6 +76,7 @@
         <item name="android:textSize">12sp</item>
         <item name="android:textStyle">bold</item>
         <item name="android:letterSpacing">0</item>
+        <item name="android:includeFontPadding">false</item>
     </style>
 
     <style name="ShapeAppearance.Aurora.NavigationIndicator" parent="">
@@ -84,8 +85,8 @@
     </style>
 
     <style name="Widget.Aurora.BottomNavigation.ActiveIndicator" parent="">
-        <item name="android:width">56dp</item>
-        <item name="android:height">28dp</item>
+        <item name="android:width">64dp</item>
+        <item name="android:height">32dp</item>
         <item name="marginHorizontal">12dp</item>
         <item name="shapeAppearance">@style/ShapeAppearance.Aurora.NavigationIndicator</item>
         <item name="android:color">@color/aurora_secondary_container</item>
@@ -103,8 +104,8 @@
         <item name="itemTextColor">@color/aurora_navigation_item</item>
         <item name="itemTextAppearanceActive">@style/TextAppearance.Aurora.Navigation</item>
         <item name="itemTextAppearanceInactive">@style/TextAppearance.Aurora.Navigation</item>
-        <item name="itemPaddingTop">5dp</item>
-        <item name="itemPaddingBottom">7dp</item>
+        <item name="itemPaddingTop">8dp</item>
+        <item name="itemPaddingBottom">8dp</item>
     </style>
 
     <style name="Widget.Aurora.SettingsDivider" parent="">
