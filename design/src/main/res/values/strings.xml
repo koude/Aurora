@@ -389,7 +389,6 @@
     <string name="aurora_network_settings_summary">VPN, DNS, routing and access control</string>
     <string name="aurora_override_settings_summary">Profile overrides and advanced configuration</string>
     <string name="aurora_meta_settings_summary">Meta kernel features and experimental options</string>
-    <string name="aurora_connection_center">Connection center</string>
     <string name="aurora_brand_name" translatable="false">Aurora</string>
     <string name="aurora_notifications">Notifications</string>
     <string name="aurora_download">Download</string>
