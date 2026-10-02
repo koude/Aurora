@@ -23,18 +23,24 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.NavigationBar
@@ -79,9 +85,11 @@ fun ProfilesScreen(
     onImportFile: () -> Unit,
     onImportUrl: (name: String, url: String) -> Unit,
     onScanQrCode: () -> Unit,
-    onOpenMoreSources: () -> Unit,
-    onOpenProfile: (UUID) -> Unit,
     onActivateProfile: (UUID) -> Unit,
+    onUpdateProfile: (UUID) -> Unit,
+    onEditProfile: (UUID) -> Unit,
+    onDuplicateProfile: (UUID) -> Unit,
+    onDeleteProfile: (UUID) -> Unit,
     onUpdateAll: () -> Unit,
     onOpenHome: () -> Unit,
     onOpenProxy: () -> Unit,
@@ -89,6 +97,7 @@ fun ProfilesScreen(
     modifier: Modifier = Modifier,
 ) {
     var addSheetVisible by rememberSaveable { mutableStateOf(false) }
+    var selectedProfileId by remember { mutableStateOf<UUID?>(null) }
 
     Scaffold(
         modifier = modifier,
@@ -121,7 +130,7 @@ fun ProfilesScreen(
             else -> ProfileList(
                 profiles = state.profiles,
                 errorMessage = state.errorMessage,
-                onOpenProfile = onOpenProfile,
+                onOpenProfile = { selectedProfileId = it },
                 onActivateProfile = onActivateProfile,
                 onUpdateAll = onUpdateAll,
                 contentPadding = PaddingValues(
@@ -149,9 +158,28 @@ fun ProfilesScreen(
                 addSheetVisible = false
                 onScanQrCode()
             },
-            onOpenMoreSources = {
-                addSheetVisible = false
-                onOpenMoreSources()
+        )
+    }
+
+    state.profiles.firstOrNull { it.id == selectedProfileId }?.let { profile ->
+        ProfileActionsSheet(
+            profile = profile,
+            onDismiss = { selectedProfileId = null },
+            onUpdate = {
+                selectedProfileId = null
+                onUpdateProfile(profile.id)
+            },
+            onEdit = {
+                selectedProfileId = null
+                onEditProfile(profile.id)
+            },
+            onDuplicate = {
+                selectedProfileId = null
+                onDuplicateProfile(profile.id)
+            },
+            onDelete = {
+                selectedProfileId = null
+                onDeleteProfile(profile.id)
             },
         )
     }
@@ -293,7 +321,6 @@ private fun AddProfileSheet(
     onImportFile: () -> Unit,
     onImportUrl: (name: String, url: String) -> Unit,
     onScanQrCode: () -> Unit,
-    onOpenMoreSources: () -> Unit,
 ) {
     var mode by remember { mutableStateOf(AddProfileSheetMode.Sources) }
     var name by rememberSaveable { mutableStateOf("") }
@@ -315,49 +342,26 @@ private fun AddProfileSheet(
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Medium,
             )
-            Spacer(Modifier.height(6.dp))
-            Text(
-                text = if (mode == AddProfileSheetMode.Sources) {
-                    "选择来源，下一步只显示必要信息。"
-                } else {
-                    "为订阅填写名称和完整地址。"
-                },
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(16.dp))
 
             if (mode == AddProfileSheetMode.Sources) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                ) {
-                    ProfileSourceButton(
-                        modifier = Modifier.weight(1f),
-                        icon = Icons.AutoMirrored.Filled.List,
-                        label = "本地文件",
-                        onClick = onImportFile,
-                    )
-                    ProfileSourceButton(
-                        modifier = Modifier.weight(1f),
-                        icon = Icons.Default.Menu,
-                        label = "订阅 URL",
-                        onClick = { mode = AddProfileSheetMode.Url },
-                    )
-                    ProfileSourceButton(
-                        modifier = Modifier.weight(1f),
-                        icon = Icons.Default.Add,
-                        label = "二维码",
-                        onClick = onScanQrCode,
-                    )
-                }
-                Spacer(Modifier.height(12.dp))
-                TextButton(
-                    modifier = Modifier.align(Alignment.End),
-                    onClick = onOpenMoreSources,
-                ) {
-                    Text("更多来源")
-                }
+                ProfileSourceButton(
+                    icon = Icons.AutoMirrored.Filled.List,
+                    label = "本地文件",
+                    onClick = onImportFile,
+                )
+                Spacer(Modifier.height(10.dp))
+                ProfileSourceButton(
+                    icon = Icons.Default.Menu,
+                    label = "远程订阅",
+                    onClick = { mode = AddProfileSheetMode.Url },
+                )
+                Spacer(Modifier.height(10.dp))
+                ProfileSourceButton(
+                    icon = Icons.Default.Add,
+                    label = "扫描二维码",
+                    onClick = onScanQrCode,
+                )
             } else {
                 OutlinedTextField(
                     value = name,
@@ -413,26 +417,177 @@ private fun ProfileSourceButton(
     modifier: Modifier = Modifier,
 ) {
     Surface(
-        modifier = modifier.height(94.dp),
+        modifier = modifier
+            .fillMaxWidth()
+            .height(64.dp),
         onClick = onClick,
         shape = RoundedCornerShape(20.dp),
         color = MaterialTheme.colorScheme.surfaceContainer,
         contentColor = MaterialTheme.colorScheme.onSurface,
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                modifier = Modifier.size(24.dp),
-                tint = MaterialTheme.colorScheme.primary,
+            Surface(
+                modifier = Modifier.size(42.dp),
+                shape = RoundedCornerShape(14.dp),
+                color = MaterialTheme.colorScheme.secondaryContainer,
+                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        modifier = Modifier.size(21.dp),
+                    )
+                }
+            }
+            Text(
+                text = label,
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Medium,
             )
-            Spacer(Modifier.height(9.dp))
-            Text(label, style = MaterialTheme.typography.labelMedium)
         }
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ProfileActionsSheet(
+    profile: ProfileSummary,
+    onDismiss: () -> Unit,
+    onUpdate: () -> Unit,
+    onEdit: () -> Unit,
+    onDuplicate: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    var confirmDelete by remember { mutableStateOf(false) }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = MaterialTheme.colorScheme.surface,
+        shape = RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 24.dp),
+        ) {
+            Column(modifier = Modifier.padding(horizontal = 24.dp)) {
+                Text(
+                    text = profile.name,
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Medium,
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = profile.detailText(),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Spacer(Modifier.height(18.dp))
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            if (profile.imported && profile.kind != ProfileKind.File) {
+                ProfileActionItem(
+                    icon = Icons.Default.Refresh,
+                    label = "更新订阅",
+                    supportingText = "重新下载并验证此配置",
+                    onClick = onUpdate,
+                )
+            }
+            ProfileActionItem(
+                icon = Icons.Default.Edit,
+                label = "编辑配置",
+                supportingText = "修改名称和配置属性",
+                onClick = onEdit,
+            )
+            ProfileActionItem(
+                icon = Icons.Default.Add,
+                label = "复制配置",
+                supportingText = "创建一个可独立修改的副本",
+                onClick = onDuplicate,
+            )
+            ProfileActionItem(
+                icon = Icons.Default.Delete,
+                label = "删除配置",
+                supportingText = "从 Aurora 中移除此配置",
+                destructive = true,
+                onClick = { confirmDelete = true },
+            )
+        }
+    }
+
+    if (confirmDelete) {
+        AlertDialog(
+            onDismissRequest = { confirmDelete = false },
+            title = { Text("删除“${profile.name}”？") },
+            text = { Text("此操作会删除配置及其本地数据，无法撤销。") },
+            confirmButton = {
+                TextButton(onClick = onDelete) {
+                    Text("删除", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmDelete = false }) {
+                    Text("取消")
+                }
+            },
+        )
+    }
+}
+
+@Composable
+private fun ProfileActionItem(
+    icon: ImageVector,
+    label: String,
+    supportingText: String,
+    onClick: () -> Unit,
+    destructive: Boolean = false,
+) {
+    val contentColor = if (destructive) {
+        MaterialTheme.colorScheme.error
+    } else {
+        MaterialTheme.colorScheme.onSurface
+    }
+
+    ListItem(
+        modifier = Modifier.clickable(onClick = onClick),
+        headlineContent = { Text(label, color = contentColor) },
+        supportingContent = {
+            Text(
+                supportingText,
+                color = if (destructive) contentColor.copy(alpha = 0.78f)
+                else MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        },
+        leadingContent = {
+            Surface(
+                modifier = Modifier.size(40.dp),
+                shape = RoundedCornerShape(14.dp),
+                color = if (destructive) {
+                    MaterialTheme.colorScheme.errorContainer
+                } else {
+                    MaterialTheme.colorScheme.secondaryContainer
+                },
+                contentColor = if (destructive) {
+                    MaterialTheme.colorScheme.onErrorContainer
+                } else {
+                    MaterialTheme.colorScheme.onSecondaryContainer
+                },
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(icon, contentDescription = null, modifier = Modifier.size(20.dp))
+                }
+            }
+        },
+        colors = androidx.compose.material3.ListItemDefaults.colors(
+            containerColor = MaterialTheme.colorScheme.surface,
+        ),
+    )
 }
 
 @Composable
@@ -770,9 +925,11 @@ private fun ProfilesScreenPreview() {
             onImportFile = {},
             onImportUrl = { _, _ -> },
             onScanQrCode = {},
-            onOpenMoreSources = {},
-            onOpenProfile = {},
             onActivateProfile = {},
+            onUpdateProfile = {},
+            onEditProfile = {},
+            onDuplicateProfile = {},
+            onDeleteProfile = {},
             onUpdateAll = {},
             onOpenHome = {},
             onOpenProxy = {},

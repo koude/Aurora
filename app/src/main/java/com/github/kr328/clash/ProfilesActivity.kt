@@ -62,15 +62,18 @@ class ProfilesActivity : BaseActivity<ProfilesDesign>() {
                         launch { importProfile(Profile.Type.Url, name, url) }
                     },
                     onScanQrCode = { scanLauncher.launch(null) },
-                    onOpenMoreSources = {
-                        launch { design.showCreateDialog(queryProfileProviders()) }
+                    onActivateProfile = profilesViewModel::activate,
+                    onUpdateProfile = profilesViewModel::update,
+                    onEditProfile = { uuid ->
+                        startActivity(PropertiesActivity::class.intent.setUUID(uuid))
                     },
-                    onOpenProfile = { uuid ->
+                    onDuplicateProfile = { uuid ->
                         launch {
-                            withProfile { queryByUUID(uuid) }?.let(design::showMenu)
+                            val duplicate = withProfile { clone(uuid) }
+                            startActivity(PropertiesActivity::class.intent.setUUID(duplicate))
                         }
                     },
-                    onActivateProfile = profilesViewModel::activate,
+                    onDeleteProfile = profilesViewModel::delete,
                     onUpdateAll = design::requestUpdateAll,
                     onOpenHome = { navigateTopLevel(MainActivity::class) },
                     onOpenProxy = { navigateTopLevel(ProxyActivity::class) },
