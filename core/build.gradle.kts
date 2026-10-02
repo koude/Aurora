@@ -11,9 +11,12 @@ plugins {
 }
 
 val golangSource = file("src/main/golang/native")
-val goExecutable = rootProject.file("local.properties").takeIf { it.exists() }?.let { file ->
-    Properties().apply { file.inputStream().use(::load) }.getProperty("go.executable")
+val localProperties = rootProject.file("local.properties").takeIf { it.exists() }?.let { file ->
+    Properties().apply { file.inputStream().use(::load) }
 }
+val goExecutable = localProperties?.getProperty("go.executable")
+val goCache = localProperties?.getProperty("go.cache")
+val goPath = localProperties?.getProperty("go.path")
 
 golang {
     sourceSets {
@@ -64,6 +67,8 @@ afterEvaluate {
     tasks.withType(GolangBuildTask::class.java).forEach {
         it.inputs.dir(golangSource)
         goExecutable?.takeIf(String::isNotBlank)?.let(it::executable)
+        goCache?.takeIf(String::isNotBlank)?.let { path -> it.environment("GOCACHE", path) }
+        goPath?.takeIf(String::isNotBlank)?.let { path -> it.environment("GOPATH", path) }
     }
 }
 
