@@ -19,8 +19,10 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
@@ -29,6 +31,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScrollableTabRow
@@ -142,6 +145,14 @@ private fun ProxyContent(
     var settingsVisible by remember { mutableStateOf(false) }
     val selectedIndex = state.selectedGroupIndex.coerceIn(state.groups.indices)
     val group = state.groups[selectedIndex]
+    var query by remember(group.name) { mutableStateOf("") }
+    val filteredProxies = remember(group.proxies, query) {
+        val normalized = query.trim().lowercase()
+        if (normalized.isEmpty()) group.proxies else group.proxies.filter { proxy ->
+            listOf(proxy.name, proxy.title, proxy.subtitle, proxy.type)
+                .any { normalized in it.lowercase() }
+        }
+    }
 
     Column(Modifier.fillMaxSize()) {
         Row(
@@ -213,7 +224,8 @@ private fun ProxyContent(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        text = "${group.proxies.size} 个节点",
+                        text = if (query.isBlank()) "${group.proxies.size} 个节点"
+                        else "${filteredProxies.size} / ${group.proxies.size} 个节点",
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -238,6 +250,27 @@ private fun ProxyContent(
                 }
             }
 
+            if (group.proxies.size > 5) {
+                item {
+                    OutlinedTextField(
+                        value = query,
+                        onValueChange = { query = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                        trailingIcon = if (query.isNotEmpty()) {
+                            {
+                                IconButton(onClick = { query = "" }) {
+                                    Icon(Icons.Default.Close, contentDescription = "清除搜索")
+                                }
+                            }
+                        } else null,
+                        placeholder = { Text("搜索节点、地区或协议") },
+                        shape = MaterialTheme.shapes.large,
+                    )
+                }
+            }
+
             if (state.errorMessage != null) {
                 item {
                     Text(
@@ -248,13 +281,24 @@ private fun ProxyContent(
                 }
             }
 
-            items(group.proxies, key = Proxy::name) { proxy ->
-                ProxyCard(
-                    proxy = proxy,
-                    selected = proxy.name == group.selectedProxy,
-                    enabled = group.selectable,
-                    onClick = { onSelectProxy(selectedIndex, proxy.name) },
-                )
+            if (filteredProxies.isEmpty()) {
+                item {
+                    Text(
+                        text = "没有匹配的节点",
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 28.dp),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            } else {
+                items(filteredProxies, key = Proxy::name) { proxy ->
+                    ProxyCard(
+                        proxy = proxy,
+                        selected = proxy.name == group.selectedProxy,
+                        enabled = group.selectable,
+                        onClick = { onSelectProxy(selectedIndex, proxy.name) },
+                    )
+                }
             }
         }
     }
