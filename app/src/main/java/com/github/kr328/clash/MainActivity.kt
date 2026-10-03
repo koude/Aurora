@@ -138,8 +138,10 @@ class MainActivity : BaseActivity<MainDesign>() {
         val backStackEntry by navController.currentBackStackEntryAsState()
         val currentRoute = backStackEntry?.destination?.route ?: ROUTE_HOME
 
-        LaunchedEffect(requestedRoute.value) {
-            if (navController.currentDestination?.route != requestedRoute.value) {
+        LaunchedEffect(requestedRoute.value, backStackEntry) {
+            if (backStackEntry != null &&
+                navController.currentDestination?.route != requestedRoute.value
+            ) {
                 navController.navigateTopLevel(requestedRoute.value)
             }
         }
