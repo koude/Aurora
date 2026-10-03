@@ -35,7 +35,7 @@ fun AuroraBottomNavigation(
     ) {
         DestinationItem("首页", Icons.Default.Home, AuroraDestination.Home, selected, true, onNavigate)
         DestinationItem("代理", Icons.AutoMirrored.Filled.List, AuroraDestination.Proxy, selected, proxyEnabled, onNavigate)
-        DestinationItem("连接", Icons.Default.Share, AuroraDestination.Connections, selected, proxyEnabled, onNavigate)
+        DestinationItem("连接", Icons.Default.Share, AuroraDestination.Connections, selected, true, onNavigate)
         DestinationItem("设置", Icons.Default.Settings, AuroraDestination.Settings, selected, true, onNavigate)
     }
 }
