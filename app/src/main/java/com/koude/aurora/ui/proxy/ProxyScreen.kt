@@ -19,18 +19,30 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.Switch
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -39,6 +51,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.github.kr328.clash.core.model.Proxy
+import com.github.kr328.clash.core.model.ProxySort
 import com.koude.aurora.designsystem.theme.AuroraTheme
 
 data class ProxyGroupUiState(
@@ -55,6 +68,8 @@ data class ProxyUiState(
     val groups: List<ProxyGroupUiState> = emptyList(),
     val selectedGroupIndex: Int = 0,
     val errorMessage: String? = null,
+    val sort: ProxySort = ProxySort.Default,
+    val hideUnselectableGroups: Boolean = false,
 )
 
 @Composable
@@ -64,6 +79,8 @@ fun ProxyScreen(
     onSelectProxy: (groupIndex: Int, proxyName: String) -> Unit,
     onTestGroup: (Int) -> Unit,
     onRefresh: () -> Unit,
+    onSortChanged: (ProxySort) -> Unit,
+    onHideUnselectableChanged: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Scaffold(
@@ -98,6 +115,8 @@ fun ProxyScreen(
                 onSelectProxy = onSelectProxy,
                 onTestGroup = onTestGroup,
                 onRefresh = onRefresh,
+                onSortChanged = onSortChanged,
+                onHideUnselectableChanged = onHideUnselectableChanged,
                 contentPadding = PaddingValues(
                     start = 20.dp,
                     top = padding.calculateTopPadding() + 18.dp,
@@ -116,8 +135,11 @@ private fun ProxyContent(
     onSelectProxy: (Int, String) -> Unit,
     onTestGroup: (Int) -> Unit,
     onRefresh: () -> Unit,
+    onSortChanged: (ProxySort) -> Unit,
+    onHideUnselectableChanged: (Boolean) -> Unit,
     contentPadding: PaddingValues,
 ) {
+    var settingsVisible by remember { mutableStateOf(false) }
     val selectedIndex = state.selectedGroupIndex.coerceIn(state.groups.indices)
     val group = state.groups[selectedIndex]
 
@@ -148,9 +170,14 @@ private fun ProxyContent(
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-            IconButton(onClick = onRefresh, enabled = !state.loading) {
-                if (state.loading) CircularProgressIndicator(Modifier.size(22.dp), strokeWidth = 2.dp)
-                else Icon(Icons.Default.Refresh, contentDescription = "刷新")
+            Row {
+                IconButton(onClick = { settingsVisible = true }) {
+                    Icon(Icons.Default.MoreVert, contentDescription = "代理设置")
+                }
+                IconButton(onClick = onRefresh, enabled = !state.loading) {
+                    if (state.loading) CircularProgressIndicator(Modifier.size(22.dp), strokeWidth = 2.dp)
+                    else Icon(Icons.Default.Refresh, contentDescription = "刷新")
+                }
             }
         }
 
@@ -228,6 +255,97 @@ private fun ProxyContent(
                     enabled = group.selectable,
                     onClick = { onSelectProxy(selectedIndex, proxy.name) },
                 )
+            }
+        }
+    }
+
+    if (settingsVisible) {
+        ProxySettingsSheet(
+            state = state,
+            onDismiss = { settingsVisible = false },
+            onSortChanged = onSortChanged,
+            onHideUnselectableChanged = onHideUnselectableChanged,
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ProxySettingsSheet(
+    state: ProxyUiState,
+    onDismiss: () -> Unit,
+    onSortChanged: (ProxySort) -> Unit,
+    onHideUnselectableChanged: (Boolean) -> Unit,
+) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = MaterialTheme.colorScheme.surface,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 20.dp, end = 20.dp, bottom = 28.dp),
+        ) {
+            Text(
+                text = "代理设置",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Medium,
+            )
+            Spacer(Modifier.height(12.dp))
+            Text(
+                text = "排序",
+                modifier = Modifier.padding(start = 4.dp, bottom = 4.dp),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary,
+            )
+            ProxySort.entries.forEach { sort ->
+                val label = when (sort) {
+                    ProxySort.Default -> "默认排序"
+                    ProxySort.Title -> "按名称"
+                    ProxySort.Delay -> "按延迟"
+                }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            onSortChanged(sort)
+                            onDismiss()
+                        }
+                        .padding(horizontal = 4.dp, vertical = 2.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(label, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
+                    RadioButton(
+                        selected = state.sort == sort,
+                        onClick = {
+                            onSortChanged(sort)
+                            onDismiss()
+                        },
+                    )
+                }
+            }
+            HorizontalDivider(
+                modifier = Modifier.padding(vertical = 8.dp),
+                color = MaterialTheme.colorScheme.outlineVariant,
+            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onHideUnselectableChanged(!state.hideUnselectableGroups) }
+                    .padding(horizontal = 4.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text("隐藏不可选代理组", modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
+                Checkbox(
+                    checked = state.hideUnselectableGroups,
+                    onCheckedChange = null,
+                )
+            }
+            TextButton(
+                modifier = Modifier.align(Alignment.End),
+                onClick = onDismiss,
+            ) {
+                Text("完成")
             }
         }
     }
@@ -347,6 +465,8 @@ private fun ProxyScreenPreview() {
             onSelectProxy = { _, _ -> },
             onTestGroup = {},
             onRefresh = {},
+            onSortChanged = {},
+            onHideUnselectableChanged = {},
         )
     }
 }

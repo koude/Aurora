@@ -185,7 +185,7 @@ class MainActivity : BaseActivity<MainDesign>() {
                             else startActivity(LogsActivity::class.intent)
                         },
                         onOpenRouteTest = design::showRouteTest,
-                        onOpenDns = ::showPlaceholder,
+                        onOpenDns = { startActivity(NetworkSettingsActivity::class.intent) },
                         onOpenProfiles = { navController.navigateTopLevel(ROUTE_PROFILES) },
                         onOpenProxy = { navController.navigateTopLevel(ROUTE_PROXY) },
                         onOpenSettings = { navController.navigateTopLevel(ROUTE_SETTINGS) },
@@ -199,6 +199,14 @@ class MainActivity : BaseActivity<MainDesign>() {
                         onSelectProxy = { index, name -> launch { selectProxy(index, name) } },
                         onTestGroup = { launch { testProxyGroup(it) } },
                         onRefresh = ::refreshProxy,
+                        onSortChanged = { sort ->
+                            uiStore.proxySort = sort
+                            refreshProxy()
+                        },
+                        onHideUnselectableChanged = { hide ->
+                            uiStore.proxyExcludeNotSelectable = hide
+                            refreshProxy()
+                        },
                     )
                 }
                 composable(ROUTE_PROFILES) {
@@ -311,7 +319,14 @@ class MainActivity : BaseActivity<MainDesign>() {
                     }.awaitAll()
                 }
                 val selected = names.indexOf(uiStore.proxyLastGroup).takeIf { it >= 0 } ?: 0
-                ProxyUiState(false, true, groups, selected)
+                ProxyUiState(
+                    loading = false,
+                    serviceRunning = true,
+                    groups = groups,
+                    selectedGroupIndex = selected,
+                    sort = uiStore.proxySort,
+                    hideUnselectableGroups = uiStore.proxyExcludeNotSelectable,
+                )
             }.onSuccess { proxyUiState.value = it }
                 .onFailure {
                     proxyUiState.value = proxyUiState.value.copy(

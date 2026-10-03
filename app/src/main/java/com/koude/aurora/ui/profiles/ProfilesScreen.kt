@@ -289,12 +289,6 @@ private fun ProfilesHeader(onUpdateAll: () -> Unit) {
                 style = MaterialTheme.typography.headlineLarge,
                 fontWeight = FontWeight.Medium,
             )
-            Spacer(Modifier.height(4.dp))
-            Text(
-                text = "选择 Aurora 当前使用的规则与节点",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
         }
         Box {
             Surface(
@@ -508,26 +502,22 @@ private fun ProfileActionsSheet(
                 ProfileActionItem(
                     icon = Icons.Default.Refresh,
                     label = "更新订阅",
-                    supportingText = "重新下载并验证此配置",
                     onClick = onUpdate,
                 )
             }
             ProfileActionItem(
                 icon = Icons.Default.Edit,
                 label = "编辑配置",
-                supportingText = "修改名称和配置属性",
                 onClick = onEdit,
             )
             ProfileActionItem(
                 icon = Icons.Default.Add,
                 label = "复制配置",
-                supportingText = "创建一个可独立修改的副本",
                 onClick = onDuplicate,
             )
             ProfileActionItem(
                 icon = Icons.Default.Delete,
                 label = "删除配置",
-                supportingText = "从 Aurora 中移除此配置",
                 destructive = true,
                 onClick = { confirmDelete = true },
             )
@@ -557,7 +547,6 @@ private fun ProfileActionsSheet(
 private fun ProfileActionItem(
     icon: ImageVector,
     label: String,
-    supportingText: String,
     onClick: () -> Unit,
     destructive: Boolean = false,
 ) {
@@ -570,13 +559,6 @@ private fun ProfileActionItem(
     ListItem(
         modifier = Modifier.clickable(onClick = onClick),
         headlineContent = { Text(label, color = contentColor) },
-        supportingContent = {
-            Text(
-                supportingText,
-                color = if (destructive) contentColor.copy(alpha = 0.78f)
-                else MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        },
         leadingContent = {
             Surface(
                 modifier = Modifier.size(40.dp),
