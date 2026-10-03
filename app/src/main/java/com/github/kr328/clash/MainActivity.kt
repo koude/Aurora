@@ -81,7 +81,7 @@ class MainActivity : BaseActivity<MainDesign>() {
     private var proxyRefreshJob: Job? = null
     private val homeUiState = mutableStateOf(HomeUiState())
     private val proxyUiState = mutableStateOf(ProxyUiState())
-    private val requestedRoute = mutableStateOf(ROUTE_HOME)
+    private val requestedRoute = mutableStateOf<String?>(null)
     private val profilesViewModel: ProfilesViewModel by viewModels { ProfilesViewModel.Factory }
     private val scanLauncher = registerForActivityResult(ScanQRCode(), ::scanResultHandler)
 
@@ -139,10 +139,12 @@ class MainActivity : BaseActivity<MainDesign>() {
         val currentRoute = backStackEntry?.destination?.route ?: ROUTE_HOME
 
         LaunchedEffect(requestedRoute.value, backStackEntry) {
-            if (backStackEntry != null &&
-                navController.currentDestination?.route != requestedRoute.value
-            ) {
-                navController.navigateTopLevel(requestedRoute.value)
+            val route = requestedRoute.value
+            if (route != null && backStackEntry != null) {
+                if (navController.currentDestination?.route != route) {
+                    navController.navigateTopLevel(route)
+                }
+                requestedRoute.value = null
             }
         }
 
