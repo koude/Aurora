@@ -37,6 +37,8 @@ import com.github.kr328.clash.common.util.intent
 import com.github.kr328.clash.common.util.setUUID
 import com.github.kr328.clash.common.util.ticker
 import com.github.kr328.clash.core.Clash
+import com.github.kr328.clash.core.model.Proxy
+import com.github.kr328.clash.core.model.ProxyGroup
 import com.github.kr328.clash.core.model.TunnelState
 import com.github.kr328.clash.core.util.trafficDownload
 import com.github.kr328.clash.core.util.trafficUpload
@@ -58,6 +60,7 @@ import com.koude.aurora.ui.home.HomeUiState
 import com.koude.aurora.ui.profiles.ProfilesScreen
 import com.koude.aurora.ui.profiles.ProfilesViewModel
 import com.koude.aurora.ui.proxy.ProxyGroupUiState
+import com.koude.aurora.ui.proxy.ProxyRouteUiState
 import com.koude.aurora.ui.proxy.ProxyScreen
 import com.koude.aurora.ui.proxy.ProxyUiState
 import com.koude.aurora.ui.settings.SettingsScreen
@@ -81,6 +84,7 @@ import com.github.kr328.clash.design.R as DesignR
 class MainActivity : BaseActivity<MainDesign>() {
     private var latencyTestJob: Job? = null
     private var proxyRefreshJob: Job? = null
+    private val testedProxyGroups = mutableSetOf<String>()
     private val homeUiState = mutableStateOf(HomeUiState())
     private val proxyUiState = mutableStateOf(ProxyUiState())
     private val connectionsUiState = mutableStateOf(ConnectionsUiState())
@@ -114,6 +118,7 @@ class MainActivity : BaseActivity<MainDesign>() {
                         }
                         Event.ClashStop -> {
                             design.fetch()
+                            testedProxyGroups.clear()
                             proxyUiState.value = ProxyUiState(serviceRunning = false)
                             connectionsUiState.value = ConnectionsUiState()
                             homeUiState.value = homeUiState.value.copy(
@@ -123,6 +128,7 @@ class MainActivity : BaseActivity<MainDesign>() {
                         }
                         Event.ProfileLoaded -> {
                             design.fetch()
+                            testedProxyGroups.clear()
                             refreshProxy()
                         }
                         Event.ProfileUpdateCompleted, Event.ProfileUpdateFailed -> profilesViewModel.refresh()
@@ -345,18 +351,44 @@ class MainActivity : BaseActivity<MainDesign>() {
             )
             runCatching {
                 val names = withClash { queryProxyGroupNames(uiStore.proxyExcludeNotSelectable) }
-                val groups = coroutineScope {
+                val groupsByName = linkedMapOf<String, ProxyGroup>()
+                val rootGroups = coroutineScope {
                     names.map { name ->
                         async {
-                            val group = withClash { queryProxyGroup(name, uiStore.proxySort) }
-                            ProxyGroupUiState(
-                                name = name,
-                                selectedProxy = group.now,
-                                selectable = group.type == "Selector",
-                                proxies = group.proxies,
-                            )
+                            name to withClash { queryProxyGroup(name, uiStore.proxySort) }
                         }
                     }.awaitAll()
+                }
+                groupsByName.putAll(rootGroups)
+
+                suspend fun resolveRoute(proxy: Proxy, visited: Set<String> = emptySet()): ProxyRouteUiState? {
+                    if (!proxy.isGroup || proxy.name in visited) return null
+                    val group = groupsByName[proxy.name] ?: withClash {
+                        queryProxyGroup(proxy.name, uiStore.proxySort)
+                    }.also { groupsByName[proxy.name] = it }
+                    val selected = group.proxies.firstOrNull { it.name == group.now } ?: return null
+                    val nextVisited = visited + proxy.name
+                    val childRoute = if (selected.isGroup) resolveRoute(selected, nextVisited) else null
+                    return ProxyRouteUiState(
+                        names = listOf(proxy.name) + (childRoute?.names ?: listOf(selected.name)),
+                        delay = childRoute?.delay ?: selected.delay,
+                    )
+                }
+
+                val groups = names.map { name ->
+                    val group = groupsByName.getValue(name)
+                    val routes = group.proxies.mapNotNull { proxy ->
+                        resolveRoute(proxy)?.let { proxy.name to it }
+                    }.toMap()
+                    ProxyGroupUiState(
+                        name = name,
+                        type = group.type,
+                        selectedProxy = group.now,
+                        selectable = group.type == "Selector",
+                        delayTested = name in testedProxyGroups,
+                        proxies = group.proxies,
+                        nestedRoutes = routes,
+                    )
                 }
                 val selected = names.indexOf(uiStore.proxyLastGroup).takeIf { it >= 0 } ?: 0
                 ProxyUiState(
@@ -419,6 +451,7 @@ class MainActivity : BaseActivity<MainDesign>() {
                 val groups = proxyUiState.value.groups.toMutableList()
                 groups[index] = group.copy(selectedProxy = name)
                 proxyUiState.value = proxyUiState.value.copy(groups = groups)
+                refreshProxy()
             }
             .onFailure(::showError)
     }
@@ -430,13 +463,16 @@ class MainActivity : BaseActivity<MainDesign>() {
             withClash { healthCheck(group.name) }
             val refreshed = withClash { queryProxyGroup(group.name, uiStore.proxySort) }
             val groups = proxyUiState.value.groups.toMutableList()
+            testedProxyGroups += group.name
             groups[index] = group.copy(
                 selectedProxy = refreshed.now,
                 selectable = refreshed.type == "Selector",
+                delayTested = true,
                 proxies = refreshed.proxies,
                 testing = false,
             )
             proxyUiState.value = proxyUiState.value.copy(groups = groups)
+            refreshProxy()
         } catch (error: Exception) {
             setProxyGroupTesting(index, false)
             showError(error)
