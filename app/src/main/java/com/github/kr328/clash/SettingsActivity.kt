@@ -1,15 +1,37 @@
 package com.github.kr328.clash
 
+import androidx.activity.compose.setContent
+import androidx.compose.runtime.mutableStateOf
 import com.github.kr328.clash.common.util.intent
 import com.github.kr328.clash.design.SettingsDesign
+import com.koude.aurora.designsystem.theme.AuroraTheme
+import com.koude.aurora.ui.settings.SettingsScreen
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.selects.select
 
 class SettingsActivity : BaseActivity<SettingsDesign>() {
+    private val proxyEnabledState = mutableStateOf(false)
+
     override suspend fun main() {
         val design = SettingsDesign(this)
 
         setContentDesign(design)
+
+        proxyEnabledState.value = clashRunning
+        setContent {
+            AuroraTheme {
+                SettingsScreen(
+                    proxyEnabled = proxyEnabledState.value,
+                    onOpenHome = { navigateTopLevel(MainActivity::class) },
+                    onOpenProxy = { navigateTopLevel(ProxyActivity::class) },
+                    onOpenProfiles = { navigateTopLevel(ProfilesActivity::class) },
+                    onOpenNetwork = { startActivity(NetworkSettingsActivity::class.intent) },
+                    onOpenApp = { startActivity(AppSettingsActivity::class.intent) },
+                    onOpenMetaFeature = { startActivity(MetaFeatureSettingsActivity::class.intent) },
+                    onOpenOverride = { startActivity(OverrideSettingsActivity::class.intent) },
+                )
+            }
+        }
 
         design.setClashRunning(clashRunning)
 
@@ -17,8 +39,10 @@ class SettingsActivity : BaseActivity<SettingsDesign>() {
             select<Unit> {
                 events.onReceive {
                     when (it) {
-                        Event.ClashStart, Event.ClashStop ->
+                        Event.ClashStart, Event.ClashStop -> {
+                            proxyEnabledState.value = clashRunning
                             design.setClashRunning(clashRunning)
+                        }
                         else -> Unit
                     }
                 }

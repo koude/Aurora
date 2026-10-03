@@ -9,6 +9,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.github.kr328.clash.common.constants.Intents
 import com.github.kr328.clash.common.util.intent
@@ -44,11 +45,13 @@ import java.util.concurrent.TimeUnit
 class ProfilesActivity : BaseActivity<ProfilesDesign>() {
     private val scanLauncher = registerForActivityResult(ScanQRCode(), ::scanResultHandler)
     private val profilesViewModel: ProfilesViewModel by viewModels { ProfilesViewModel.Factory }
+    private val proxyEnabledState = mutableStateOf(false)
 
     override suspend fun main() {
         val design = ProfilesDesign(this)
 
         setContentDesign(design)
+        proxyEnabledState.value = clashRunning
         setContent {
             val state by profilesViewModel.uiState.collectAsStateWithLifecycle()
 
@@ -75,6 +78,7 @@ class ProfilesActivity : BaseActivity<ProfilesDesign>() {
                     },
                     onDeleteProfile = profilesViewModel::delete,
                     onUpdateAll = design::requestUpdateAll,
+                    proxyEnabled = proxyEnabledState.value,
                     onOpenHome = { navigateTopLevel(MainActivity::class) },
                     onOpenProxy = { navigateTopLevel(ProxyActivity::class) },
                     onOpenSettings = { navigateTopLevel(SettingsActivity::class) },
@@ -92,8 +96,10 @@ class ProfilesActivity : BaseActivity<ProfilesDesign>() {
                             design.fetch()
                             design.setClashRunning(clashRunning)
                         }
-                        Event.ClashStart, Event.ClashStop ->
+                        Event.ClashStart, Event.ClashStop -> {
+                            proxyEnabledState.value = clashRunning
                             design.setClashRunning(clashRunning)
+                        }
                         else -> Unit
                     }
                 }

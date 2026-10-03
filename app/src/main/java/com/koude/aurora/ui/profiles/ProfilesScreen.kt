@@ -25,11 +25,9 @@ import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -43,9 +41,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -76,6 +71,8 @@ import androidx.compose.ui.unit.sp
 import com.koude.aurora.designsystem.theme.AuroraTheme
 import com.koude.aurora.model.ProfileKind
 import com.koude.aurora.model.ProfileSummary
+import com.koude.aurora.ui.components.AuroraBottomNavigation
+import com.koude.aurora.ui.components.AuroraDestination
 import java.util.UUID
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -91,6 +88,7 @@ fun ProfilesScreen(
     onDuplicateProfile: (UUID) -> Unit,
     onDeleteProfile: (UUID) -> Unit,
     onUpdateAll: () -> Unit,
+    proxyEnabled: Boolean,
     onOpenHome: () -> Unit,
     onOpenProxy: () -> Unit,
     onOpenSettings: () -> Unit,
@@ -103,10 +101,17 @@ fun ProfilesScreen(
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.surface,
         bottomBar = {
-            ProfilesNavigationBar(
-                onOpenHome = onOpenHome,
-                onOpenProxy = onOpenProxy,
-                onOpenSettings = onOpenSettings,
+            AuroraBottomNavigation(
+                selected = AuroraDestination.Profiles,
+                proxyEnabled = proxyEnabled,
+                onNavigate = { destination ->
+                    when (destination) {
+                        AuroraDestination.Home -> onOpenHome()
+                        AuroraDestination.Proxy -> onOpenProxy()
+                        AuroraDestination.Profiles -> Unit
+                        AuroraDestination.Settings -> onOpenSettings()
+                    }
+                },
             )
         },
         floatingActionButton = {
@@ -820,41 +825,6 @@ private fun SwitchProfileIcon(contentDescription: String) {
 }
 
 @Composable
-private fun ProfilesNavigationBar(
-    onOpenHome: () -> Unit,
-    onOpenProxy: () -> Unit,
-    onOpenSettings: () -> Unit,
-) {
-    NavigationBar(
-        containerColor = MaterialTheme.colorScheme.surfaceContainer,
-        tonalElevation = 0.dp,
-    ) {
-        NavigationItem("首页", Icons.Default.Home, false, onOpenHome)
-        NavigationItem("代理", Icons.AutoMirrored.Filled.List, false, onOpenProxy)
-        NavigationItem("配置", Icons.Default.Menu, true, {})
-        NavigationItem("设置", Icons.Default.Settings, false, onOpenSettings)
-    }
-}
-
-@Composable
-private fun androidx.compose.foundation.layout.RowScope.NavigationItem(
-    label: String,
-    icon: ImageVector,
-    selected: Boolean,
-    onClick: () -> Unit,
-) {
-    NavigationBarItem(
-        selected = selected,
-        onClick = onClick,
-        icon = { Icon(icon, contentDescription = null) },
-        label = { Text(label) },
-        colors = NavigationBarItemDefaults.colors(
-            indicatorColor = MaterialTheme.colorScheme.secondaryContainer,
-        ),
-    )
-}
-
-@Composable
 private fun LoadingContent(modifier: Modifier = Modifier) {
     Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         CircularProgressIndicator()
@@ -931,6 +901,7 @@ private fun ProfilesScreenPreview() {
             onDuplicateProfile = {},
             onDeleteProfile = {},
             onUpdateAll = {},
+            proxyEnabled = true,
             onOpenHome = {},
             onOpenProxy = {},
             onOpenSettings = {},
