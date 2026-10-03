@@ -4,7 +4,7 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -19,7 +19,7 @@ import androidx.compose.ui.unit.dp
 enum class AuroraDestination {
     Home,
     Proxy,
-    Profiles,
+    Connections,
     Settings,
 }
 
@@ -35,7 +35,7 @@ fun AuroraBottomNavigation(
     ) {
         DestinationItem("首页", Icons.Default.Home, AuroraDestination.Home, selected, true, onNavigate)
         DestinationItem("代理", Icons.AutoMirrored.Filled.List, AuroraDestination.Proxy, selected, proxyEnabled, onNavigate)
-        DestinationItem("配置", Icons.Default.Menu, AuroraDestination.Profiles, selected, true, onNavigate)
+        DestinationItem("连接", Icons.Default.Share, AuroraDestination.Connections, selected, proxyEnabled, onNavigate)
         DestinationItem("设置", Icons.Default.Settings, AuroraDestination.Settings, selected, true, onNavigate)
     }
 }

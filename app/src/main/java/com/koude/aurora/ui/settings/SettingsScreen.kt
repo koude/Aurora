@@ -48,6 +48,7 @@ fun SettingsScreen(
     proxyEnabled: Boolean,
     onOpenHome: () -> Unit,
     onOpenProxy: () -> Unit,
+    onOpenConnections: () -> Unit = {},
     onOpenProfiles: () -> Unit,
     onOpenNetwork: () -> Unit,
     onOpenApp: () -> Unit,
@@ -69,7 +70,7 @@ fun SettingsScreen(
                     when (destination) {
                         AuroraDestination.Home -> onOpenHome()
                         AuroraDestination.Proxy -> onOpenProxy()
-                        AuroraDestination.Profiles -> onOpenProfiles()
+                        AuroraDestination.Connections -> onOpenConnections()
                         AuroraDestination.Settings -> Unit
                     }
                 },
@@ -94,6 +95,13 @@ fun SettingsScreen(
                 )
             }
             item { Spacer(Modifier.height(12.dp)) }
+
+            item { SettingsSectionTitle("管理") }
+            item {
+                SettingsGroup {
+                    SettingsRow(Icons.Default.Menu, "配置与订阅", onOpenProfiles)
+                }
+            }
 
             item { SettingsSectionTitle("网络") }
             item {

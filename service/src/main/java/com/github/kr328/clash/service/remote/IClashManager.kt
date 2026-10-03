@@ -10,12 +10,15 @@ interface IClashManager {
     fun queryTrafficNow(): Long
     fun queryTrafficTotal(): Long
     fun queryRoutePreview(target: String): RoutePreview
+    fun queryConnections(): ConnectionList
     fun queryProxyGroupNames(excludeNotSelectable: Boolean): List<String>
     fun queryProxyGroup(name: String, proxySort: ProxySort): ProxyGroup
     fun queryConfiguration(): UiConfiguration
     fun queryProviders(): ProviderList
 
     fun patchSelector(group: String, name: String): Boolean
+    fun closeConnection(id: String): Boolean
+    fun closeAllConnections()
 
     suspend fun healthCheck(group: String)
     suspend fun updateProvider(type: Provider.Type, name: String)

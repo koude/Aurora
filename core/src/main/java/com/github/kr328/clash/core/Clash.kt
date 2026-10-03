@@ -57,6 +57,15 @@ object Clash {
         )
     }
 
+    fun queryConnections(): List<ConnectionInfo> = Json.Default.decodeFromString(
+        ListSerializer(ConnectionInfo.serializer()),
+        Bridge.nativeQueryConnections(),
+    )
+
+    fun closeConnection(id: String): Boolean = Bridge.nativeCloseConnection(id)
+
+    fun closeAllConnections() = Bridge.nativeCloseAllConnections()
+
     fun notifyDnsChanged(dns: List<String>) {
         Bridge.nativeNotifyDnsChanged(dns.toSet().joinToString(separator = ","))
     }

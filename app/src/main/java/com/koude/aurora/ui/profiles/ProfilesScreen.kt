@@ -26,6 +26,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -40,6 +41,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
@@ -97,6 +99,8 @@ fun ProfilesScreen(
     onOpenHome: () -> Unit,
     onOpenProxy: () -> Unit,
     onOpenSettings: () -> Unit,
+    onOpenConnections: () -> Unit = {},
+    onBack: () -> Unit = {},
     showBottomNavigation: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
@@ -106,17 +110,32 @@ fun ProfilesScreen(
     Scaffold(
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.surface,
+        topBar = {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(start = 8.dp, top = 4.dp, end = 20.dp, bottom = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                IconButton(onClick = onBack) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
+                }
+                Text(
+                    text = "配置与订阅",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Medium,
+                )
+            }
+        },
         contentWindowInsets = if (showBottomNavigation) ScaffoldDefaults.contentWindowInsets
         else WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal),
         bottomBar = if (showBottomNavigation) {{
             AuroraBottomNavigation(
-                selected = AuroraDestination.Profiles,
+                selected = AuroraDestination.Settings,
                 proxyEnabled = proxyEnabled,
                 onNavigate = { destination ->
                     when (destination) {
                         AuroraDestination.Home -> onOpenHome()
                         AuroraDestination.Proxy -> onOpenProxy()
-                        AuroraDestination.Profiles -> Unit
+                        AuroraDestination.Connections -> onOpenConnections()
                         AuroraDestination.Settings -> onOpenSettings()
                     }
                 },
@@ -283,13 +302,7 @@ private fun ProfilesHeader(onUpdateAll: () -> Unit) {
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column {
-            Text(
-                text = "配置",
-                style = MaterialTheme.typography.headlineLarge,
-                fontWeight = FontWeight.Medium,
-            )
-        }
+        Spacer(Modifier.weight(1f))
         Box {
             Surface(
                 modifier = Modifier.size(44.dp),

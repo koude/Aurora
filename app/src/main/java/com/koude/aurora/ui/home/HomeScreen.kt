@@ -101,7 +101,7 @@ fun HomeScreen(
                     when (destination) {
                         AuroraDestination.Home -> Unit
                         AuroraDestination.Proxy -> onOpenProxy()
-                        AuroraDestination.Profiles -> onOpenProfiles()
+                        AuroraDestination.Connections -> onOpenConnections()
                         AuroraDestination.Settings -> onOpenSettings()
                     }
                 },

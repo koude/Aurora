@@ -34,6 +34,8 @@ class ClashManager(private val context: Context) : IClashManager,
         return Clash.queryRoutePreview(target)
     }
 
+    override fun queryConnections(): ConnectionList = ConnectionList(Clash.queryConnections())
+
     override fun queryProxyGroupNames(excludeNotSelectable: Boolean): List<String> {
         return Clash.queryGroupNames(excludeNotSelectable)
     }
@@ -65,6 +67,10 @@ class ClashManager(private val context: Context) : IClashManager,
             }
         }
     }
+
+    override fun closeConnection(id: String): Boolean = Clash.closeConnection(id)
+
+    override fun closeAllConnections() = Clash.closeAllConnections()
 
     override fun patchOverride(slot: Clash.OverrideSlot, configuration: ConfigurationOverride) {
         Clash.patchOverride(slot, configuration)

@@ -51,6 +51,8 @@ import com.github.kr328.clash.util.withProfile
 import com.koude.aurora.designsystem.theme.AuroraTheme
 import com.koude.aurora.ui.components.AuroraBottomNavigation
 import com.koude.aurora.ui.components.AuroraDestination
+import com.koude.aurora.ui.connections.ConnectionsScreen
+import com.koude.aurora.ui.connections.ConnectionsUiState
 import com.koude.aurora.ui.home.HomeScreen
 import com.koude.aurora.ui.home.HomeUiState
 import com.koude.aurora.ui.profiles.ProfilesScreen
@@ -81,6 +83,8 @@ class MainActivity : BaseActivity<MainDesign>() {
     private var proxyRefreshJob: Job? = null
     private val homeUiState = mutableStateOf(HomeUiState())
     private val proxyUiState = mutableStateOf(ProxyUiState())
+    private val connectionsUiState = mutableStateOf(ConnectionsUiState())
+    private val activeRoute = mutableStateOf(ROUTE_HOME)
     private val requestedRoute = mutableStateOf<String?>(null)
     private val profilesViewModel: ProfilesViewModel by viewModels { ProfilesViewModel.Factory }
     private val scanLauncher = registerForActivityResult(ScanQRCode(), ::scanResultHandler)
@@ -99,14 +103,19 @@ class MainActivity : BaseActivity<MainDesign>() {
             select<Unit> {
                 events.onReceive { event ->
                     when (event) {
-                        Event.ActivityStart, Event.ServiceRecreated, Event.ProfileChanged -> design.fetch()
+                        Event.ActivityStart, Event.ServiceRecreated, Event.ProfileChanged -> {
+                            design.fetch()
+                            if (activeRoute.value == ROUTE_CONNECTIONS) refreshConnections()
+                        }
                         Event.ClashStart -> {
                             design.fetch()
                             refreshProxy()
+                            if (activeRoute.value == ROUTE_CONNECTIONS) refreshConnections()
                         }
                         Event.ClashStop -> {
                             design.fetch()
                             proxyUiState.value = ProxyUiState(serviceRunning = false)
+                            connectionsUiState.value = ConnectionsUiState()
                             homeUiState.value = homeUiState.value.copy(
                                 uploadSpeed = "-- B/s",
                                 downloadSpeed = "-- B/s",
@@ -127,7 +136,10 @@ class MainActivity : BaseActivity<MainDesign>() {
                         design.setRoutePreviewError()
                     }
                 }
-                if (clashRunning) ticker.onReceive { design.fetchTraffic() }
+                if (clashRunning) ticker.onReceive {
+                    design.fetchTraffic()
+                    if (activeRoute.value == ROUTE_CONNECTIONS) refreshConnections()
+                }
             }
         }
     }
@@ -146,6 +158,11 @@ class MainActivity : BaseActivity<MainDesign>() {
                 }
                 requestedRoute.value = null
             }
+        }
+
+        LaunchedEffect(currentRoute, homeUiState.value.running) {
+            activeRoute.value = currentRoute
+            if (currentRoute == ROUTE_CONNECTIONS) refreshConnections()
         }
 
         Scaffold(
@@ -179,14 +196,14 @@ class MainActivity : BaseActivity<MainDesign>() {
                                 latencyTestJob = launch { design.testSiteLatency() }
                             }
                         },
-                        onOpenConnections = ::showPlaceholder,
+                        onOpenConnections = { navController.navigateTopLevel(ROUTE_CONNECTIONS) },
                         onOpenLogs = {
                             if (LogcatService.running) startActivity(LogcatActivity::class.intent)
                             else startActivity(LogsActivity::class.intent)
                         },
                         onOpenRouteTest = design::showRouteTest,
                         onOpenDns = { startActivity(NetworkSettingsActivity::class.intent) },
-                        onOpenProfiles = { navController.navigateTopLevel(ROUTE_PROFILES) },
+                        onOpenProfiles = { navController.navigate(ROUTE_PROFILES) },
                         onOpenProxy = { navController.navigateTopLevel(ROUTE_PROXY) },
                         onOpenSettings = { navController.navigateTopLevel(ROUTE_SETTINGS) },
                         showBottomNavigation = false,
@@ -223,10 +240,32 @@ class MainActivity : BaseActivity<MainDesign>() {
                         onDeleteProfile = profilesViewModel::delete,
                         onUpdateAll = profilesViewModel::updateAll,
                         proxyEnabled = homeUiState.value.running,
+                        onBack = { navController.popBackStack() },
                         onOpenHome = { navController.navigateTopLevel(ROUTE_HOME) },
                         onOpenProxy = { navController.navigateTopLevel(ROUTE_PROXY) },
+                        onOpenConnections = { navController.navigateTopLevel(ROUTE_CONNECTIONS) },
                         onOpenSettings = { navController.navigateTopLevel(ROUTE_SETTINGS) },
                         showBottomNavigation = false,
+                    )
+                }
+                composable(ROUTE_CONNECTIONS) {
+                    ConnectionsScreen(
+                        state = connectionsUiState.value,
+                        onRefresh = { launch { refreshConnections() } },
+                        onCloseConnection = { id ->
+                            launch {
+                                runCatching { withClash { closeConnection(id) } }
+                                    .onFailure(::showError)
+                                refreshConnections()
+                            }
+                        },
+                        onCloseAll = {
+                            launch {
+                                runCatching { withClash { closeAllConnections() } }
+                                    .onFailure(::showError)
+                                refreshConnections()
+                            }
+                        },
                     )
                 }
                 composable(ROUTE_SETTINGS) {
@@ -234,7 +273,8 @@ class MainActivity : BaseActivity<MainDesign>() {
                         proxyEnabled = homeUiState.value.running,
                         onOpenHome = { navController.navigateTopLevel(ROUTE_HOME) },
                         onOpenProxy = { navController.navigateTopLevel(ROUTE_PROXY) },
-                        onOpenProfiles = { navController.navigateTopLevel(ROUTE_PROFILES) },
+                        onOpenConnections = { navController.navigateTopLevel(ROUTE_CONNECTIONS) },
+                        onOpenProfiles = { navController.navigate(ROUTE_PROFILES) },
                         onOpenNetwork = { startActivity(NetworkSettingsActivity::class.intent) },
                         onOpenApp = { startActivity(AppSettingsActivity::class.intent) },
                         onOpenMetaFeature = { startActivity(MetaFeatureSettingsActivity::class.intent) },
@@ -336,6 +376,33 @@ class MainActivity : BaseActivity<MainDesign>() {
                     )
                 }
         }
+    }
+
+    private suspend fun refreshConnections() {
+        if (!clashRunning) {
+            connectionsUiState.value = ConnectionsUiState()
+            return
+        }
+        val current = connectionsUiState.value
+        connectionsUiState.value = current.copy(
+            serviceRunning = true,
+            loading = current.connections.isEmpty(),
+            errorMessage = null,
+        )
+        runCatching { withClash { queryConnections().toList() } }
+            .onSuccess { connections ->
+                connectionsUiState.value = ConnectionsUiState(
+                    serviceRunning = true,
+                    connections = connections,
+                )
+            }
+            .onFailure { error ->
+                connectionsUiState.value = connectionsUiState.value.copy(
+                    serviceRunning = true,
+                    loading = false,
+                    errorMessage = error.message ?: "连接读取失败",
+                )
+            }
     }
 
     private fun selectProxyGroup(index: Int) {
@@ -591,9 +658,10 @@ class MainActivity : BaseActivity<MainDesign>() {
         const val EXTRA_TOP_LEVEL_ROUTE = "com.koude.aurora.extra.TOP_LEVEL_ROUTE"
         const val ROUTE_HOME = "home"
         const val ROUTE_PROXY = "proxy"
+        const val ROUTE_CONNECTIONS = "connections"
         const val ROUTE_PROFILES = "profiles"
         const val ROUTE_SETTINGS = "settings"
-        private val TOP_LEVEL_ROUTES = setOf(ROUTE_HOME, ROUTE_PROXY, ROUTE_PROFILES, ROUTE_SETTINGS)
+        private val TOP_LEVEL_ROUTES = setOf(ROUTE_HOME, ROUTE_PROXY, ROUTE_CONNECTIONS, ROUTE_PROFILES, ROUTE_SETTINGS)
     }
 }
 
@@ -601,13 +669,14 @@ private val AuroraDestination.route: String
     get() = when (this) {
         AuroraDestination.Home -> MainActivity.ROUTE_HOME
         AuroraDestination.Proxy -> MainActivity.ROUTE_PROXY
-        AuroraDestination.Profiles -> MainActivity.ROUTE_PROFILES
+        AuroraDestination.Connections -> MainActivity.ROUTE_CONNECTIONS
         AuroraDestination.Settings -> MainActivity.ROUTE_SETTINGS
     }
 
 private fun String.toAuroraDestination(): AuroraDestination = when (this) {
     MainActivity.ROUTE_PROXY -> AuroraDestination.Proxy
-    MainActivity.ROUTE_PROFILES -> AuroraDestination.Profiles
+    MainActivity.ROUTE_CONNECTIONS -> AuroraDestination.Connections
+    MainActivity.ROUTE_PROFILES -> AuroraDestination.Settings
     MainActivity.ROUTE_SETTINGS -> AuroraDestination.Settings
     else -> AuroraDestination.Home
 }
