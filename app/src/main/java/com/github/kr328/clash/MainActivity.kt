@@ -2,29 +2,65 @@ package com.github.kr328.clash
 
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.os.PersistableBundle
 import android.os.SystemClock
+import android.widget.Toast
+import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.result.contract.ActivityResultContracts.RequestPermission
-import androidx.core.app.ActivityCompat
+import androidx.activity.viewModels
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Scaffold
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
 import androidx.core.content.pm.ShortcutInfoCompat
 import androidx.core.content.pm.ShortcutManagerCompat
 import androidx.core.graphics.drawable.IconCompat
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
 import com.github.kr328.clash.common.constants.Intents
 import com.github.kr328.clash.common.util.intent
+import com.github.kr328.clash.common.util.setUUID
 import com.github.kr328.clash.common.util.ticker
-import com.github.kr328.clash.design.MainDesign
-import com.github.kr328.clash.design.ui.ToastDuration
 import com.github.kr328.clash.core.Clash
 import com.github.kr328.clash.core.model.TunnelState
+import com.github.kr328.clash.core.util.trafficDownload
+import com.github.kr328.clash.core.util.trafficUpload
+import com.github.kr328.clash.design.MainDesign
+import com.github.kr328.clash.remote.FilesClient
+import com.github.kr328.clash.service.model.Profile
+import com.github.kr328.clash.util.fileName
 import com.github.kr328.clash.util.startClashService
 import com.github.kr328.clash.util.stopClashService
 import com.github.kr328.clash.util.withClash
 import com.github.kr328.clash.util.withProfile
-import com.github.kr328.clash.core.bridge.*
+import com.koude.aurora.designsystem.theme.AuroraTheme
+import com.koude.aurora.ui.components.AuroraBottomNavigation
+import com.koude.aurora.ui.components.AuroraDestination
+import com.koude.aurora.ui.home.HomeScreen
+import com.koude.aurora.ui.home.HomeUiState
+import com.koude.aurora.ui.profiles.ProfilesScreen
+import com.koude.aurora.ui.profiles.ProfilesViewModel
+import com.koude.aurora.ui.proxy.ProxyGroupUiState
+import com.koude.aurora.ui.proxy.ProxyScreen
+import com.koude.aurora.ui.proxy.ProxyUiState
+import com.koude.aurora.ui.settings.SettingsScreen
+import io.github.g00fy2.quickie.QRResult
+import io.github.g00fy2.quickie.ScanQRCode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -33,80 +69,55 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.selects.select
-import kotlinx.coroutines.withContext
 import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
+import java.util.UUID
 import java.util.concurrent.TimeUnit
 import com.github.kr328.clash.design.R as DesignR
 
 class MainActivity : BaseActivity<MainDesign>() {
     private var latencyTestJob: Job? = null
+    private var proxyRefreshJob: Job? = null
+    private val homeUiState = mutableStateOf(HomeUiState())
+    private val proxyUiState = mutableStateOf(ProxyUiState())
+    private val requestedRoute = mutableStateOf(ROUTE_HOME)
+    private val profilesViewModel: ProfilesViewModel by viewModels { ProfilesViewModel.Factory }
+    private val scanLauncher = registerForActivityResult(ScanQRCode(), ::scanResultHandler)
 
     override suspend fun main() {
         val design = MainDesign(this)
 
         setContentDesign(design)
+        setContent { AuroraTheme { AuroraApp(design) } }
 
         design.fetch()
+        refreshProxy()
 
         val ticker = ticker(TimeUnit.SECONDS.toMillis(1))
-
         while (isActive) {
             select<Unit> {
-                events.onReceive {
-                    when (it) {
-                        Event.ActivityStart,
-                        Event.ServiceRecreated,
-                        Event.ClashStop, Event.ClashStart,
-                        Event.ProfileLoaded, Event.ProfileChanged -> design.fetch()
+                events.onReceive { event ->
+                    when (event) {
+                        Event.ActivityStart, Event.ServiceRecreated, Event.ProfileChanged -> design.fetch()
+                        Event.ClashStart -> {
+                            design.fetch()
+                            refreshProxy()
+                        }
+                        Event.ClashStop -> {
+                            design.fetch()
+                            proxyUiState.value = ProxyUiState(serviceRunning = false)
+                            homeUiState.value = homeUiState.value.copy(
+                                uploadSpeed = "-- B/s",
+                                downloadSpeed = "-- B/s",
+                            )
+                        }
+                        Event.ProfileLoaded -> {
+                            design.fetch()
+                            refreshProxy()
+                        }
+                        Event.ProfileUpdateCompleted, Event.ProfileUpdateFailed -> profilesViewModel.refresh()
                         else -> Unit
-                    }
-                }
-                design.requests.onReceive {
-                    when (it) {
-                        MainDesign.Request.ToggleStatus -> {
-                            if (clashRunning)
-                                stopClashService()
-                            else
-                                design.startClash()
-                        }
-                        MainDesign.Request.OpenProxy ->
-                            navigateTopLevel(ProxyActivity::class)
-                        MainDesign.Request.OpenProfiles ->
-                            navigateTopLevel(ProfilesActivity::class)
-                        MainDesign.Request.OpenProviders ->
-                            startActivity(ProvidersActivity::class.intent)
-                        MainDesign.Request.OpenLogs -> {
-                            if (LogcatService.running) {
-                                startActivity(LogcatActivity::class.intent)
-                            } else {
-                                startActivity(LogsActivity::class.intent)
-                            }
-                        }
-                        MainDesign.Request.OpenSettings ->
-                            navigateTopLevel(SettingsActivity::class)
-                        MainDesign.Request.OpenHelp ->
-                            startActivity(HelpActivity::class.intent)
-                        MainDesign.Request.OpenAbout ->
-                            design.showAbout(queryAppVersionName())
-                        MainDesign.Request.SetModeRule ->
-                            design.patchMode(TunnelState.Mode.Rule)
-                        MainDesign.Request.SetModeGlobal ->
-                            design.patchMode(TunnelState.Mode.Global)
-                        MainDesign.Request.SetModeDirect ->
-                            design.patchMode(TunnelState.Mode.Direct)
-                        MainDesign.Request.TestSiteLatency -> {
-                            if (latencyTestJob?.isActive != true) {
-                                latencyTestJob = launch {
-                                    design.testSiteLatency()
-                                }
-                            }
-                        }
-                        MainDesign.Request.OpenRouteTest ->
-                            design.showRouteTest()
-                        MainDesign.Request.Placeholder ->
-                            design.showToast(DesignR.string.aurora_feature_placeholder, ToastDuration.Short)
                     }
                 }
                 design.routePreviewRequests.onReceive { target ->
@@ -116,36 +127,145 @@ class MainActivity : BaseActivity<MainDesign>() {
                         design.setRoutePreviewError()
                     }
                 }
-                if (clashRunning) {
-                    ticker.onReceive {
-                        design.fetchTraffic()
-                    }
+                if (clashRunning) ticker.onReceive { design.fetchTraffic() }
+            }
+        }
+    }
+
+    @Composable
+    private fun AuroraApp(design: MainDesign) {
+        val navController = rememberNavController()
+        val backStackEntry by navController.currentBackStackEntryAsState()
+        val currentRoute = backStackEntry?.destination?.route ?: ROUTE_HOME
+
+        LaunchedEffect(requestedRoute.value) {
+            if (navController.currentDestination?.route != requestedRoute.value) {
+                navController.navigateTopLevel(requestedRoute.value)
+            }
+        }
+
+        Scaffold(
+            contentWindowInsets = WindowInsets(0),
+            bottomBar = {
+                AuroraBottomNavigation(
+                    selected = currentRoute.toAuroraDestination(),
+                    proxyEnabled = homeUiState.value.running,
+                    onNavigate = { navController.navigateTopLevel(it.route) },
+                )
+            },
+        ) { padding ->
+            NavHost(
+                navController = navController,
+                startDestination = ROUTE_HOME,
+                modifier = Modifier.padding(bottom = padding.calculateBottomPadding()),
+                enterTransition = { fadeIn(tween(220, delayMillis = 90)) },
+                exitTransition = { fadeOut(tween(90)) },
+                popEnterTransition = { fadeIn(tween(220, delayMillis = 90)) },
+                popExitTransition = { fadeOut(tween(90)) },
+            ) {
+                composable(ROUTE_HOME) {
+                    HomeScreen(
+                        state = homeUiState.value,
+                        onToggleConnection = {
+                            launch { if (clashRunning) stopClashService() else design.startClash() }
+                        },
+                        onModeSelected = { launch { design.patchMode(it) } },
+                        onTestLatency = {
+                            if (latencyTestJob?.isActive != true) {
+                                latencyTestJob = launch { design.testSiteLatency() }
+                            }
+                        },
+                        onOpenConnections = ::showPlaceholder,
+                        onOpenLogs = {
+                            if (LogcatService.running) startActivity(LogcatActivity::class.intent)
+                            else startActivity(LogsActivity::class.intent)
+                        },
+                        onOpenRouteTest = design::showRouteTest,
+                        onOpenDns = ::showPlaceholder,
+                        onOpenProfiles = { navController.navigateTopLevel(ROUTE_PROFILES) },
+                        onOpenProxy = { navController.navigateTopLevel(ROUTE_PROXY) },
+                        onOpenSettings = { navController.navigateTopLevel(ROUTE_SETTINGS) },
+                        showBottomNavigation = false,
+                    )
+                }
+                composable(ROUTE_PROXY) {
+                    ProxyScreen(
+                        state = proxyUiState.value,
+                        onSelectGroup = ::selectProxyGroup,
+                        onSelectProxy = { index, name -> launch { selectProxy(index, name) } },
+                        onTestGroup = { launch { testProxyGroup(it) } },
+                        onRefresh = ::refreshProxy,
+                    )
+                }
+                composable(ROUTE_PROFILES) {
+                    val state by profilesViewModel.uiState.collectAsStateWithLifecycle()
+                    ProfilesScreen(
+                        state = state,
+                        onImportFile = { launch { importProfileFromFile() } },
+                        onImportUrl = { name, url -> launch { importProfile(Profile.Type.Url, name, url) } },
+                        onScanQrCode = { scanLauncher.launch(null) },
+                        onActivateProfile = profilesViewModel::activate,
+                        onUpdateProfile = profilesViewModel::update,
+                        onEditProfile = { startActivity(PropertiesActivity::class.intent.setUUID(it)) },
+                        onDuplicateProfile = { launch { duplicateProfile(it) } },
+                        onDeleteProfile = profilesViewModel::delete,
+                        onUpdateAll = profilesViewModel::updateAll,
+                        proxyEnabled = homeUiState.value.running,
+                        onOpenHome = { navController.navigateTopLevel(ROUTE_HOME) },
+                        onOpenProxy = { navController.navigateTopLevel(ROUTE_PROXY) },
+                        onOpenSettings = { navController.navigateTopLevel(ROUTE_SETTINGS) },
+                        showBottomNavigation = false,
+                    )
+                }
+                composable(ROUTE_SETTINGS) {
+                    SettingsScreen(
+                        proxyEnabled = homeUiState.value.running,
+                        onOpenHome = { navController.navigateTopLevel(ROUTE_HOME) },
+                        onOpenProxy = { navController.navigateTopLevel(ROUTE_PROXY) },
+                        onOpenProfiles = { navController.navigateTopLevel(ROUTE_PROFILES) },
+                        onOpenNetwork = { startActivity(NetworkSettingsActivity::class.intent) },
+                        onOpenApp = { startActivity(AppSettingsActivity::class.intent) },
+                        onOpenMetaFeature = { startActivity(MetaFeatureSettingsActivity::class.intent) },
+                        onOpenOverride = { startActivity(OverrideSettingsActivity::class.intent) },
+                        showBottomNavigation = false,
+                    )
                 }
             }
         }
     }
 
+    private fun NavHostController.navigateTopLevel(route: String) {
+        navigate(route) {
+            launchSingleTop = true
+            restoreState = true
+            popUpTo(graph.startDestinationId) { saveState = true }
+        }
+    }
+
     private suspend fun MainDesign.fetch() {
         setClashRunning(clashRunning)
-
-        val state = withClash {
-            queryTunnelState()
-        }
-        val providers = withClash {
-            queryProviders()
-        }
+        val state = withClash { queryTunnelState() }
+        val providers = withClash { queryProviders() }
+        val profileName = withProfile { queryActive()?.name }
 
         setMode(state.mode)
         setHasProviders(providers.isNotEmpty())
-
-        withProfile {
-            setProfileName(queryActive()?.name)
-        }
+        setProfileName(profileName)
+        homeUiState.value = homeUiState.value.copy(
+            running = clashRunning,
+            mode = state.mode,
+            profileName = profileName,
+        )
     }
 
     private suspend fun MainDesign.fetchTraffic() {
         withClash {
             setForwarded(queryTrafficTotal())
+            val traffic = queryTrafficNow()
+            homeUiState.value = homeUiState.value.copy(
+                uploadSpeed = "${traffic.trafficUpload()}/s",
+                downloadSpeed = "${traffic.trafficDownload()}/s",
+            )
         }
     }
 
@@ -156,6 +276,92 @@ class MainActivity : BaseActivity<MainDesign>() {
             patchOverride(Clash.OverrideSlot.Session, override)
         }
         setMode(mode)
+        homeUiState.value = homeUiState.value.copy(mode = mode)
+    }
+
+    private fun refreshProxy() {
+        proxyRefreshJob?.cancel()
+        proxyRefreshJob = launch {
+            if (!clashRunning) {
+                proxyUiState.value = ProxyUiState(serviceRunning = false)
+                return@launch
+            }
+            proxyUiState.value = proxyUiState.value.copy(
+                loading = true,
+                serviceRunning = true,
+                errorMessage = null,
+            )
+            runCatching {
+                val names = withClash { queryProxyGroupNames(uiStore.proxyExcludeNotSelectable) }
+                val groups = coroutineScope {
+                    names.map { name ->
+                        async {
+                            val group = withClash { queryProxyGroup(name, uiStore.proxySort) }
+                            ProxyGroupUiState(
+                                name = name,
+                                selectedProxy = group.now,
+                                selectable = group.type == "Selector",
+                                proxies = group.proxies,
+                            )
+                        }
+                    }.awaitAll()
+                }
+                val selected = names.indexOf(uiStore.proxyLastGroup).takeIf { it >= 0 } ?: 0
+                ProxyUiState(false, true, groups, selected)
+            }.onSuccess { proxyUiState.value = it }
+                .onFailure {
+                    proxyUiState.value = proxyUiState.value.copy(
+                        loading = false,
+                        serviceRunning = clashRunning,
+                        errorMessage = it.message ?: "代理列表加载失败",
+                    )
+                }
+        }
+    }
+
+    private fun selectProxyGroup(index: Int) {
+        val group = proxyUiState.value.groups.getOrNull(index) ?: return
+        uiStore.proxyLastGroup = group.name
+        proxyUiState.value = proxyUiState.value.copy(selectedGroupIndex = index)
+    }
+
+    private suspend fun selectProxy(index: Int, name: String) {
+        val group = proxyUiState.value.groups.getOrNull(index) ?: return
+        if (!group.selectable) return
+        runCatching { withClash { patchSelector(group.name, name) } }
+            .onSuccess {
+                val groups = proxyUiState.value.groups.toMutableList()
+                groups[index] = group.copy(selectedProxy = name)
+                proxyUiState.value = proxyUiState.value.copy(groups = groups)
+            }
+            .onFailure(::showError)
+    }
+
+    private suspend fun testProxyGroup(index: Int) {
+        val group = proxyUiState.value.groups.getOrNull(index) ?: return
+        setProxyGroupTesting(index, true)
+        try {
+            withClash { healthCheck(group.name) }
+            val refreshed = withClash { queryProxyGroup(group.name, uiStore.proxySort) }
+            val groups = proxyUiState.value.groups.toMutableList()
+            groups[index] = group.copy(
+                selectedProxy = refreshed.now,
+                selectable = refreshed.type == "Selector",
+                proxies = refreshed.proxies,
+                testing = false,
+            )
+            proxyUiState.value = proxyUiState.value.copy(groups = groups)
+        } catch (error: Exception) {
+            setProxyGroupTesting(index, false)
+            showError(error)
+        }
+    }
+
+    private fun setProxyGroupTesting(index: Int, testing: Boolean) {
+        val groups = proxyUiState.value.groups.toMutableList()
+        val group = groups.getOrNull(index) ?: return
+        groups[index] = group.copy(testing = testing)
+        proxyUiState.value = proxyUiState.value.copy(groups = groups)
     }
 
     private suspend fun MainDesign.testSiteLatency() {
@@ -165,20 +371,31 @@ class MainActivity : BaseActivity<MainDesign>() {
             MainDesign.LatencySite.YouTube to "https://www.youtube.com/generate_204",
             MainDesign.LatencySite.Google to "https://www.google.com/generate_204",
         )
-
         setLatencyTesting(true)
+        homeUiState.value = homeUiState.value.copy(
+            latencyTesting = true,
+            appleLatency = "检测中",
+            githubLatency = "检测中",
+            youtubeLatency = "检测中",
+            googleLatency = "检测中",
+        )
         try {
             coroutineScope {
-                targets.map { (site, url) ->
-                    async(Dispatchers.IO) {
-                        site to measureHttpLatency(url)
-                    }
-                }.awaitAll()
+                targets.map { (site, url) -> async(Dispatchers.IO) { site to measureHttpLatency(url) } }
+                    .awaitAll()
             }.forEach { (site, latency) ->
                 setSiteLatency(site, latency)
+                val value = latency?.let { "$it ms" } ?: "超时"
+                homeUiState.value = when (site) {
+                    MainDesign.LatencySite.Apple -> homeUiState.value.copy(appleLatency = value)
+                    MainDesign.LatencySite.GitHub -> homeUiState.value.copy(githubLatency = value)
+                    MainDesign.LatencySite.YouTube -> homeUiState.value.copy(youtubeLatency = value)
+                    MainDesign.LatencySite.Google -> homeUiState.value.copy(googleLatency = value)
+                }
             }
         } finally {
             setLatencyTesting(false)
+            homeUiState.value = homeUiState.value.copy(latencyTesting = false)
         }
     }
 
@@ -191,7 +408,6 @@ class MainActivity : BaseActivity<MainDesign>() {
             useCaches = false
             setRequestProperty("User-Agent", "Aurora connectivity check")
         }
-
         return try {
             val startedAt = SystemClock.elapsedRealtime()
             connection.connect()
@@ -206,101 +422,173 @@ class MainActivity : BaseActivity<MainDesign>() {
 
     private suspend fun MainDesign.startClash() {
         val active = withProfile { queryActive() }
-
         if (active == null || !active.imported) {
-            showToast(DesignR.string.no_profile_selected, ToastDuration.Long) {
-                setAction(DesignR.string.profiles) {
-                    navigateTopLevel(ProfilesActivity::class)
-                }
-            }
-
+            Toast.makeText(this@MainActivity, DesignR.string.no_profile_selected, Toast.LENGTH_LONG).show()
+            requestedRoute.value = ROUTE_PROFILES
             return
         }
-
         val vpnRequest = startClashService()
-
         try {
             if (vpnRequest != null) {
-                val result = startActivityForResult(
-                    ActivityResultContracts.StartActivityForResult(),
-                    vpnRequest
-                )
-
-                if (result.resultCode == RESULT_OK)
-                    startClashService()
+                val result = startActivityForResult(ActivityResultContracts.StartActivityForResult(), vpnRequest)
+                if (result.resultCode == RESULT_OK) startClashService()
             }
-        } catch (e: Exception) {
-            design?.showToast(DesignR.string.unable_to_start_vpn, ToastDuration.Long)
+        } catch (_: Exception) {
+            Toast.makeText(
+                this@MainActivity,
+                DesignR.string.unable_to_start_vpn,
+                Toast.LENGTH_LONG,
+            ).show()
         }
     }
 
-    private suspend fun queryAppVersionName(): String {
-        return withContext(Dispatchers.IO) {
-            packageManager.getPackageInfo(packageName, 0).versionName + "\n" + Bridge.nativeCoreVersion().replace("_", "-")
+    private suspend fun importProfileFromFile() {
+        val uri: Uri = startActivityForResult(ActivityResultContracts.GetContent(), "*/*") ?: return
+        val name = uri.fileName?.substringBeforeLast('.')?.takeIf(String::isNotBlank)
+            ?: getString(DesignR.string.new_profile)
+        importProfile(Profile.Type.File, name) { uuid ->
+            FilesClient(this).copyDocument("$uuid/config.yaml", uri)
         }
+    }
+
+    private suspend fun importProfile(
+        type: Profile.Type,
+        name: String,
+        source: String = "",
+        prepare: suspend (UUID) -> Unit = {},
+    ) {
+        var uuid: UUID? = null
+        try {
+            uuid = withProfile { create(type, name, source) }
+            prepare(uuid)
+            withProfile { commit(uuid) { } }
+            profilesViewModel.refresh()
+        } catch (error: Exception) {
+            uuid?.let { failedId -> runCatching { withProfile { delete(failedId) } } }
+            showError(error)
+            profilesViewModel.refresh()
+        }
+    }
+
+    private suspend fun duplicateProfile(uuid: UUID) {
+        runCatching { withProfile { clone(uuid) } }
+            .onSuccess {
+                startActivity(PropertiesActivity::class.intent.setUUID(it))
+                profilesViewModel.refresh()
+            }
+            .onFailure(::showError)
+    }
+
+    private fun scanResultHandler(result: QRResult) {
+        launch {
+            when (result) {
+                is QRResult.QRSuccess -> {
+                    val url = result.content.rawValue
+                        ?: result.content.rawBytes?.let(::String).orEmpty()
+                    if (url.isNotBlank()) importProfile(
+                        Profile.Type.Url,
+                        getString(DesignR.string.new_profile),
+                        url,
+                    )
+                }
+                QRResult.QRUserCanceled -> Unit
+                QRResult.QRMissingPermission -> Toast.makeText(
+                    this@MainActivity,
+                    DesignR.string.import_from_qr_no_permission,
+                    Toast.LENGTH_LONG,
+                ).show()
+                is QRResult.QRError -> Toast.makeText(
+                    this@MainActivity,
+                    DesignR.string.import_from_qr_exception,
+                    Toast.LENGTH_LONG,
+                ).show()
+            }
+        }
+    }
+
+    private fun showPlaceholder() {
+        Toast.makeText(this, DesignR.string.aurora_feature_placeholder, Toast.LENGTH_SHORT).show()
+    }
+
+    private fun showError(error: Throwable) {
+        Toast.makeText(this, error.message ?: "操作失败", Toast.LENGTH_LONG).show()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        requestedRoute.value = routeFromIntent(intent)
         super.onCreate(savedInstanceState)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            val requestPermissionLauncher =
-                registerForActivityResult(RequestPermission()
-                ) { isGranted: Boolean ->
-                }
-            if (ContextCompat.checkSelfPermission(
-                    this,
-                    android.Manifest.permission.POST_NOTIFICATIONS
-                ) != PackageManager.PERMISSION_GRANTED) {
-                requestPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
-            }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS) !=
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            registerForActivityResult(RequestPermission()) { }
+                .launch(android.Manifest.permission.POST_NOTIFICATIONS)
         }
         setupShortcuts()
     }
 
-    private fun setupShortcuts() {
-        // Skip dynamic shortcut setup when the app icon is hidden.
-        if (uiStore.hideAppIcon) return
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        requestedRoute.value = routeFromIntent(intent)
+    }
 
-        val flags = Intent.FLAG_ACTIVITY_NEW_TASK or
-            Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS or
+    private fun routeFromIntent(intent: Intent): String =
+        intent.getStringExtra(EXTRA_TOP_LEVEL_ROUTE)
+            ?.takeIf { it in TOP_LEVEL_ROUTES }
+            ?: if (intent.action == Intent.ACTION_APPLICATION_PREFERENCES ||
+                intent.action == "android.service.quicksettings.action.QS_TILE_PREFERENCES"
+            ) ROUTE_SETTINGS else ROUTE_HOME
+
+    private fun setupShortcuts() {
+        if (uiStore.hideAppIcon) return
+        val flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS or
             Intent.FLAG_ACTIVITY_NO_ANIMATION
 
-        val toggle = ShortcutInfoCompat.Builder(this, "toggle_clash")
-            .setShortLabel(getString(DesignR.string.shortcut_toggle_short))
-            .setLongLabel(getString(DesignR.string.shortcut_toggle_long))
-            .setIcon(IconCompat.createWithResource(this, R.drawable.ic_toggle_all))
-            .setIntent(
-                Intent(Intents.ACTION_TOGGLE_CLASH)
-                    .setClassName(this, ExternalControlActivity::class.java.name)
-                    .addFlags(flags)
-            )
-            .setRank(0)
-            .build()
+        fun shortcut(id: String, short: Int, long: Int, icon: Int, action: String, rank: Int) =
+            ShortcutInfoCompat.Builder(this, id)
+                .setShortLabel(getString(short))
+                .setLongLabel(getString(long))
+                .setIcon(IconCompat.createWithResource(this, icon))
+                .setIntent(
+                    Intent(action)
+                        .setClassName(this, ExternalControlActivity::class.java.name)
+                        .addFlags(flags),
+                )
+                .setRank(rank)
+                .build()
 
-        val start = ShortcutInfoCompat.Builder(this, "start_clash")
-            .setShortLabel(getString(DesignR.string.shortcut_start_short))
-            .setLongLabel(getString(DesignR.string.shortcut_start_long))
-            .setIcon(IconCompat.createWithResource(this, R.drawable.ic_toggle_on))
-            .setIntent(
-                Intent(Intents.ACTION_START_CLASH)
-                    .setClassName(this, ExternalControlActivity::class.java.name)
-                    .addFlags(flags)
-            )
-            .setRank(1)
-            .build()
-
-        val stop = ShortcutInfoCompat.Builder(this, "stop_clash")
-            .setShortLabel(getString(DesignR.string.shortcut_stop_short))
-            .setLongLabel(getString(DesignR.string.shortcut_stop_long))
-            .setIcon(IconCompat.createWithResource(this, R.drawable.ic_toggle_off))
-            .setIntent(
-                Intent(Intents.ACTION_STOP_CLASH)
-                    .setClassName(this, ExternalControlActivity::class.java.name)
-                    .addFlags(flags)
-            )
-            .setRank(2)
-            .build()
-
-        ShortcutManagerCompat.setDynamicShortcuts(this, listOf(toggle, start, stop))
+        ShortcutManagerCompat.setDynamicShortcuts(
+            this,
+            listOf(
+                shortcut("toggle_clash", DesignR.string.shortcut_toggle_short, DesignR.string.shortcut_toggle_long, R.drawable.ic_toggle_all, Intents.ACTION_TOGGLE_CLASH, 0),
+                shortcut("start_clash", DesignR.string.shortcut_start_short, DesignR.string.shortcut_start_long, R.drawable.ic_toggle_on, Intents.ACTION_START_CLASH, 1),
+                shortcut("stop_clash", DesignR.string.shortcut_stop_short, DesignR.string.shortcut_stop_long, R.drawable.ic_toggle_off, Intents.ACTION_STOP_CLASH, 2),
+            ),
+        )
     }
+
+    companion object {
+        const val EXTRA_TOP_LEVEL_ROUTE = "com.koude.aurora.extra.TOP_LEVEL_ROUTE"
+        const val ROUTE_HOME = "home"
+        const val ROUTE_PROXY = "proxy"
+        const val ROUTE_PROFILES = "profiles"
+        const val ROUTE_SETTINGS = "settings"
+        private val TOP_LEVEL_ROUTES = setOf(ROUTE_HOME, ROUTE_PROXY, ROUTE_PROFILES, ROUTE_SETTINGS)
+    }
+}
+
+private val AuroraDestination.route: String
+    get() = when (this) {
+        AuroraDestination.Home -> MainActivity.ROUTE_HOME
+        AuroraDestination.Proxy -> MainActivity.ROUTE_PROXY
+        AuroraDestination.Profiles -> MainActivity.ROUTE_PROFILES
+        AuroraDestination.Settings -> MainActivity.ROUTE_SETTINGS
+    }
+
+private fun String.toAuroraDestination(): AuroraDestination = when (this) {
+    MainActivity.ROUTE_PROXY -> AuroraDestination.Proxy
+    MainActivity.ROUTE_PROFILES -> AuroraDestination.Profiles
+    MainActivity.ROUTE_SETTINGS -> AuroraDestination.Settings
+    else -> AuroraDestination.Home
 }

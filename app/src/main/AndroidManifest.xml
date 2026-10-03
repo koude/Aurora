@@ -37,14 +37,11 @@
             </activity>
         <activity android:name=".ApkBrokenActivity" android:configChanges="uiMode" android:exported="false" android:label="@string/application_broken" />
         <activity android:name=".AppCrashedActivity" android:configChanges="uiMode" android:exported="false" android:label="@string/application_crashed" android:launchMode="singleTask" />
-        <activity android:name=".ProfilesActivity" android:configChanges="uiMode" android:exported="false" android:label="@string/profiles" />
         <activity android:name=".NewProfileActivity" android:configChanges="uiMode" android:exported="false" android:label="@string/create_profile" />
         <activity android:name=".PropertiesActivity" android:configChanges="uiMode" android:exported="false" android:label="@string/profile" />
-        <activity android:name=".ProxyActivity" android:configChanges="uiMode" android:exported="false" android:label="@string/proxy" />
         <activity android:name=".ProvidersActivity" android:configChanges="uiMode" android:exported="false" android:label="@string/providers" />
         <activity android:name=".LogsActivity" android:configChanges="uiMode" android:exported="false" android:label="@string/logs" />
         <activity android:name=".LogcatActivity" android:configChanges="uiMode" android:exported="false" android:label="@string/logcat" />
-        <activity android:name=".SettingsActivity" android:configChanges="uiMode" android:exported="false" android:label="@string/settings" />
         <activity android:name=".NetworkSettingsActivity" android:configChanges="uiMode" android:exported="false" android:label="@string/network" />
         <activity android:name=".AppSettingsActivity" android:configChanges="uiMode" android:exported="false" android:label="@string/app" />
         <activity android:name=".OverrideSettingsActivity" android:configChanges="uiMode" android:exported="false" android:label="@string/override" />

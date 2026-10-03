@@ -12,6 +12,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
@@ -25,6 +29,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.ScaffoldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -48,12 +53,15 @@ fun SettingsScreen(
     onOpenApp: () -> Unit,
     onOpenMetaFeature: () -> Unit,
     onOpenOverride: () -> Unit,
+    showBottomNavigation: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
     Scaffold(
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.surface,
-        bottomBar = {
+        contentWindowInsets = if (showBottomNavigation) ScaffoldDefaults.contentWindowInsets
+        else WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal),
+        bottomBar = if (showBottomNavigation) {{
             AuroraBottomNavigation(
                 selected = AuroraDestination.Settings,
                 proxyEnabled = proxyEnabled,
@@ -66,7 +74,7 @@ fun SettingsScreen(
                     }
                 },
             )
-        },
+        }} else {{ }},
     ) { padding ->
         LazyColumn(
             modifier = Modifier.fillMaxSize(),

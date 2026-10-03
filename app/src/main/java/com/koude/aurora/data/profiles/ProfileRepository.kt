@@ -23,6 +23,7 @@ interface ProfileRepository {
     suspend fun refresh()
     suspend fun activate(id: UUID)
     suspend fun update(id: UUID)
+    suspend fun updateAll()
     suspend fun delete(id: UUID)
 }
 
@@ -72,6 +73,14 @@ class ServiceProfileRepository : ProfileRepository {
 
     override suspend fun update(id: UUID) {
         withProfile { update(id) }
+    }
+
+    override suspend fun updateAll() {
+        withProfile {
+            queryAll()
+                .filter { it.imported && it.type != Profile.Type.File }
+                .forEach { update(it.uuid) }
+        }
     }
 
     override suspend fun delete(id: UUID) {

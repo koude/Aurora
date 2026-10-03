@@ -7,6 +7,7 @@ import com.github.kr328.kaidl.BinderInterface
 @BinderInterface
 interface IClashManager {
     fun queryTunnelState(): TunnelState
+    fun queryTrafficNow(): Long
     fun queryTrafficTotal(): Long
     fun queryRoutePreview(target: String): RoutePreview
     fun queryProxyGroupNames(excludeNotSelectable: Boolean): List<String>

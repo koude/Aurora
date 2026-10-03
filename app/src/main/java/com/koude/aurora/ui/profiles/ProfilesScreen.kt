@@ -16,6 +16,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -42,6 +46,7 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.ScaffoldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -92,6 +97,7 @@ fun ProfilesScreen(
     onOpenHome: () -> Unit,
     onOpenProxy: () -> Unit,
     onOpenSettings: () -> Unit,
+    showBottomNavigation: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
     var addSheetVisible by rememberSaveable { mutableStateOf(false) }
@@ -100,7 +106,9 @@ fun ProfilesScreen(
     Scaffold(
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.surface,
-        bottomBar = {
+        contentWindowInsets = if (showBottomNavigation) ScaffoldDefaults.contentWindowInsets
+        else WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal),
+        bottomBar = if (showBottomNavigation) {{
             AuroraBottomNavigation(
                 selected = AuroraDestination.Profiles,
                 proxyEnabled = proxyEnabled,
@@ -113,7 +121,7 @@ fun ProfilesScreen(
                     }
                 },
             )
-        },
+        }} else {{ }},
         floatingActionButton = {
             ExtendedFloatingActionButton(
                 modifier = Modifier.height(54.dp),

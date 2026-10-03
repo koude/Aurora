@@ -26,6 +26,10 @@ class ClashManager(private val context: Context) : IClashManager,
         return Clash.queryTrafficTotal()
     }
 
+    override fun queryTrafficNow(): Long {
+        return Clash.queryTrafficNow()
+    }
+
     override fun queryRoutePreview(target: String): RoutePreview {
         return Clash.queryRoutePreview(target)
     }

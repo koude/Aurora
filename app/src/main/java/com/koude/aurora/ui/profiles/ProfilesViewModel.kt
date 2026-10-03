@@ -45,7 +45,11 @@ class ProfilesViewModel(
 
     fun activate(id: UUID) = perform { repository.activate(id) }
 
+    fun refresh() = perform { repository.refresh() }
+
     fun update(id: UUID) = perform { repository.update(id) }
+
+    fun updateAll() = perform { repository.updateAll() }
 
     fun delete(id: UUID) = perform { repository.delete(id) }
 
