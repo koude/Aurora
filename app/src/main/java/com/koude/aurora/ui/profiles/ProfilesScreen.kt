@@ -75,6 +75,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -600,35 +601,46 @@ private fun ProfileImportProgressDialog(progress: ProfileImportProgress) {
         title = { Text("正在添加配置") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(progress.stage, style = MaterialTheme.typography.bodyMedium)
+                Text(
+                    text = progress.stage,
+                    style = MaterialTheme.typography.bodyMedium,
+                    minLines = 2,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
                 if (hasTotal) {
                     LinearProgressIndicator(
                         progress = { fraction },
                         modifier = Modifier.fillMaxWidth(),
                     )
-                    Text(
-                        "${Formatter.formatFileSize(context, progress.downloadedBytes)} / " +
-                            "${Formatter.formatFileSize(context, progress.totalBytes)}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
                 } else {
                     LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-                    if (progress.downloadedBytes > 0) {
-                        Text(
-                            "已接收 ${Formatter.formatFileSize(context, progress.downloadedBytes)}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
                 }
-                if (progress.speedBytesPerSecond > 0) {
-                    Text(
-                        "下载速度 ${Formatter.formatFileSize(context, progress.speedBytesPerSecond)}/秒",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                }
+                Text(
+                    text = if (hasTotal) {
+                        "${Formatter.formatFileSize(context, progress.downloadedBytes)} / " +
+                            Formatter.formatFileSize(context, progress.totalBytes)
+                    } else if (progress.downloadedBytes > 0) {
+                        "已接收 ${Formatter.formatFileSize(context, progress.downloadedBytes)}"
+                    } else {
+                        "正在准备资源…"
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    minLines = 1,
+                    maxLines = 1,
+                )
+                Text(
+                    text = if (progress.speedBytesPerSecond > 0) {
+                        "下载速度 ${Formatter.formatFileSize(context, progress.speedBytesPerSecond)}/秒"
+                    } else {
+                        "下载速度 --/秒"
+                    },
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    minLines = 1,
+                    maxLines = 1,
+                )
             }
         },
         confirmButton = {},
