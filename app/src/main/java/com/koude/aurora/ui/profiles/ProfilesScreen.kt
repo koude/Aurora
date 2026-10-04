@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -41,7 +42,6 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
@@ -112,7 +112,10 @@ fun ProfilesScreen(
         containerColor = MaterialTheme.colorScheme.surface,
         topBar = {
             Row(
-                modifier = Modifier.fillMaxWidth().padding(start = 8.dp, top = 4.dp, end = 20.dp, bottom = 4.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .statusBarsPadding()
+                    .padding(start = 8.dp, top = 4.dp, end = 20.dp, bottom = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 IconButton(onClick = onBack) {
@@ -142,15 +145,17 @@ fun ProfilesScreen(
             )
         }} else {{ }},
         floatingActionButton = {
-            ExtendedFloatingActionButton(
-                modifier = Modifier.height(54.dp),
-                onClick = { addSheetVisible = true },
-                icon = { Icon(Icons.Default.Add, contentDescription = null) },
-                text = { Text("添加配置") },
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                shape = RoundedCornerShape(18.dp),
-            )
+            if (!state.loading && state.profiles.isNotEmpty()) {
+                ExtendedFloatingActionButton(
+                    modifier = Modifier.height(54.dp),
+                    onClick = { addSheetVisible = true },
+                    icon = { Icon(Icons.Default.Add, contentDescription = null) },
+                    text = { Text("添加配置") },
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    shape = RoundedCornerShape(18.dp),
+                )
+            }
         },
     ) { padding ->
         when {

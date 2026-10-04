@@ -71,6 +71,7 @@ data class ProxyGroupUiState(
     val testing: Boolean = false,
     val activeDelay: Int = 65535,
     val activeDelayTested: Boolean = false,
+    val selectingProxy: String? = null,
 )
 
 data class ProxyRouteUiState(
@@ -399,9 +400,10 @@ private fun ProxyGroupCard(
                         ProxyCard(
                             proxy = proxy,
                             selected = proxy.name == group.selectedProxy,
+                            selecting = proxy.name == group.selectingProxy,
                             route = group.nestedRoutes[proxy.name],
                             showDelay = group.delayTested,
-                            enabled = group.selectable,
+                            enabled = group.selectable && group.selectingProxy == null,
                             onClick = { onSelectProxy(proxy.name) },
                         )
                     }
@@ -505,6 +507,7 @@ private fun ProxySettingsSheet(
 private fun ProxyCard(
     proxy: Proxy,
     selected: Boolean,
+    selecting: Boolean,
     enabled: Boolean,
     route: ProxyRouteUiState?,
     showDelay: Boolean,
@@ -566,7 +569,9 @@ private fun ProxyCard(
             }
             val delay = if (proxy.isGroup) route?.delay ?: proxy.delay else proxy.delay
             Box(Modifier.width(64.dp), contentAlignment = Alignment.CenterEnd) {
-                if (showDelay && (delay == 65535 || delay in 1..65534)) {
+                if (selecting) {
+                    CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+                } else if (showDelay && (delay == 65535 || delay in 1..65534)) {
                     ProxyDelayText(delay)
                 }
             }

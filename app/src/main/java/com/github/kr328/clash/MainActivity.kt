@@ -14,15 +14,28 @@ import androidx.activity.viewModels
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.content.pm.ShortcutInfoCompat
 import androidx.core.content.pm.ShortcutManagerCompat
@@ -82,6 +95,11 @@ import java.util.UUID
 import java.util.concurrent.TimeUnit
 import com.github.kr328.clash.design.R as DesignR
 
+private data class AuroraErrorDialogState(
+    val title: String,
+    val details: String,
+)
+
 class MainActivity : BaseActivity<MainDesign>() {
     private var latencyTestJob: Job? = null
     private var proxyRefreshJob: Job? = null
@@ -90,6 +108,7 @@ class MainActivity : BaseActivity<MainDesign>() {
     private val homeUiState = mutableStateOf(HomeUiState())
     private val proxyUiState = mutableStateOf(ProxyUiState())
     private val connectionsUiState = mutableStateOf(ConnectionsUiState())
+    private val errorDialogState = mutableStateOf<AuroraErrorDialogState?>(null)
     private val activeRoute = mutableStateOf(ROUTE_HOME)
     private val requestedRoute = mutableStateOf<String?>(null)
     private val profilesViewModel: ProfilesViewModel by viewModels { ProfilesViewModel.Factory }
@@ -300,6 +319,13 @@ class MainActivity : BaseActivity<MainDesign>() {
                 }
             }
         }
+
+        errorDialogState.value?.let { error ->
+            AuroraErrorDialog(
+                error = error,
+                onDismiss = { errorDialogState.value = null },
+            )
+        }
     }
 
     private fun NavHostController.navigateTopLevel(route: String) {
@@ -500,15 +526,30 @@ class MainActivity : BaseActivity<MainDesign>() {
 
     private suspend fun selectProxy(index: Int, name: String) {
         val group = proxyUiState.value.groups.getOrNull(index) ?: return
-        if (!group.selectable) return
+        if (!group.selectable || group.selectingProxy != null) return
+
+        val pendingGroups = proxyUiState.value.groups.toMutableList()
+        pendingGroups[index] = group.copy(selectingProxy = name)
+        proxyUiState.value = proxyUiState.value.copy(groups = pendingGroups)
+
         runCatching { withClash { patchSelector(group.name, name) } }
             .onSuccess {
-                val groups = proxyUiState.value.groups.toMutableList()
-                groups[index] = group.copy(selectedProxy = name)
-                proxyUiState.value = proxyUiState.value.copy(groups = groups)
+                clearProxySelectionPending(index, name)
                 refreshProxy()
             }
-            .onFailure(::showError)
+            .onFailure { error ->
+                clearProxySelectionPending(index, name)
+                refreshProxy()
+                showError(IllegalStateException("切换到 $name 失败：${error.message ?: "操作未成功"}", error))
+            }
+    }
+
+    private fun clearProxySelectionPending(index: Int, name: String) {
+        val groups = proxyUiState.value.groups.toMutableList()
+        val group = groups.getOrNull(index) ?: return
+        if (group.selectingProxy != name) return
+        groups[index] = group.copy(selectingProxy = null)
+        proxyUiState.value = proxyUiState.value.copy(groups = groups)
     }
 
     private suspend fun testProxyGroup(index: Int) {
@@ -642,7 +683,10 @@ class MainActivity : BaseActivity<MainDesign>() {
             profilesViewModel.refresh()
         } catch (error: Exception) {
             uuid?.let { failedId -> runCatching { withProfile { delete(failedId) } } }
-            showError(error)
+            showError(
+                error = error,
+                title = if (type == Profile.Type.Url) "订阅获取失败" else "配置导入失败",
+            )
             profilesViewModel.refresh()
         }
     }
@@ -688,7 +732,24 @@ class MainActivity : BaseActivity<MainDesign>() {
     }
 
     private fun showError(error: Throwable) {
-        Toast.makeText(this, error.message ?: "操作失败", Toast.LENGTH_LONG).show()
+        showError(error, "操作失败")
+    }
+
+    private fun showError(error: Throwable, title: String) {
+        val messages = mutableListOf<String>()
+        val visited = mutableSetOf<Throwable>()
+        var current: Throwable? = error
+        while (current != null && visited.add(current)) {
+            current.message
+                ?.trim()
+                ?.takeIf(String::isNotEmpty)
+                ?.let(messages::add)
+            current = current.cause
+        }
+        errorDialogState.value = AuroraErrorDialogState(
+            title = title,
+            details = messages.distinct().joinToString("\n\n").ifBlank { "未提供错误详情" },
+        )
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -771,4 +832,52 @@ private fun String.toAuroraDestination(): AuroraDestination = when (this) {
     MainActivity.ROUTE_PROFILES -> AuroraDestination.Settings
     MainActivity.ROUTE_SETTINGS -> AuroraDestination.Settings
     else -> AuroraDestination.Home
+}
+
+@Composable
+private fun AuroraErrorDialog(
+    error: AuroraErrorDialogState,
+    onDismiss: () -> Unit,
+) {
+    val clipboardManager = LocalClipboardManager.current
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(error.title) },
+        text = {
+            Column(
+                modifier = Modifier
+                    .heightIn(max = 420.dp)
+                    .verticalScroll(rememberScrollState()),
+            ) {
+                Text(
+                    text = "操作未能完成。错误详情如下：",
+                    style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                SelectionContainer {
+                    Text(
+                        text = error.details,
+                        style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                        color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("关闭")
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = {
+                    clipboardManager.setText(AnnotatedString(error.details))
+                    onDismiss()
+                },
+            ) {
+                Text("复制详情")
+            }
+        },
+    )
 }
