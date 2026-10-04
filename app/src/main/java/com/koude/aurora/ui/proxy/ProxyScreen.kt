@@ -48,6 +48,8 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.saveable.listSaver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -157,7 +159,9 @@ private fun ProxyContent(
     var settingsVisible by remember { mutableStateOf(false) }
     var searchVisible by remember { mutableStateOf(false) }
     var query by remember { mutableStateOf("") }
-    val expandedGroups = remember { mutableStateMapOf<String, Boolean>() }
+    val expandedGroups = rememberSaveable(saver = expandedGroupsSaver) {
+        mutableStateMapOf<String, Boolean>()
+    }
     val normalizedQuery = query.trim().lowercase()
     val filteredGroups = state.groups.filter { group ->
         normalizedQuery.isEmpty() || group.name.lowercase().contains(normalizedQuery) ||
@@ -297,6 +301,19 @@ private fun ProxyContent(
         )
     }
 }
+
+private val expandedGroupsSaver = listSaver<MutableMap<String, Boolean>, String>(
+    save = { groups ->
+        groups.flatMap { (name, expanded) -> listOf(name, if (expanded) "1" else "0") }
+    },
+    restore = { saved ->
+        mutableStateMapOf<String, Boolean>().apply {
+            saved.chunked(2).forEach { entry ->
+                if (entry.size == 2) put(entry[0], entry[1] == "1")
+            }
+        }
+    },
+)
 
 @Composable
 private fun ProxyGroupCard(
