@@ -46,6 +46,11 @@ class UiStore(context: Context) {
         defaultValue = false,
     )
 
+    var lastMainRoute by store.string(
+        key = "last_main_route",
+        defaultValue = "home",
+    )
+
     var proxyLine: Int by store.int(
         key = "proxy_line",
         defaultValue = 2

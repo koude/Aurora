@@ -74,6 +74,14 @@ func healthCheck(completable unsafe.Pointer, name C.c_string) {
 	}(C.GoString(name))
 }
 
+//export testProxy
+func testProxy(completable unsafe.Pointer, name C.c_string) {
+	go func(name string) {
+		tunnel.TestProxy(name)
+		C.complete(completable, nil)
+	}(C.GoString(name))
+}
+
 //export healthCheckAll
 func healthCheckAll() {
 	tunnel.HealthCheckAll()

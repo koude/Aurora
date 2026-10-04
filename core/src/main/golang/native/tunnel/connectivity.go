@@ -1,13 +1,24 @@
 package tunnel
 
 import (
+	"context"
 	"sync"
 
+	"github.com/metacubex/mihomo/common/utils"
 	"github.com/metacubex/mihomo/adapter/outboundgroup"
 	"github.com/metacubex/mihomo/constant/provider"
 	"github.com/metacubex/mihomo/log"
 	"github.com/metacubex/mihomo/tunnel"
 )
+
+func TestProxy(name string) {
+	p := tunnel.Proxies()[name]
+	if p == nil {
+		log.Warnln("Request proxy test for `%s`: not found", name)
+		return
+	}
+	_, _ = p.URLTest(context.Background(), "https://www.gstatic.com/generate_204", utils.IntRanges[uint16](nil))
+}
 
 func HealthCheck(name string) {
 	p := tunnel.Proxies()[name]

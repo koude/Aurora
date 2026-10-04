@@ -3,6 +3,7 @@ package com.koude.aurora.ui.proxy
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -12,6 +13,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.only
@@ -20,8 +23,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
@@ -66,6 +67,8 @@ data class ProxyGroupUiState(
     val proxies: List<Proxy> = emptyList(),
     val nestedRoutes: Map<String, ProxyRouteUiState> = emptyMap(),
     val testing: Boolean = false,
+    val activeDelay: Int = 65535,
+    val activeDelayTested: Boolean = false,
 )
 
 data class ProxyRouteUiState(
@@ -81,6 +84,7 @@ data class ProxyUiState(
     val errorMessage: String? = null,
     val sort: ProxySort = ProxySort.Default,
     val hideUnselectableGroups: Boolean = false,
+    val activeEndpointsTesting: Boolean = false,
 )
 
 @Composable
@@ -197,8 +201,8 @@ private fun ProxyContent(
                 IconButton(onClick = { settingsVisible = true }) {
                     Icon(Icons.Default.MoreVert, contentDescription = "代理设置")
                 }
-                IconButton(onClick = onRefresh, enabled = !state.loading) {
-                    if (state.loading) CircularProgressIndicator(Modifier.size(22.dp), strokeWidth = 2.dp)
+                IconButton(onClick = onRefresh, enabled = !state.loading && !state.activeEndpointsTesting) {
+                    if (state.loading || state.activeEndpointsTesting) CircularProgressIndicator(Modifier.size(22.dp), strokeWidth = 2.dp)
                     else Icon(Icons.Default.Refresh, contentDescription = "刷新")
                 }
             }
@@ -323,36 +327,36 @@ private fun ProxyGroupCard(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Column(Modifier.weight(1f)) {
-                    Text(group.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium)
-                    val selectedRoute = group.nestedRoutes[group.selectedProxy]?.names
-                    val current = selectedRoute?.joinToString(" → ") ?: group.selectedProxy
-                    if (current.isNotBlank()) {
+                val current = group.nestedRoutes[group.selectedProxy]?.names?.lastOrNull()
+                    ?: group.selectedProxy
+                BoxWithConstraints(Modifier.weight(1f)) {
+                    val availableWidth = maxWidth
+                    Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            text = "当前选择：$current",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            text = if (current.isBlank()) group.name else "${group.name} → $current",
+                            modifier = Modifier.weight(1f),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Medium,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
+                        if (availableWidth >= 270.dp) {
+                            Text(
+                                displayGroupType(group.type),
+                                modifier = Modifier.padding(start = 8.dp),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = .72f),
+                                maxLines = 1,
+                                softWrap = false,
+                            )
+                        }
                     }
                 }
-                Surface(
-                    shape = MaterialTheme.shapes.small,
-                    color = MaterialTheme.colorScheme.secondaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                ) {
-                    Text(
-                        displayGroupType(group.type),
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
-                        style = MaterialTheme.typography.labelSmall,
-                    )
+                Box(Modifier.width(64.dp), contentAlignment = Alignment.CenterEnd) {
+                    if (group.activeDelayTested) {
+                        ProxyDelayText(group.activeDelay)
+                    }
                 }
-                Icon(
-                    imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                    contentDescription = if (expanded) "收起${group.name}" else "展开${group.name}",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
             }
             if (expanded) {
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = .55f))
@@ -504,8 +508,8 @@ private fun ProxyCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 17.dp, vertical = 15.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                .padding(horizontal = 17.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             if (selected) {
@@ -517,56 +521,59 @@ private fun ProxyCard(
                     Surface(Modifier.fillMaxSize(), shape = MaterialTheme.shapes.extraSmall, color = MaterialTheme.colorScheme.primary) {}
                 }
             }
-            Column(Modifier.weight(1f)) {
-                val routeNames = if (proxy.isGroup) route?.names else null
-                Text(
-                    text = routeNames?.joinToString(" → ") ?: if (proxy.isGroup) proxy.name else proxy.title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                val subtitle = if (proxy.isGroup) "嵌套策略组" else {
-                    listOf(proxy.subtitle.takeIf { it.isNotBlank() && it != proxy.type }, shortProtocol(proxy.type))
-                        .filterNotNull()
-                        .filter(String::isNotBlank)
-                        .distinct()
-                        .joinToString(" · ")
-                }
+            val routeNames = if (proxy.isGroup) route?.names else null
+            Text(
+                text = routeNames?.joinToString(" → ") ?: if (proxy.isGroup) proxy.name else proxy.title,
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            if (!proxy.isGroup) {
+                val subtitle = listOf(
+                    proxy.subtitle.takeIf { it.isNotBlank() && it != proxy.type },
+                    shortProtocol(proxy.type),
+                ).filterNotNull().filter(String::isNotBlank).distinct().joinToString(" · ")
                 if (subtitle.isNotBlank()) {
                     Text(
                         text = subtitle,
-                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.widthIn(max = 104.dp),
+                        style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
+                        softWrap = false,
                     )
                 }
             }
             val delay = if (proxy.isGroup) route?.delay ?: proxy.delay else proxy.delay
-            if (showDelay && delay == 65535) {
-                Text("超时", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelLarge)
-            } else if (showDelay && delay in 1..65534) {
-                val delayColor = when (delay) {
-                    in 1..399 -> MaterialTheme.colorScheme.primary
-                    in 400..799 -> MaterialTheme.colorScheme.tertiary
-                    else -> MaterialTheme.colorScheme.error
-                }
-                Surface(
-                    shape = MaterialTheme.shapes.small,
-                    color = delayColor.copy(alpha = .12f),
-                    contentColor = delayColor,
-                ) {
-                    Text(
-                        text = "$delay ms",
-                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 4.dp),
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.SemiBold,
-                    )
+            Box(Modifier.width(64.dp), contentAlignment = Alignment.CenterEnd) {
+                if (showDelay && (delay == 65535 || delay in 1..65534)) {
+                    ProxyDelayText(delay)
                 }
             }
         }
     }
+}
+
+@Composable
+private fun ProxyDelayText(delay: Int) {
+    val color = when {
+        delay == 65535 -> MaterialTheme.colorScheme.error.copy(alpha = .78f)
+        delay in 1..399 -> MaterialTheme.colorScheme.primary.copy(alpha = .82f)
+        delay in 400..799 -> MaterialTheme.colorScheme.tertiary.copy(alpha = .82f)
+        delay in 800..65534 -> MaterialTheme.colorScheme.error.copy(alpha = .82f)
+        else -> MaterialTheme.colorScheme.onSurfaceVariant
+    }
+    Text(
+        text = if (delay == 65535) "超时" else "$delay ms",
+        style = MaterialTheme.typography.labelMedium,
+        fontWeight = FontWeight.Medium,
+        color = color,
+        maxLines = 1,
+        softWrap = false,
+    )
 }
 
 private fun shortProtocol(type: String): String = when (type.lowercase()) {
@@ -577,11 +584,11 @@ private fun shortProtocol(type: String): String = when (type.lowercase()) {
 }
 
 private fun displayGroupType(type: String): String = when (type.lowercase()) {
-    "urltest" -> "URL-Test"
-    "loadbalance" -> "Load-Balance"
-    "selector" -> "Selector"
-    "fallback" -> "Fallback"
-    "relay" -> "Relay"
+    "urltest", "url-test" -> "自动测速"
+    "loadbalance", "load-balance" -> "负载均衡"
+    "selector" -> "手动选择"
+    "fallback" -> "故障切换"
+    "relay" -> "链式代理"
     else -> type
 }
 

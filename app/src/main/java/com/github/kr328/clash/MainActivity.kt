@@ -21,6 +21,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
 import androidx.core.content.pm.ShortcutInfoCompat
@@ -85,6 +86,7 @@ class MainActivity : BaseActivity<MainDesign>() {
     private var latencyTestJob: Job? = null
     private var proxyRefreshJob: Job? = null
     private val testedProxyGroups = mutableSetOf<String>()
+    private val testedActiveProxies = mutableSetOf<String>()
     private val homeUiState = mutableStateOf(HomeUiState())
     private val proxyUiState = mutableStateOf(ProxyUiState())
     private val connectionsUiState = mutableStateOf(ConnectionsUiState())
@@ -119,6 +121,7 @@ class MainActivity : BaseActivity<MainDesign>() {
                         Event.ClashStop -> {
                             design.fetch()
                             testedProxyGroups.clear()
+                            testedActiveProxies.clear()
                             proxyUiState.value = ProxyUiState(serviceRunning = false)
                             connectionsUiState.value = ConnectionsUiState()
                             homeUiState.value = homeUiState.value.copy(
@@ -129,6 +132,7 @@ class MainActivity : BaseActivity<MainDesign>() {
                         Event.ProfileLoaded -> {
                             design.fetch()
                             testedProxyGroups.clear()
+                            testedActiveProxies.clear()
                             refreshProxy()
                         }
                         Event.ProfileUpdateCompleted, Event.ProfileUpdateFailed -> profilesViewModel.refresh()
@@ -153,6 +157,9 @@ class MainActivity : BaseActivity<MainDesign>() {
     @Composable
     private fun AuroraApp(design: MainDesign) {
         val navController = rememberNavController()
+        val startDestination = remember {
+            uiStore.lastMainRoute.takeIf { it in PERSISTED_MAIN_ROUTES } ?: ROUTE_HOME
+        }
         val backStackEntry by navController.currentBackStackEntryAsState()
         val currentRoute = backStackEntry?.destination?.route ?: ROUTE_HOME
 
@@ -168,6 +175,9 @@ class MainActivity : BaseActivity<MainDesign>() {
 
         LaunchedEffect(currentRoute, homeUiState.value.running) {
             activeRoute.value = currentRoute
+            if (currentRoute in PERSISTED_MAIN_ROUTES) {
+                uiStore.lastMainRoute = currentRoute
+            }
             if (currentRoute == ROUTE_CONNECTIONS) refreshConnections()
         }
 
@@ -183,7 +193,7 @@ class MainActivity : BaseActivity<MainDesign>() {
         ) { padding ->
             NavHost(
                 navController = navController,
-                startDestination = ROUTE_HOME,
+                startDestination = startDestination,
                 modifier = Modifier.padding(bottom = padding.calculateBottomPadding()),
                 enterTransition = { fadeIn(tween(220, delayMillis = 90)) },
                 exitTransition = { fadeOut(tween(90)) },
@@ -221,7 +231,7 @@ class MainActivity : BaseActivity<MainDesign>() {
                         onSelectGroup = ::selectProxyGroup,
                         onSelectProxy = { index, name -> launch { selectProxy(index, name) } },
                         onTestGroup = { launch { testProxyGroup(it) } },
-                        onRefresh = ::refreshProxy,
+                        onRefresh = ::refreshActiveProxyEndpoints,
                         onSortChanged = { sort ->
                             uiStore.proxySort = sort
                             refreshProxy()
@@ -388,6 +398,11 @@ class MainActivity : BaseActivity<MainDesign>() {
                         delayTested = name in testedProxyGroups,
                         proxies = group.proxies,
                         nestedRoutes = routes,
+                        activeDelay = routes[group.now]?.delay
+                            ?: group.proxies.firstOrNull { it.name == group.now }?.delay
+                            ?: 65535,
+                        activeDelayTested = activeEndpointFor(group.now, routes, group.proxies)
+                            ?.let { it in testedActiveProxies } == true,
                     )
                 }
                 val selected = names.indexOf(uiStore.proxyLastGroup).takeIf { it >= 0 } ?: 0
@@ -398,6 +413,7 @@ class MainActivity : BaseActivity<MainDesign>() {
                     selectedGroupIndex = selected,
                     sort = uiStore.proxySort,
                     hideUnselectableGroups = uiStore.proxyExcludeNotSelectable,
+                    activeEndpointsTesting = proxyUiState.value.activeEndpointsTesting,
                 )
             }.onSuccess { proxyUiState.value = it }
                 .onFailure {
@@ -441,6 +457,45 @@ class MainActivity : BaseActivity<MainDesign>() {
         val group = proxyUiState.value.groups.getOrNull(index) ?: return
         uiStore.proxyLastGroup = group.name
         proxyUiState.value = proxyUiState.value.copy(selectedGroupIndex = index)
+    }
+
+    private fun activeEndpointFor(
+        selected: String,
+        routes: Map<String, ProxyRouteUiState>,
+        proxies: List<Proxy>,
+    ): String? {
+        val route = routes[selected]?.names?.lastOrNull()
+        if (!route.isNullOrBlank()) return route
+        return proxies.firstOrNull { it.name == selected && !it.isGroup }?.name
+    }
+
+    private fun refreshActiveProxyEndpoints() {
+        if (proxyUiState.value.activeEndpointsTesting) return
+        if (!clashRunning) {
+            refreshProxy()
+            return
+        }
+        launch {
+            val currentGroups = proxyUiState.value.groups
+            val endpoints = currentGroups.mapNotNull { group ->
+                activeEndpointFor(group.selectedProxy, group.nestedRoutes, group.proxies)
+            }.distinct()
+            if (endpoints.isEmpty()) {
+                refreshProxy()
+                return@launch
+            }
+
+            proxyUiState.value = proxyUiState.value.copy(activeEndpointsTesting = true)
+            try {
+                endpoints.forEach { endpoint -> withClash { testProxy(endpoint) } }
+                testedActiveProxies += endpoints
+            } catch (error: Exception) {
+                showError(error)
+            } finally {
+                proxyUiState.value = proxyUiState.value.copy(activeEndpointsTesting = false)
+                refreshProxy()
+            }
+        }
     }
 
     private suspend fun selectProxy(index: Int, name: String) {
@@ -698,6 +753,7 @@ class MainActivity : BaseActivity<MainDesign>() {
         const val ROUTE_PROFILES = "profiles"
         const val ROUTE_SETTINGS = "settings"
         private val TOP_LEVEL_ROUTES = setOf(ROUTE_HOME, ROUTE_PROXY, ROUTE_CONNECTIONS, ROUTE_PROFILES, ROUTE_SETTINGS)
+        private val PERSISTED_MAIN_ROUTES = setOf(ROUTE_HOME, ROUTE_PROXY, ROUTE_CONNECTIONS, ROUTE_SETTINGS)
     }
 }
 

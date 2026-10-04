@@ -21,6 +21,7 @@ interface IClashManager {
     fun closeAllConnections()
 
     suspend fun healthCheck(group: String)
+    suspend fun testProxy(name: String)
     suspend fun updateProvider(type: Provider.Type, name: String)
 
     fun queryOverride(slot: Clash.OverrideSlot): ConfigurationOverride
