@@ -51,6 +51,7 @@ import com.github.kr328.clash.common.util.intent
 import com.github.kr328.clash.common.util.setUUID
 import com.github.kr328.clash.common.util.ticker
 import com.github.kr328.clash.core.Clash
+import com.github.kr328.clash.core.model.FetchStatus
 import com.github.kr328.clash.core.model.Proxy
 import com.github.kr328.clash.core.model.ProxyGroup
 import com.github.kr328.clash.core.model.TunnelState
@@ -72,6 +73,7 @@ import com.koude.aurora.ui.connections.ConnectionsUiState
 import com.koude.aurora.ui.home.HomeScreen
 import com.koude.aurora.ui.home.HomeUiState
 import com.koude.aurora.ui.profiles.ProfilesScreen
+import com.koude.aurora.ui.profiles.ProfileImportProgress
 import com.koude.aurora.ui.profiles.ProfilesViewModel
 import com.koude.aurora.ui.proxy.ProxyGroupUiState
 import com.koude.aurora.ui.proxy.ProxyRouteUiState
@@ -109,6 +111,9 @@ class MainActivity : BaseActivity<MainDesign>() {
     private val proxyUiState = mutableStateOf(ProxyUiState())
     private val connectionsUiState = mutableStateOf(ConnectionsUiState())
     private val errorDialogState = mutableStateOf<AuroraErrorDialogState?>(null)
+    private val profileImportProgress = mutableStateOf<ProfileImportProgress?>(null)
+    private var profileImportInProgress = false
+    private var profileImportGeneration = 0
     private val activeRoute = mutableStateOf(ROUTE_HOME)
     private val requestedRoute = mutableStateOf<String?>(null)
     private val profilesViewModel: ProfilesViewModel by viewModels { ProfilesViewModel.Factory }
@@ -194,6 +199,9 @@ class MainActivity : BaseActivity<MainDesign>() {
 
         LaunchedEffect(currentRoute, homeUiState.value.running) {
             activeRoute.value = currentRoute
+            if (currentRoute != ROUTE_PROXY && proxyUiState.value.expandedGroups.isNotEmpty()) {
+                proxyUiState.value = proxyUiState.value.copy(expandedGroups = emptyMap())
+            }
             if (currentRoute in PERSISTED_MAIN_ROUTES) {
                 uiStore.lastMainRoute = currentRoute
             }
@@ -248,6 +256,7 @@ class MainActivity : BaseActivity<MainDesign>() {
                     ProxyScreen(
                         state = proxyUiState.value,
                         onSelectGroup = ::selectProxyGroup,
+                        onGroupExpandedChange = ::setProxyGroupExpanded,
                         onSelectProxy = { index, name -> launch { selectProxy(index, name) } },
                         onTestGroup = { launch { testProxyGroup(it) } },
                         onRefresh = ::refreshActiveProxyEndpoints,
@@ -265,6 +274,7 @@ class MainActivity : BaseActivity<MainDesign>() {
                     val state by profilesViewModel.uiState.collectAsStateWithLifecycle()
                     ProfilesScreen(
                         state = state,
+                        importProgress = profileImportProgress.value,
                         onImportFile = { launch { importProfileFromFile() } },
                         onImportUrl = { name, url -> launch { importProfile(Profile.Type.Url, name, url) } },
                         onScanQrCode = { scanLauncher.launch(null) },
@@ -441,7 +451,9 @@ class MainActivity : BaseActivity<MainDesign>() {
                     hideUnselectableGroups = uiStore.proxyExcludeNotSelectable,
                     activeEndpointsTesting = proxyUiState.value.activeEndpointsTesting,
                 )
-            }.onSuccess { proxyUiState.value = it }
+            }.onSuccess {
+                proxyUiState.value = it.copy(expandedGroups = proxyUiState.value.expandedGroups)
+            }
                 .onFailure {
                     proxyUiState.value = proxyUiState.value.copy(
                         loading = false,
@@ -483,6 +495,13 @@ class MainActivity : BaseActivity<MainDesign>() {
         val group = proxyUiState.value.groups.getOrNull(index) ?: return
         uiStore.proxyLastGroup = group.name
         proxyUiState.value = proxyUiState.value.copy(selectedGroupIndex = index)
+    }
+
+    private fun setProxyGroupExpanded(name: String, expanded: Boolean) {
+        val expandedGroups = proxyUiState.value.expandedGroups.toMutableMap().apply {
+            this[name] = expanded
+        }
+        proxyUiState.value = proxyUiState.value.copy(expandedGroups = expandedGroups)
     }
 
     private fun activeEndpointFor(
@@ -675,11 +694,28 @@ class MainActivity : BaseActivity<MainDesign>() {
         source: String = "",
         prepare: suspend (UUID) -> Unit = {},
     ) {
+        if (profileImportInProgress) return
+        profileImportInProgress = true
+        val importGeneration = ++profileImportGeneration
+        profileImportProgress.value = ProfileImportProgress(
+            stage = if (type == Profile.Type.Url) "正在连接订阅并准备下载…" else "正在导入配置…",
+        )
         var uuid: UUID? = null
         try {
             uuid = withProfile { create(type, name, source) }
             prepare(uuid)
-            withProfile { commit(uuid) { } }
+            withProfile {
+                commit(uuid) { status ->
+                    if (status.action != FetchStatus.Action.SubscriptionInfo) {
+                        val progress = status.toProfileImportProgress()
+                        runOnUiThread {
+                            if (importGeneration == profileImportGeneration) {
+                                profileImportProgress.value = progress
+                            }
+                        }
+                    }
+                }
+            }
             profilesViewModel.refresh()
         } catch (error: Exception) {
             uuid?.let { failedId -> runCatching { withProfile { delete(failedId) } } }
@@ -688,7 +724,31 @@ class MainActivity : BaseActivity<MainDesign>() {
                 title = if (type == Profile.Type.Url) "订阅获取失败" else "配置导入失败",
             )
             profilesViewModel.refresh()
+        } finally {
+            if (importGeneration == profileImportGeneration) {
+                profileImportInProgress = false
+                profileImportProgress.value = null
+            }
         }
+    }
+
+    private fun FetchStatus.toProfileImportProgress(): ProfileImportProgress {
+        val resource = args.firstOrNull()?.takeIf { it.isNotBlank() }
+        val stage = when (action) {
+            FetchStatus.Action.FetchConfiguration -> "正在下载配置文件${resource?.let { " · $it" }.orEmpty()}"
+            FetchStatus.Action.FetchProviders -> {
+                val position = if (max > 0) "（${(progress + 1).coerceAtMost(max)}/$max）" else ""
+                "正在下载资源$position${resource?.let { " · $it" }.orEmpty()}"
+            }
+            FetchStatus.Action.SubscriptionInfo -> "正在读取订阅信息…"
+            FetchStatus.Action.Verifying -> "正在校验配置文件…"
+        }
+        return ProfileImportProgress(
+            stage = stage,
+            downloadedBytes = downloadedBytes,
+            totalBytes = totalBytes,
+            speedBytesPerSecond = speedBytesPerSecond,
+        )
     }
 
     private suspend fun duplicateProfile(uuid: UUID) {

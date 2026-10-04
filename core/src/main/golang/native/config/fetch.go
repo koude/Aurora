@@ -22,20 +22,24 @@ import (
 )
 
 type Status struct {
-	Action            string   `json:"action"`
-	Args              []string `json:"args"`
-	Progress          int      `json:"progress"`
-	MaxProgress       int      `json:"max"`
-	SubUpload         *int64   `json:"subUpload,omitempty"`
-	SubDownload       *int64   `json:"subDownload,omitempty"`
-	SubTotal          *int64   `json:"subTotal,omitempty"`
-	SubExpire         *int64   `json:"subExpire,omitempty"`
-	SubUpdateInterval *int64   `json:"subUpdateInterval,omitempty"`
+	Action              string   `json:"action"`
+	Args                []string `json:"args"`
+	Progress            int      `json:"progress"`
+	MaxProgress         int      `json:"max"`
+	DownloadedBytes     int64    `json:"downloadedBytes,omitempty"`
+	TotalBytes          int64    `json:"totalBytes,omitempty"`
+	SpeedBytesPerSecond int64    `json:"speedBytesPerSecond,omitempty"`
+	SubUpload           *int64   `json:"subUpload,omitempty"`
+	SubDownload         *int64   `json:"subDownload,omitempty"`
+	SubTotal            *int64   `json:"subTotal,omitempty"`
+	SubExpire           *int64   `json:"subExpire,omitempty"`
+	SubUpdateInterval   *int64   `json:"subUpdateInterval,omitempty"`
 }
 
 type fetchHeader struct {
 	SubscriptionUserInfo  string
 	ProfileUpdateInterval string
+	ContentLength         int64
 }
 
 func openUrl(ctx context.Context, url string) (io.ReadCloser, fetchHeader, error) {
@@ -48,6 +52,7 @@ func openUrl(ctx context.Context, url string) (io.ReadCloser, fetchHeader, error
 	return response.Body, fetchHeader{
 		SubscriptionUserInfo:  response.Header.Get("subscription-userinfo"),
 		ProfileUpdateInterval: response.Header.Get("profile-update-interval"),
+		ContentLength:         response.ContentLength,
 	}, nil
 }
 
@@ -55,7 +60,7 @@ func openContent(url string) (io.ReadCloser, error) {
 	return app.OpenContent(url)
 }
 
-func fetch(url *U.URL, file string) (fetchHeader, error) {
+func fetch(url *U.URL, file string, action string, args []string, progress int, maxProgress int, reportStatus func(string)) (fetchHeader, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
@@ -78,10 +83,17 @@ func fetch(url *U.URL, file string) (fetchHeader, error) {
 
 	defer reader.Close()
 
-	return header, writeFile(file, reader)
+	report := func(downloaded, total, speed int64) {
+		bytes, _ := json.Marshal(&Status{
+			Action: action, Args: args, Progress: progress, MaxProgress: maxProgress,
+			DownloadedBytes: downloaded, TotalBytes: total, SpeedBytesPerSecond: speed,
+		})
+		reportStatus(string(bytes))
+	}
+	return header, writeFile(file, reader, header.ContentLength, report)
 }
 
-func writeFile(file string, reader io.Reader) error {
+func writeFile(file string, reader io.Reader, totalBytes int64, report func(downloaded, total, speed int64)) error {
 	_ = os.MkdirAll(P.Dir(file), 0700)
 
 	f, err := os.OpenFile(file, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0600)
@@ -91,7 +103,45 @@ func writeFile(file string, reader io.Reader) error {
 
 	defer f.Close()
 
-	_, err = io.Copy(f, reader)
+	lastReportAt := time.Now()
+	var downloaded int64
+	var lastReportedBytes int64
+	buffer := make([]byte, 32*1024)
+	for {
+		count, readErr := reader.Read(buffer)
+		if count > 0 {
+			written, writeErr := f.Write(buffer[:count])
+			downloaded += int64(written)
+			now := time.Now()
+			if now.Sub(lastReportAt) >= 200*time.Millisecond || readErr == io.EOF {
+				elapsed := now.Sub(lastReportAt).Seconds()
+				speed := int64(0)
+				if elapsed > 0 {
+					speed = int64(float64(downloaded-lastReportedBytes) / elapsed)
+				}
+				report(downloaded, totalBytes, speed)
+				lastReportedBytes = downloaded
+				lastReportAt = now
+			}
+			if writeErr != nil {
+				err = writeErr
+				break
+			}
+			if written != count {
+				err = io.ErrShortWrite
+				break
+			}
+		}
+		if readErr != nil {
+			if readErr == io.EOF && count == 0 {
+				report(downloaded, totalBytes, 0)
+			}
+			if readErr != io.EOF {
+				err = readErr
+			}
+			break
+		}
+	}
 	if err != nil {
 		_ = os.Remove(file)
 	}
@@ -171,7 +221,7 @@ func FetchAndValid(
 
 		reportStatus(string(bytes))
 
-		header, err := fetch(url, configPath)
+		header, err := fetch(url, configPath, "FetchConfiguration", []string{url.Host}, -1, -1, reportStatus)
 		if err != nil {
 			return err
 		}
@@ -227,7 +277,13 @@ func FetchAndValid(
 					// so we maintain consistency with the old behavior.
 					if file, err := RB.Open(pib); err == nil {
 						defer file.Close()
-						if err := writeFile(ps, file); err == nil {
+						if err := writeFile(ps, file, -1, func(downloaded, totalBytes, speed int64) {
+							bytes, _ := json.Marshal(&Status{
+								Action: "FetchProviders", Args: []string{name}, Progress: index, MaxProgress: total,
+								DownloadedBytes: downloaded, TotalBytes: totalBytes, SpeedBytesPerSecond: speed,
+							})
+							reportStatus(string(bytes))
+						}); err == nil {
 							return
 						}
 					}
@@ -235,7 +291,7 @@ func FetchAndValid(
 			}
 		}
 
-		_, _ = fetch(url, ps)
+		_, _ = fetch(url, ps, "FetchProviders", []string{name}, index, total, reportStatus)
 	})
 
 	bytes, _ := json.Marshal(&Status{

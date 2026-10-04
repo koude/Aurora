@@ -44,12 +44,9 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.saveable.listSaver
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -84,6 +81,7 @@ data class ProxyUiState(
     val serviceRunning: Boolean = false,
     val groups: List<ProxyGroupUiState> = emptyList(),
     val selectedGroupIndex: Int = 0,
+    val expandedGroups: Map<String, Boolean> = emptyMap(),
     val errorMessage: String? = null,
     val sort: ProxySort = ProxySort.Default,
     val hideUnselectableGroups: Boolean = false,
@@ -94,6 +92,7 @@ data class ProxyUiState(
 fun ProxyScreen(
     state: ProxyUiState,
     onSelectGroup: (Int) -> Unit,
+    onGroupExpandedChange: (String, Boolean) -> Unit,
     onSelectProxy: (groupIndex: Int, proxyName: String) -> Unit,
     onTestGroup: (Int) -> Unit,
     onRefresh: () -> Unit,
@@ -130,6 +129,7 @@ fun ProxyScreen(
             else -> ProxyContent(
                 state = state,
                 onSelectGroup = onSelectGroup,
+                onGroupExpandedChange = onGroupExpandedChange,
                 onSelectProxy = onSelectProxy,
                 onTestGroup = onTestGroup,
                 onRefresh = onRefresh,
@@ -150,6 +150,7 @@ fun ProxyScreen(
 private fun ProxyContent(
     state: ProxyUiState,
     onSelectGroup: (Int) -> Unit,
+    onGroupExpandedChange: (String, Boolean) -> Unit,
     onSelectProxy: (Int, String) -> Unit,
     onTestGroup: (Int) -> Unit,
     onRefresh: () -> Unit,
@@ -160,9 +161,6 @@ private fun ProxyContent(
     var settingsVisible by remember { mutableStateOf(false) }
     var searchVisible by remember { mutableStateOf(false) }
     var query by remember { mutableStateOf("") }
-    val expandedGroups = rememberSaveable(saver = expandedGroupsSaver) {
-        mutableStateMapOf<String, Boolean>()
-    }
     val normalizedQuery = query.trim().lowercase()
     val filteredGroups = state.groups.filter { group ->
         normalizedQuery.isEmpty() || group.name.lowercase().contains(normalizedQuery) ||
@@ -275,14 +273,14 @@ private fun ProxyContent(
                 items(filteredGroups, key = ProxyGroupUiState::name) { item ->
                     val index = state.groups.indexOfFirst { it.name == item.name }
                     val expanded = if (normalizedQuery.isNotEmpty()) true
-                    else expandedGroups.getOrPut(item.name) { index == state.selectedGroupIndex }
+                    else state.expandedGroups[item.name] ?: false
                     ProxyGroupCard(
                         group = item,
                         expanded = expanded,
                         searchQuery = normalizedQuery,
                         onExpand = {
                             val next = !expanded
-                            expandedGroups[item.name] = next
+                            onGroupExpandedChange(item.name, next)
                             if (next) onSelectGroup(index)
                         },
                         onSelectProxy = { name -> onSelectProxy(index, name) },
@@ -302,19 +300,6 @@ private fun ProxyContent(
         )
     }
 }
-
-private val expandedGroupsSaver = listSaver<MutableMap<String, Boolean>, String>(
-    save = { groups ->
-        groups.flatMap { (name, expanded) -> listOf(name, if (expanded) "1" else "0") }
-    },
-    restore = { saved ->
-        mutableStateMapOf<String, Boolean>().apply {
-            saved.chunked(2).forEach { entry ->
-                if (entry.size == 2) put(entry[0], entry[1] == "1")
-            }
-        }
-    },
-)
 
 @Composable
 private fun ProxyGroupCard(
@@ -648,6 +633,7 @@ private fun ProxyScreenPreview() {
                 ),
             ),
             onSelectGroup = {},
+            onGroupExpandedChange = { _, _ -> },
             onSelectProxy = { _, _ -> },
             onTestGroup = {},
             onRefresh = {},

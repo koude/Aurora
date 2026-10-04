@@ -1,6 +1,7 @@
 package com.koude.aurora.ui.profiles
 
 import android.text.format.DateUtils
+import android.text.format.Formatter
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -28,7 +29,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Menu
@@ -45,6 +48,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
@@ -69,8 +73,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -82,10 +85,18 @@ import com.koude.aurora.ui.components.AuroraBottomNavigation
 import com.koude.aurora.ui.components.AuroraDestination
 import java.util.UUID
 
+data class ProfileImportProgress(
+    val stage: String,
+    val downloadedBytes: Long = 0,
+    val totalBytes: Long = 0,
+    val speedBytesPerSecond: Long = 0,
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfilesScreen(
     state: ProfilesUiState,
+    importProgress: ProfileImportProgress? = null,
     onImportFile: () -> Unit,
     onImportUrl: (name: String, url: String) -> Unit,
     onScanQrCode: () -> Unit,
@@ -168,7 +179,6 @@ fun ProfilesScreen(
                 profiles = state.profiles,
                 errorMessage = state.errorMessage,
                 onOpenProfile = { selectedProfileId = it },
-                onActivateProfile = onActivateProfile,
                 onUpdateAll = onUpdateAll,
                 contentPadding = PaddingValues(
                     start = 20.dp,
@@ -206,6 +216,10 @@ fun ProfilesScreen(
                 selectedProfileId = null
                 onUpdateProfile(profile.id)
             },
+            onActivate = {
+                selectedProfileId = null
+                onActivateProfile(profile.id)
+            },
             onEdit = {
                 selectedProfileId = null
                 onEditProfile(profile.id)
@@ -220,6 +234,10 @@ fun ProfilesScreen(
             },
         )
     }
+
+    if (importProgress != null) {
+        ProfileImportProgressDialog(importProgress)
+    }
 }
 
 @Composable
@@ -227,7 +245,6 @@ private fun ProfileList(
     profiles: List<ProfileSummary>,
     errorMessage: String?,
     onOpenProfile: (UUID) -> Unit,
-    onActivateProfile: (UUID) -> Unit,
     onUpdateAll: () -> Unit,
     contentPadding: PaddingValues,
 ) {
@@ -275,12 +292,12 @@ private fun ProfileList(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        text = "其他配置",
+                        text = "可切换配置",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Medium,
                     )
                     Text(
-                        text = "${otherProfiles.size} 个可切换",
+                        text = "${otherProfiles.size} 个",
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -291,7 +308,6 @@ private fun ProfileList(
                 ProfileCard(
                     profile = profile,
                     onOpen = { onOpenProfile(profile.id) },
-                    onActivate = { onActivateProfile(profile.id) },
                 )
             }
         }
@@ -485,6 +501,7 @@ private fun ProfileActionsSheet(
     profile: ProfileSummary,
     onDismiss: () -> Unit,
     onUpdate: () -> Unit,
+    onActivate: () -> Unit,
     onEdit: () -> Unit,
     onDuplicate: () -> Unit,
     onDelete: () -> Unit,
@@ -516,6 +533,13 @@ private fun ProfileActionsSheet(
             }
             Spacer(Modifier.height(18.dp))
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            if (!profile.active && profile.imported) {
+                ProfileActionItem(
+                    icon = Icons.Default.Check,
+                    label = "启用配置",
+                    onClick = onActivate,
+                )
+            }
             if (profile.imported && profile.kind != ProfileKind.File) {
                 ProfileActionItem(
                     icon = Icons.Default.Refresh,
@@ -559,6 +583,56 @@ private fun ProfileActionsSheet(
             },
         )
     }
+}
+
+@Composable
+private fun ProfileImportProgressDialog(progress: ProfileImportProgress) {
+    val context = LocalContext.current
+    val hasTotal = progress.totalBytes > 0
+    val fraction = if (hasTotal) {
+        (progress.downloadedBytes.toFloat() / progress.totalBytes).coerceIn(0f, 1f)
+    } else {
+        0f
+    }
+
+    AlertDialog(
+        onDismissRequest = {},
+        title = { Text("正在添加配置") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(progress.stage, style = MaterialTheme.typography.bodyMedium)
+                if (hasTotal) {
+                    LinearProgressIndicator(
+                        progress = { fraction },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Text(
+                        "${Formatter.formatFileSize(context, progress.downloadedBytes)} / " +
+                            "${Formatter.formatFileSize(context, progress.totalBytes)}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                } else {
+                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                    if (progress.downloadedBytes > 0) {
+                        Text(
+                            "已接收 ${Formatter.formatFileSize(context, progress.downloadedBytes)}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+                if (progress.speedBytesPerSecond > 0) {
+                    Text(
+                        "下载速度 ${Formatter.formatFileSize(context, progress.speedBytesPerSecond)}/秒",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+            }
+        },
+        confirmButton = {},
+    )
 }
 
 @Composable
@@ -670,16 +744,6 @@ private fun ActiveProfileCard(
                         color = Color.White.copy(alpha = 0.90f),
                     )
                 }
-                Surface(
-                    modifier = Modifier.size(38.dp),
-                    shape = MaterialTheme.shapes.medium,
-                    color = Color.White.copy(alpha = 0.11f),
-                    contentColor = Color.White,
-                ) {
-                    IconButton(onClick = onOpen) {
-                        Icon(Icons.Default.MoreVert, contentDescription = "配置操作")
-                    }
-                }
             }
             Spacer(Modifier.height(14.dp))
             Text(
@@ -726,10 +790,9 @@ private fun NoActiveProfileCard() {
 private fun ProfileCard(
     profile: ProfileSummary,
     onOpen: () -> Unit,
-    onActivate: () -> Unit,
 ) {
     Card(
-        onClick = if (profile.imported) onActivate else onOpen,
+        onClick = onOpen,
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer,
@@ -769,66 +832,13 @@ private fun ProfileCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            IconButton(onClick = if (profile.imported) onActivate else onOpen) {
-                SwitchProfileIcon(
-                    contentDescription = if (profile.imported) "切换到${profile.name}" else "继续设置${profile.name}",
-                )
-            }
+            Icon(
+                Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
-    }
-}
-
-@Composable
-private fun SwitchProfileIcon(contentDescription: String) {
-    val color = MaterialTheme.colorScheme.onSurfaceVariant
-    Canvas(
-        modifier = Modifier
-            .size(20.dp)
-            .semantics { this.contentDescription = contentDescription },
-    ) {
-        val stroke = 1.8.dp.toPx()
-        drawLine(
-            color = color,
-            start = Offset(size.width * 0.18f, size.height * 0.34f),
-            end = Offset(size.width * 0.82f, size.height * 0.34f),
-            strokeWidth = stroke,
-            cap = StrokeCap.Round,
-        )
-        drawLine(
-            color = color,
-            start = Offset(size.width * 0.82f, size.height * 0.34f),
-            end = Offset(size.width * 0.66f, size.height * 0.18f),
-            strokeWidth = stroke,
-            cap = StrokeCap.Round,
-        )
-        drawLine(
-            color = color,
-            start = Offset(size.width * 0.82f, size.height * 0.34f),
-            end = Offset(size.width * 0.66f, size.height * 0.50f),
-            strokeWidth = stroke,
-            cap = StrokeCap.Round,
-        )
-        drawLine(
-            color = color,
-            start = Offset(size.width * 0.82f, size.height * 0.68f),
-            end = Offset(size.width * 0.18f, size.height * 0.68f),
-            strokeWidth = stroke,
-            cap = StrokeCap.Round,
-        )
-        drawLine(
-            color = color,
-            start = Offset(size.width * 0.18f, size.height * 0.68f),
-            end = Offset(size.width * 0.34f, size.height * 0.52f),
-            strokeWidth = stroke,
-            cap = StrokeCap.Round,
-        )
-        drawLine(
-            color = color,
-            start = Offset(size.width * 0.18f, size.height * 0.68f),
-            end = Offset(size.width * 0.34f, size.height * 0.84f),
-            strokeWidth = stroke,
-            cap = StrokeCap.Round,
-        )
     }
 }
 
