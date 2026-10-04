@@ -72,6 +72,7 @@ import com.koude.aurora.ui.connections.ConnectionsScreen
 import com.koude.aurora.ui.connections.ConnectionsUiState
 import com.koude.aurora.ui.home.HomeScreen
 import com.koude.aurora.ui.home.HomeUiState
+import com.koude.aurora.ui.home.RouteTestUiState
 import com.koude.aurora.ui.profiles.ProfilesScreen
 import com.koude.aurora.ui.profiles.ProfileImportProgress
 import com.koude.aurora.ui.profiles.ProfilesViewModel
@@ -104,10 +105,12 @@ private data class AuroraErrorDialogState(
 
 class MainActivity : BaseActivity<MainDesign>() {
     private var latencyTestJob: Job? = null
+    private var routePreviewJob: Job? = null
     private var proxyRefreshJob: Job? = null
     private val testedProxyGroups = mutableSetOf<String>()
     private val testedActiveProxies = mutableSetOf<String>()
     private val homeUiState = mutableStateOf(HomeUiState())
+    private val routeTestUiState = mutableStateOf(RouteTestUiState())
     private val proxyUiState = mutableStateOf(ProxyUiState())
     private val connectionsUiState = mutableStateOf(ConnectionsUiState())
     private val errorDialogState = mutableStateOf<AuroraErrorDialogState?>(null)
@@ -163,13 +166,6 @@ class MainActivity : BaseActivity<MainDesign>() {
                         else -> Unit
                     }
                 }
-                design.routePreviewRequests.onReceive { target ->
-                    try {
-                        design.setRoutePreview(withClash { queryRoutePreview(target) })
-                    } catch (_: Exception) {
-                        design.setRoutePreviewError()
-                    }
-                }
                 if (clashRunning) ticker.onReceive {
                     design.fetchTraffic()
                     if (activeRoute.value == ROUTE_CONNECTIONS) refreshConnections()
@@ -199,6 +195,9 @@ class MainActivity : BaseActivity<MainDesign>() {
 
         LaunchedEffect(currentRoute, homeUiState.value.running) {
             activeRoute.value = currentRoute
+            if (currentRoute != ROUTE_HOME && routeTestUiState.value.isOpen) {
+                dismissRouteTest()
+            }
             if (currentRoute != ROUTE_PROXY && proxyUiState.value.expandedGroups.isNotEmpty()) {
                 proxyUiState.value = proxyUiState.value.copy(expandedGroups = emptyMap())
             }
@@ -239,12 +238,16 @@ class MainActivity : BaseActivity<MainDesign>() {
                                 latencyTestJob = launch { design.testSiteLatency() }
                             }
                         },
+                        routeTestState = routeTestUiState.value,
                         onOpenConnections = { navController.navigateTopLevel(ROUTE_CONNECTIONS) },
                         onOpenLogs = {
                             if (LogcatService.running) startActivity(LogcatActivity::class.intent)
                             else startActivity(LogsActivity::class.intent)
                         },
-                        onOpenRouteTest = design::showRouteTest,
+                        onOpenRouteTest = ::openRouteTest,
+                        onDismissRouteTest = ::dismissRouteTest,
+                        onRouteTargetChange = ::changeRouteTestTarget,
+                        onSubmitRouteTest = ::submitRouteTest,
                         onOpenDns = { startActivity(NetworkSettingsActivity::class.intent) },
                         onOpenProfiles = { navController.navigate(ROUTE_PROFILES) },
                         onOpenProxy = { navController.navigateTopLevel(ROUTE_PROXY) },
@@ -791,6 +794,86 @@ class MainActivity : BaseActivity<MainDesign>() {
 
     private fun showError(error: Throwable) {
         showError(error, "操作失败")
+    }
+
+    private fun openRouteTest() {
+        routeTestUiState.value = routeTestUiState.value.copy(
+            isOpen = true,
+            isTesting = false,
+            errorMessage = null,
+            preview = null,
+        )
+    }
+
+    private fun dismissRouteTest() {
+        routePreviewJob?.cancel()
+        routePreviewJob = null
+        routeTestUiState.value = routeTestUiState.value.copy(isOpen = false, isTesting = false)
+    }
+
+    private fun changeRouteTestTarget(target: String) {
+        routeTestUiState.value = routeTestUiState.value.copy(
+            target = target,
+            errorMessage = null,
+            preview = null,
+        )
+    }
+
+    private fun submitRouteTest() {
+        val rawTarget = routeTestUiState.value.target.trim()
+        val target = normalizeRouteTarget(rawTarget)
+        if (target == null) {
+            routeTestUiState.value = routeTestUiState.value.copy(
+                errorMessage = getString(DesignR.string.aurora_route_invalid_target),
+                preview = null,
+            )
+            return
+        }
+        if (!clashRunning) {
+            routeTestUiState.value = routeTestUiState.value.copy(
+                errorMessage = getString(DesignR.string.aurora_route_service_required),
+                preview = null,
+            )
+            return
+        }
+
+        routePreviewJob?.cancel()
+        routeTestUiState.value = routeTestUiState.value.copy(
+            target = target,
+            isTesting = true,
+            errorMessage = null,
+            preview = null,
+        )
+        routePreviewJob = launch {
+            runCatching { withClash { queryRoutePreview(target) } }
+                .onSuccess { preview ->
+                    if (routeTestUiState.value.isOpen && routeTestUiState.value.target == target) {
+                        routeTestUiState.value = routeTestUiState.value.copy(
+                            isTesting = false,
+                            errorMessage = preview.error,
+                            preview = preview.takeIf { it.error == null },
+                        )
+                    }
+                }
+                .onFailure {
+                    if (routeTestUiState.value.isOpen && routeTestUiState.value.target == target) {
+                        routeTestUiState.value = routeTestUiState.value.copy(
+                            isTesting = false,
+                            errorMessage = getString(DesignR.string.aurora_route_test_failed),
+                            preview = null,
+                        )
+                    }
+                }
+        }
+    }
+
+    private fun normalizeRouteTarget(value: String): String? {
+        if (value.isBlank() || value.any(Char::isWhitespace)) return null
+
+        return runCatching {
+            val uri = java.net.URI(if ("://" in value) value else "https://$value")
+            uri.host?.trimEnd('.')?.takeIf { it.isNotBlank() }
+        }.getOrNull()
     }
 
     private fun showError(error: Throwable, title: String) {

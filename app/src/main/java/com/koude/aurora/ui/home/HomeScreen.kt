@@ -11,8 +11,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.only
@@ -35,9 +37,13 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScaffoldDefaults
 import androidx.compose.material3.Surface
@@ -48,6 +54,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -55,6 +65,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.github.kr328.clash.core.model.TunnelState
+import com.github.kr328.clash.core.model.RoutePreview
 import com.koude.aurora.designsystem.theme.AuroraTheme
 import com.koude.aurora.ui.components.AuroraBottomNavigation
 import com.koude.aurora.ui.components.AuroraDestination
@@ -72,15 +83,27 @@ data class HomeUiState(
     val googleLatency: String = "-- ms",
 )
 
+data class RouteTestUiState(
+    val isOpen: Boolean = false,
+    val target: String = "github.com",
+    val isTesting: Boolean = false,
+    val errorMessage: String? = null,
+    val preview: RoutePreview? = null,
+)
+
 @Composable
 fun HomeScreen(
     state: HomeUiState,
     onToggleConnection: () -> Unit,
     onModeSelected: (TunnelState.Mode) -> Unit,
     onTestLatency: () -> Unit,
+    routeTestState: RouteTestUiState,
     onOpenConnections: () -> Unit,
     onOpenLogs: () -> Unit,
     onOpenRouteTest: () -> Unit,
+    onDismissRouteTest: () -> Unit,
+    onRouteTargetChange: (String) -> Unit,
+    onSubmitRouteTest: () -> Unit,
     onOpenDns: () -> Unit,
     onOpenProfiles: () -> Unit,
     onOpenProxy: () -> Unit,
@@ -146,6 +169,156 @@ fun HomeScreen(
                 onOpenProfiles = onOpenProfiles,
             )
         }
+    }
+
+    if (routeTestState.isOpen) {
+        RouteTestSheet(
+            state = routeTestState,
+            onDismiss = onDismissRouteTest,
+            onTargetChange = onRouteTargetChange,
+            onSubmit = onSubmitRouteTest,
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun RouteTestSheet(
+    state: RouteTestUiState,
+    onDismiss: () -> Unit,
+    onTargetChange: (String) -> Unit,
+    onSubmit: () -> Unit,
+) {
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .imePadding()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 24.dp)
+                .padding(bottom = 28.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Text("路由测试", style = MaterialTheme.typography.headlineSmall)
+            Text(
+                "预览当前配置的匹配结果，不会连接目标网站。",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalAlignment = Alignment.Top,
+            ) {
+                OutlinedTextField(
+                    value = state.target,
+                    onValueChange = onTargetChange,
+                    modifier = Modifier.weight(1f),
+                    label = { Text("网站或域名") },
+                    singleLine = true,
+                    enabled = !state.isTesting,
+                    isError = state.errorMessage != null,
+                    supportingText = state.errorMessage?.let { message ->
+                        { Text(message, maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis) }
+                    },
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Uri,
+                        imeAction = ImeAction.Go,
+                    ),
+                    keyboardActions = KeyboardActions(onGo = { onSubmit() }),
+                )
+                FilledTonalButton(
+                    onClick = onSubmit,
+                    enabled = !state.isTesting,
+                    modifier = Modifier.padding(top = 8.dp).height(56.dp),
+                ) {
+                    if (state.isTesting) {
+                        CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+                    } else {
+                        Text("测试")
+                    }
+                }
+            }
+
+            if (state.isTesting) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+                    Text("正在匹配当前规则…", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+
+            state.preview?.takeIf { it.error == null }?.let { preview ->
+                RoutePreviewCard(preview)
+            }
+        }
+    }
+}
+
+@Composable
+private fun RoutePreviewCard(preview: RoutePreview) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(0.dp),
+    ) {
+        Surface(
+            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp, bottomStart = 8.dp, bottomEnd = 8.dp),
+            color = MaterialTheme.colorScheme.surfaceContainer,
+        ) {
+            Column(Modifier.padding(horizontal = 18.dp, vertical = 8.dp)) {
+                RoutePreviewRow("目标", preview.resolvedIp?.let { "${preview.target} · $it" } ?: preview.target)
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                RoutePreviewRow("命中规则", preview.rule)
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                RoutePreviewRow("策略组", preview.policy)
+            }
+        }
+        Surface(
+            shape = RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp, bottomStart = 24.dp, bottomEnd = 24.dp),
+            color = MaterialTheme.colorScheme.primaryContainer,
+        ) {
+            Column(Modifier.padding(horizontal = 18.dp, vertical = 16.dp)) {
+                Text(
+                    "实际出口",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    preview.outbound.ifBlank { "—" },
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    maxLines = 2,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun RoutePreviewRow(label: String, value: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 14.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            label,
+            modifier = Modifier.width(68.dp),
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            value.ifBlank { "—" },
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 2,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+        )
     }
 }
 
@@ -441,9 +614,13 @@ private fun HomeScreenPreview() {
             onToggleConnection = {},
             onModeSelected = {},
             onTestLatency = {},
+            routeTestState = RouteTestUiState(),
             onOpenConnections = {},
             onOpenLogs = {},
             onOpenRouteTest = {},
+            onDismissRouteTest = {},
+            onRouteTargetChange = {},
+            onSubmitRouteTest = {},
             onOpenDns = {},
             onOpenProfiles = {},
             onOpenProxy = {},
