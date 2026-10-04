@@ -498,9 +498,7 @@ class MainActivity : BaseActivity<MainDesign>() {
     }
 
     private fun setProxyGroupExpanded(name: String, expanded: Boolean) {
-        val expandedGroups = proxyUiState.value.expandedGroups.toMutableMap().apply {
-            this[name] = expanded
-        }
+        val expandedGroups = if (expanded) mapOf(name to true) else emptyMap()
         proxyUiState.value = proxyUiState.value.copy(expandedGroups = expandedGroups)
     }
 
