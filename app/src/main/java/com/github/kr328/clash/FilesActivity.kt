@@ -2,141 +2,100 @@
 
 package com.github.kr328.clash
 
-import android.Manifest
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.net.Uri
-import android.os.Build
+import android.widget.Toast
+import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.core.content.ContextCompat
+import androidx.compose.runtime.mutableStateOf
 import com.github.kr328.clash.common.util.grantPermissions
-import com.github.kr328.clash.common.util.ticker
+import com.github.kr328.clash.common.util.intent
 import com.github.kr328.clash.common.util.uuid
 import com.github.kr328.clash.design.FilesDesign
-import com.github.kr328.clash.design.util.showExceptionToast
+import com.github.kr328.clash.design.model.File
 import com.github.kr328.clash.remote.FilesClient
 import com.github.kr328.clash.service.model.Profile
-import com.github.kr328.clash.util.fileName
 import com.github.kr328.clash.util.withProfile
+import com.koude.aurora.designsystem.theme.AuroraTheme
+import com.koude.aurora.ui.profiles.FilesScreen
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.selects.select
-import java.util.*
-import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.withContext
+import java.util.Stack
 
 class FilesActivity : BaseActivity<FilesDesign>() {
+    private val filesState = mutableStateOf<List<File>>(emptyList())
+    private val currentInBaseState = mutableStateOf(true)
+    private var editable = false
+
     override suspend fun main() {
         val uuid = intent.uuid ?: return finish()
         val profile = withProfile { queryByUUID(uuid) } ?: return finish()
-        val root = uuid.toString()
-
-        val design = FilesDesign(this)
+        editable = profile.type != Profile.Type.Url
         val client = FilesClient(this)
         val stack = Stack<String>()
+        val root = uuid.toString()
 
-        design.configurationEditable = profile.type != Profile.Type.Url
-        design.fetch(client, stack, root)
-
-        setContentDesign(design)
-
-        val ticker = ticker(TimeUnit.MINUTES.toMillis(1))
+        suspend fun refresh() {
+            val id = stack.lastOrNull() ?: root
+            val listed = withContext(Dispatchers.IO) { client.list(id) }
+            val visible = if (stack.empty()) {
+                val config = listed.firstOrNull { it.id.endsWith("config.yaml") }
+                if (config == null || config.size > 0) listed else listOf(config)
+            } else listed
+            filesState.value = visible
+            currentInBaseState.value = stack.empty()
+        }
+        refresh()
+        setContent {
+            AuroraTheme {
+                FilesScreen(
+                    files = filesState.value,
+                    currentInBase = currentInBaseState.value,
+                    configurationEditable = editable,
+                    onBack = { if (stack.empty()) finish() else { stack.pop(); launch { refresh() } } },
+                    onOpenDirectory = { file -> stack.push(file.id); launch { refresh() } },
+                    onOpenFile = { file -> startActivity(Intent(Intent.ACTION_VIEW).setDataAndType(client.buildDocumentUri(file.id), "text/plain").grantPermissions()) },
+                    onImport = { file, uri, name -> launch {
+                        try {
+                            withContext(Dispatchers.IO) {
+                                if (file == null) client.importDocument(stack.last(), uri, name ?: "File")
+                                else client.copyDocument(file.id, uri)
+                            }
+                            refresh()
+                        } catch (e: Exception) { showFailure(e) }
+                    } },
+                    onExport = { file, uri -> launch {
+                        try { withContext(Dispatchers.IO) { client.copyDocument(uri, file.id) }; refresh() }
+                        catch (e: Exception) { showFailure(e) }
+                    } },
+                    onRename = { file, name -> launch {
+                        try { withContext(Dispatchers.IO) { client.renameDocument(file.id, name) }; refresh() }
+                        catch (e: Exception) { showFailure(e) }
+                    } },
+                    onDelete = { file -> launch {
+                        try { withContext(Dispatchers.IO) { client.deleteDocument(file.id) }; refresh() }
+                        catch (e: Exception) { showFailure(e) }
+                    } },
+                )
+            }
+        }
 
         while (isActive) {
             select<Unit> {
                 events.onReceive {
                     when (it) {
-                        Event.ActivityStart, Event.ActivityStop -> {
-                            design.fetch(client, stack, root)
-                        }
+                        Event.ActivityStart, Event.ActivityStop -> runCatching { refresh() }
                         else -> Unit
-                    }
-                }
-                design.requests.onReceive {
-                    try {
-                        when (it) {
-                            FilesDesign.Request.PopStack -> {
-                                if (stack.empty()) {
-                                    finish()
-                                } else {
-                                    stack.pop()
-                                }
-                            }
-                            is FilesDesign.Request.OpenDirectory -> {
-                                stack.push(it.file.id)
-                            }
-                            is FilesDesign.Request.OpenFile -> {
-                                startActivityForResult(
-                                    ActivityResultContracts.StartActivityForResult(),
-                                    Intent(Intent.ACTION_VIEW).setDataAndType(
-                                        client.buildDocumentUri(it.file.id),
-                                        "text/plain"
-                                    ).grantPermissions()
-                                )
-                            }
-                            is FilesDesign.Request.DeleteFile -> {
-                                client.deleteDocument(it.file.id)
-                            }
-                            is FilesDesign.Request.RenameFile -> {
-                                val newName = design.requestFileName(it.file.name)
-
-                                client.renameDocument(it.file.id, newName)
-                            }
-                            is FilesDesign.Request.ImportFile -> {
-                                val uri: Uri? = startActivityForResult(
-                                    ActivityResultContracts.GetContent(),
-                                    "*/*"
-                                )
-
-                                if (uri != null) {
-                                    if (it.file == null) {
-                                        val name = design.requestFileName(uri.fileName ?: "File")
-
-                                        client.importDocument(stack.last(), uri, name)
-                                    } else {
-                                        client.copyDocument(it.file!!.id, uri)
-                                    }
-                                }
-                            }
-                            is FilesDesign.Request.ExportFile -> {
-                                val uri: Uri? = startActivityForResult(
-                                    ActivityResultContracts.CreateDocument("text/plain"),
-                                    it.file.name
-                                )
-
-                                if (uri != null) {
-                                    client.copyDocument(uri, it.file.id)
-                                }
-                            }
-                        }
-                    } catch (e: Exception) {
-                        design.showExceptionToast(e)
-                    }
-
-                    design.fetch(client, stack, root)
-                }
-                if (activityStarted) {
-                    ticker.onReceive {
-                        design.updateElapsed()
                     }
                 }
             }
         }
     }
 
-    override fun onBackPressed() {
-        design?.requests?.trySend(FilesDesign.Request.PopStack)
-    }
-
-    private suspend fun FilesDesign.fetch(client: FilesClient, stack: Stack<String>, root: String) {
-        val documentId = stack.lastOrNull() ?: root
-        val files = if (stack.empty()) {
-            val list = client.list(documentId)
-            val config = list.firstOrNull { it.id.endsWith("config.yaml") }
-
-            if (config == null || config.size > 0) list else listOf(config)
-        } else {
-            client.list(documentId)
-        }
-
-        swapFiles(files, stack.empty())
+    private fun showFailure(error: Exception) {
+        Toast.makeText(this, error.message ?: error.javaClass.simpleName, Toast.LENGTH_LONG).show()
     }
 }
