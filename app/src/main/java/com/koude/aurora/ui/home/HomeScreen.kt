@@ -1,5 +1,6 @@
 package com.koude.aurora.ui.home
 
+import com.github.kr328.clash.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -61,6 +62,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
@@ -481,21 +484,21 @@ private fun LatencyCard(
 
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 LatencyCell(
-                    "Apple", state.appleLatency, state.testingLatencySites.contains(WebsiteLatencySite.Apple),
+                    "Apple", R.drawable.ic_site_apple, state.appleLatency, state.testingLatencySites.contains(WebsiteLatencySite.Apple),
                     Modifier.weight(1f), onClick = { onTestSiteLatency(WebsiteLatencySite.Apple) },
                 )
                 LatencyCell(
-                    "GitHub", state.githubLatency, state.testingLatencySites.contains(WebsiteLatencySite.GitHub),
+                    "GitHub", R.drawable.ic_site_github, state.githubLatency, state.testingLatencySites.contains(WebsiteLatencySite.GitHub),
                     Modifier.weight(1f), onClick = { onTestSiteLatency(WebsiteLatencySite.GitHub) },
                 )
             }
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 LatencyCell(
-                    "YouTube", state.youtubeLatency, state.testingLatencySites.contains(WebsiteLatencySite.YouTube),
+                    "YouTube", R.drawable.ic_site_youtube, state.youtubeLatency, state.testingLatencySites.contains(WebsiteLatencySite.YouTube),
                     Modifier.weight(1f), onClick = { onTestSiteLatency(WebsiteLatencySite.YouTube) },
                 )
                 LatencyCell(
-                    "Google", state.googleLatency, state.testingLatencySites.contains(WebsiteLatencySite.Google),
+                    "Google", R.drawable.ic_site_google, state.googleLatency, state.testingLatencySites.contains(WebsiteLatencySite.Google),
                     Modifier.weight(1f), onClick = { onTestSiteLatency(WebsiteLatencySite.Google) },
                 )
             }
@@ -506,6 +509,7 @@ private fun LatencyCard(
 @Composable
 private fun LatencyCell(
     label: String,
+    iconRes: Int,
     value: String,
     testing: Boolean,
     modifier: Modifier = Modifier,
@@ -518,11 +522,28 @@ private fun LatencyCell(
         border = ButtonDefaults.outlinedButtonBorder(enabled = true),
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 18.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 18.dp),
+            horizontalArrangement = Arrangement.spacedBy(7.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(label, style = MaterialTheme.typography.titleMedium)
+            Surface(
+                modifier = Modifier.size(26.dp),
+                shape = CircleShape,
+                color = Color.White,
+            ) {
+                Icon(
+                    painter = painterResource(iconRes),
+                    contentDescription = null,
+                    modifier = Modifier.padding(4.dp),
+                    tint = Color.Unspecified,
+                )
+            }
+            Text(
+                label,
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.titleSmall,
+                maxLines = 1,
+            )
             if (testing) {
                 CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
             } else {
