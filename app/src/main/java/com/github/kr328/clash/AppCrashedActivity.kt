@@ -4,16 +4,18 @@ import com.github.kr328.clash.common.compat.versionCodeCompat
 import com.github.kr328.clash.common.log.Log
 import com.github.kr328.clash.design.AppCrashedDesign
 import com.github.kr328.clash.log.SystemLogcat
+import com.koude.aurora.designsystem.theme.AuroraTheme
+import com.koude.aurora.ui.misc.AppCrashedScreen
+import androidx.activity.compose.setContent
+import androidx.compose.runtime.mutableStateOf
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
 
 class AppCrashedActivity : BaseActivity<AppCrashedDesign>() {
+    private val logsState = mutableStateOf("")
+
     override suspend fun main() {
-        val design = AppCrashedDesign(this)
-
-        setContentDesign(design)
-
         val packageInfo = withContext(Dispatchers.IO) {
             packageManager.getPackageInfo(packageName, 0)
         }
@@ -24,7 +26,8 @@ class AppCrashedActivity : BaseActivity<AppCrashedDesign>() {
             SystemLogcat.dumpCrash()
         }
 
-        design.setAppLogs(logs)
+        logsState.value = logs
+        setContent { AuroraTheme { AppCrashedScreen(logsState.value) } }
 
         while (isActive) {
             events.receive()
