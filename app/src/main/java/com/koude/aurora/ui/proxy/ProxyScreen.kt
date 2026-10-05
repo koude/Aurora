@@ -97,8 +97,7 @@ fun ProxyScreen(
     onSelectGroup: (Int) -> Unit,
     onGroupExpandedChange: (String, Boolean) -> Unit,
     onSelectProxy: (groupIndex: Int, proxyName: String) -> Unit,
-    onTestGroup: (Int) -> Unit,
-    onRefresh: () -> Unit,
+    onRefresh: (expandedGroupIndex: Int?) -> Unit,
     onSortChanged: (ProxySort) -> Unit,
     onHideUnselectableChanged: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
@@ -134,7 +133,6 @@ fun ProxyScreen(
                 onSelectGroup = onSelectGroup,
                 onGroupExpandedChange = onGroupExpandedChange,
                 onSelectProxy = onSelectProxy,
-                onTestGroup = onTestGroup,
                 onRefresh = onRefresh,
                 onSortChanged = onSortChanged,
                 onHideUnselectableChanged = onHideUnselectableChanged,
@@ -155,8 +153,7 @@ private fun ProxyContent(
     onSelectGroup: (Int) -> Unit,
     onGroupExpandedChange: (String, Boolean) -> Unit,
     onSelectProxy: (Int, String) -> Unit,
-    onTestGroup: (Int) -> Unit,
-    onRefresh: () -> Unit,
+    onRefresh: (expandedGroupIndex: Int?) -> Unit,
     onSortChanged: (ProxySort) -> Unit,
     onHideUnselectableChanged: (Boolean) -> Unit,
     contentPadding: PaddingValues,
@@ -200,9 +197,15 @@ private fun ProxyContent(
                 IconButton(onClick = { settingsVisible = true }) {
                     Icon(Icons.Default.MoreVert, contentDescription = "代理设置")
                 }
-                IconButton(onClick = onRefresh, enabled = !state.loading && !state.activeEndpointsTesting) {
-                    if (state.loading || state.activeEndpointsTesting) CircularProgressIndicator(Modifier.size(22.dp), strokeWidth = 2.dp)
-                    else Icon(Icons.Default.Refresh, contentDescription = "刷新")
+                val expandedGroupIndex = state.groups.indexOfFirst { state.expandedGroups[it.name] == true }
+                    .takeIf { it >= 0 }
+                val expandedGroupTesting = expandedGroupIndex?.let { state.groups[it].testing } == true
+                IconButton(
+                    onClick = { onRefresh(expandedGroupIndex) },
+                    enabled = !state.loading && !state.activeEndpointsTesting && !expandedGroupTesting,
+                ) {
+                    if (state.loading || state.activeEndpointsTesting || expandedGroupTesting) CircularProgressIndicator(Modifier.size(22.dp), strokeWidth = 2.dp)
+                    else Icon(Icons.Default.Refresh, contentDescription = "测速")
                 }
             },
         )
@@ -280,7 +283,6 @@ private fun ProxyContent(
                             if (next) onSelectGroup(index)
                         },
                         onSelectProxy = { name -> onSelectProxy(index, name) },
-                        onTestGroup = { onTestGroup(index) },
                     )
                 }
             }
@@ -304,7 +306,6 @@ private fun ProxyGroupCard(
     searchQuery: String,
     onExpand: () -> Unit,
     onSelectProxy: (String) -> Unit,
-    onTestGroup: () -> Unit,
 ) {
     val visibleProxies = if (searchQuery.isBlank() || group.name.contains(searchQuery, ignoreCase = true)) {
         group.proxies
@@ -359,23 +360,6 @@ private fun ProxyGroupCard(
             }
             if (expanded) {
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = .55f))
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 12.dp, top = 6.dp, bottom = 2.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = "${visibleProxies.size} 个选项",
-                        modifier = Modifier.weight(1f),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    TextButton(onClick = onTestGroup, enabled = !group.testing) {
-                        if (group.testing) CircularProgressIndicator(Modifier.size(15.dp), strokeWidth = 2.dp)
-                        else Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(Modifier.size(6.dp))
-                        Text(if (group.testing) "测速中" else "测速")
-                    }
-                }
                 Column(
                     Modifier.padding(start = 10.dp, end = 10.dp, bottom = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -634,7 +618,6 @@ private fun ProxyScreenPreview() {
             onSelectGroup = {},
             onGroupExpandedChange = { _, _ -> },
             onSelectProxy = { _, _ -> },
-            onTestGroup = {},
             onRefresh = {},
             onSortChanged = {},
             onHideUnselectableChanged = {},

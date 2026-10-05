@@ -255,8 +255,10 @@ class MainActivity : BaseActivity() {
                         onSelectGroup = ::selectProxyGroup,
                         onGroupExpandedChange = ::setProxyGroupExpanded,
                         onSelectProxy = { index, name -> launch { selectProxy(index, name) } },
-                        onTestGroup = { launch { testProxyGroup(it) } },
-                        onRefresh = ::refreshActiveProxyEndpoints,
+                        onRefresh = { expandedGroupIndex ->
+                            if (expandedGroupIndex == null) refreshActiveProxyEndpoints()
+                            else launch { testProxyGroup(expandedGroupIndex) }
+                        },
                         onSortChanged = { sort ->
                             uiStore.proxySort = sort
                             refreshProxy()
