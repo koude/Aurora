@@ -5,7 +5,6 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.os.SystemClock
 import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -71,9 +70,8 @@ import com.koude.aurora.ui.components.AuroraDestination
 import com.koude.aurora.ui.connections.ConnectionsScreen
 import com.koude.aurora.ui.connections.ConnectionsUiState
 import com.koude.aurora.ui.home.HomeScreen
-import com.koude.aurora.ui.home.HomeUiState
+import com.koude.aurora.ui.home.HomeViewModel
 import com.koude.aurora.ui.home.RouteTestUiState
-import com.koude.aurora.ui.home.WebsiteLatencySite
 import com.koude.aurora.ui.profiles.ProfilesScreen
 import com.koude.aurora.ui.profiles.ProfileImportProgress
 import com.koude.aurora.ui.profiles.ProfilesViewModel
@@ -84,7 +82,6 @@ import com.koude.aurora.ui.proxy.ProxyUiState
 import com.koude.aurora.ui.settings.SettingsScreen
 import io.github.g00fy2.quickie.QRResult
 import io.github.g00fy2.quickie.ScanQRCode
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -93,10 +90,6 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.selects.select
-import kotlinx.coroutines.withContext
-import java.io.IOException
-import java.net.HttpURLConnection
-import java.net.URL
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 import com.github.kr328.clash.design.R as DesignR
@@ -107,12 +100,10 @@ private data class AuroraErrorDialogState(
 )
 
 class MainActivity : BaseActivity<MainDesign>() {
-    private val latencyTestJobs = mutableMapOf<WebsiteLatencySite, Job>()
     private var routePreviewJob: Job? = null
     private var proxyRefreshJob: Job? = null
     private val testedProxyGroups = mutableSetOf<String>()
     private val testedActiveProxies = mutableSetOf<String>()
-    private val homeUiState = mutableStateOf(HomeUiState())
     private val routeTestUiState = mutableStateOf(RouteTestUiState())
     private val proxyUiState = mutableStateOf(ProxyUiState())
     private val connectionsUiState = mutableStateOf(ConnectionsUiState())
@@ -123,6 +114,7 @@ class MainActivity : BaseActivity<MainDesign>() {
     private val activeRoute = mutableStateOf(ROUTE_HOME)
     private val requestedRoute = mutableStateOf<String?>(null)
     private val profilesViewModel: ProfilesViewModel by viewModels { ProfilesViewModel.Factory }
+    private val homeViewModel: HomeViewModel by viewModels { HomeViewModel.Factory }
     private val scanLauncher = registerForActivityResult(ScanQRCode(), ::scanResultHandler)
 
     override suspend fun main() {
@@ -154,10 +146,7 @@ class MainActivity : BaseActivity<MainDesign>() {
                             testedActiveProxies.clear()
                             proxyUiState.value = ProxyUiState(serviceRunning = false)
                             connectionsUiState.value = ConnectionsUiState()
-                            homeUiState.value = homeUiState.value.copy(
-                                uploadSpeed = "-- B/s",
-                                downloadSpeed = "-- B/s",
-                            )
+                            homeViewModel.clearTraffic()
                         }
                         Event.ProfileLoaded -> {
                             design.fetch()
@@ -185,6 +174,7 @@ class MainActivity : BaseActivity<MainDesign>() {
         }
         val backStackEntry by navController.currentBackStackEntryAsState()
         val currentRoute = backStackEntry?.destination?.route ?: ROUTE_HOME
+        val homeState by homeViewModel.uiState.collectAsStateWithLifecycle()
 
         LaunchedEffect(requestedRoute.value, backStackEntry) {
             val route = requestedRoute.value
@@ -196,7 +186,7 @@ class MainActivity : BaseActivity<MainDesign>() {
             }
         }
 
-        LaunchedEffect(currentRoute, homeUiState.value.running) {
+        LaunchedEffect(currentRoute, homeState.running) {
             activeRoute.value = currentRoute
             if (currentRoute != ROUTE_HOME && routeTestUiState.value.isOpen) {
                 dismissRouteTest()
@@ -215,7 +205,7 @@ class MainActivity : BaseActivity<MainDesign>() {
             bottomBar = {
                 AuroraBottomNavigation(
                     selected = currentRoute.toAuroraDestination(),
-                    proxyEnabled = homeUiState.value.running,
+                    proxyEnabled = homeState.running,
                     onNavigate = { navController.navigateTopLevel(it.route) },
                 )
             },
@@ -231,15 +221,15 @@ class MainActivity : BaseActivity<MainDesign>() {
             ) {
                 composable(ROUTE_HOME) {
                     HomeScreen(
-                        state = homeUiState.value,
+                        state = homeState,
                         onToggleConnection = {
                             launch { if (clashRunning) stopClashService() else design.startClash() }
                         },
                         onModeSelected = { launch { design.patchMode(it) } },
                         onTestLatency = {
-                            testAllSiteLatencies()
+                            homeViewModel.testAllSiteLatencies()
                         },
-                        onTestSiteLatency = ::testSiteLatency,
+                        onTestSiteLatency = homeViewModel::testSiteLatency,
                         routeTestState = routeTestUiState.value,
                         onOpenConnections = { navController.navigateTopLevel(ROUTE_CONNECTIONS) },
                         onOpenLogs = {
@@ -289,7 +279,7 @@ class MainActivity : BaseActivity<MainDesign>() {
                         onDuplicateProfile = { launch { duplicateProfile(it) } },
                         onDeleteProfile = profilesViewModel::delete,
                         onUpdateAll = profilesViewModel::updateAll,
-                        proxyEnabled = homeUiState.value.running,
+                        proxyEnabled = homeState.running,
                         onBack = { navController.popBackStack() },
                         onOpenHome = { navController.navigateTopLevel(ROUTE_HOME) },
                         onOpenProxy = { navController.navigateTopLevel(ROUTE_PROXY) },
@@ -320,7 +310,7 @@ class MainActivity : BaseActivity<MainDesign>() {
                 }
                 composable(ROUTE_SETTINGS) {
                     SettingsScreen(
-                        proxyEnabled = homeUiState.value.running,
+                        proxyEnabled = homeState.running,
                         onOpenHome = { navController.navigateTopLevel(ROUTE_HOME) },
                         onOpenProxy = { navController.navigateTopLevel(ROUTE_PROXY) },
                         onOpenConnections = { navController.navigateTopLevel(ROUTE_CONNECTIONS) },
@@ -360,18 +350,14 @@ class MainActivity : BaseActivity<MainDesign>() {
         setMode(state.mode)
         setHasProviders(providers.isNotEmpty())
         setProfileName(profileName)
-        homeUiState.value = homeUiState.value.copy(
-            running = clashRunning,
-            mode = state.mode,
-            profileName = profileName,
-        )
+        homeViewModel.updateConnection(clashRunning, state.mode, profileName)
     }
 
     private suspend fun MainDesign.fetchTraffic() {
         withClash {
             setForwarded(queryTrafficTotal())
             val traffic = queryTrafficNow()
-            homeUiState.value = homeUiState.value.copy(
+            homeViewModel.updateTraffic(
                 uploadSpeed = "${traffic.trafficUpload()}/s",
                 downloadSpeed = "${traffic.trafficDownload()}/s",
             )
@@ -385,7 +371,7 @@ class MainActivity : BaseActivity<MainDesign>() {
             patchOverride(Clash.OverrideSlot.Session, override)
         }
         setMode(mode)
-        homeUiState.value = homeUiState.value.copy(mode = mode)
+        homeViewModel.updateMode(mode)
     }
 
     private fun refreshProxy() {
@@ -602,90 +588,6 @@ class MainActivity : BaseActivity<MainDesign>() {
         val group = groups.getOrNull(index) ?: return
         groups[index] = group.copy(testing = testing)
         proxyUiState.value = proxyUiState.value.copy(groups = groups)
-    }
-
-    private fun testAllSiteLatencies() {
-        homeUiState.value = homeUiState.value.copy(latencyTesting = true)
-        WebsiteLatencySite.entries.forEach(::startSiteLatencyTest)
-    }
-
-    private fun testSiteLatency(site: WebsiteLatencySite) {
-        startSiteLatencyTest(site)
-    }
-
-    private fun startSiteLatencyTest(site: WebsiteLatencySite) {
-        if (latencyTestJobs[site]?.isActive == true) return
-
-        val testingSites = homeUiState.value.testingLatencySites + site
-        homeUiState.value = updateSiteLatency(
-            homeUiState.value.copy(testingLatencySites = testingSites),
-            site,
-            "检测中",
-        )
-
-        val job = launch {
-            try {
-                val latency = try {
-                    withContext(Dispatchers.IO) { measureHttpLatency(site.latencyUrl()) }
-                } catch (cancelled: CancellationException) {
-                    throw cancelled
-                } catch (_: Exception) {
-                    null
-                }
-                homeUiState.value = updateSiteLatency(
-                    homeUiState.value,
-                    site,
-                    latency?.let { "$it ms" } ?: "超时",
-                )
-            } finally {
-                latencyTestJobs.remove(site)
-                val remaining = homeUiState.value.testingLatencySites - site
-                homeUiState.value = homeUiState.value.copy(
-                    testingLatencySites = remaining,
-                    latencyTesting = homeUiState.value.latencyTesting && remaining.isNotEmpty(),
-                )
-            }
-        }
-        latencyTestJobs[site] = job
-    }
-
-    private fun WebsiteLatencySite.latencyUrl(): String = when (this) {
-        WebsiteLatencySite.Apple -> "https://www.apple.com/library/test/success.html"
-        WebsiteLatencySite.GitHub -> "https://github.com/"
-        WebsiteLatencySite.YouTube -> "https://www.youtube.com/generate_204"
-        WebsiteLatencySite.Google -> "https://www.google.com/generate_204"
-    }
-
-    private fun updateSiteLatency(
-        state: HomeUiState,
-        site: WebsiteLatencySite,
-        value: String,
-    ): HomeUiState = when (site) {
-        WebsiteLatencySite.Apple -> state.copy(appleLatency = value)
-        WebsiteLatencySite.GitHub -> state.copy(githubLatency = value)
-        WebsiteLatencySite.YouTube -> state.copy(youtubeLatency = value)
-        WebsiteLatencySite.Google -> state.copy(googleLatency = value)
-    }
-
-    private fun measureHttpLatency(url: String): Long? {
-        val connection = (URL(url).openConnection() as HttpURLConnection).apply {
-            connectTimeout = 6_000
-            readTimeout = 6_000
-            instanceFollowRedirects = false
-            requestMethod = "GET"
-            useCaches = false
-            setRequestProperty("User-Agent", "Aurora connectivity check")
-        }
-        return try {
-            val startedAt = SystemClock.elapsedRealtime()
-            connection.connect()
-            connection.responseCode
-            SystemClock.elapsedRealtime() - startedAt
-        } catch (_: IOException) {
-            null
-        } finally {
-            connection.disconnect()
-        }
     }
 
     private suspend fun MainDesign.startClash() {

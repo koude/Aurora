@@ -70,6 +70,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.github.kr328.clash.core.model.TunnelState
 import com.github.kr328.clash.core.model.RoutePreview
+import com.koude.aurora.model.WebsiteLatencySite
 import com.koude.aurora.designsystem.theme.AuroraTheme
 import com.koude.aurora.ui.components.AuroraBottomNavigation
 import com.koude.aurora.ui.components.AuroraDestination
@@ -87,13 +88,6 @@ data class HomeUiState(
     val googleLatency: String = "-- ms",
     val testingLatencySites: Set<WebsiteLatencySite> = emptySet(),
 )
-
-enum class WebsiteLatencySite {
-    Apple,
-    GitHub,
-    YouTube,
-    Google,
-}
 
 data class RouteTestUiState(
     val isOpen: Boolean = false,
