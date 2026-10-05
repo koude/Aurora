@@ -6,7 +6,7 @@ import com.github.kr328.clash.core.Clash
 import com.github.kr328.clash.core.model.ConfigurationOverride
 import com.github.kr328.clash.core.model.LogMessage
 import com.github.kr328.clash.core.model.TunnelState
-import com.github.kr328.clash.design.OverrideSettingsDesign
+import com.github.kr328.clash.design.Design
 import com.github.kr328.clash.design.R as DesignR
 import com.github.kr328.clash.util.withClash
 import com.koude.aurora.designsystem.theme.AuroraTheme
@@ -18,7 +18,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.selects.select
 
-class OverrideSettingsActivity : BaseActivity<OverrideSettingsDesign>() {
+class OverrideSettingsActivity : BaseActivity<Design<*>>() {
     override suspend fun main() {
         val configuration = withClash { queryOverride(Clash.OverrideSlot.Persist) }
         val revision = mutableIntStateOf(0)

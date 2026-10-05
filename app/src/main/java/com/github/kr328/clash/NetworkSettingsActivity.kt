@@ -4,7 +4,7 @@ import android.os.Build
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.mutableStateOf
 import com.github.kr328.clash.common.util.intent
-import com.github.kr328.clash.design.NetworkSettingsDesign
+import com.github.kr328.clash.design.Design
 import com.github.kr328.clash.service.model.AccessControlMode
 import com.github.kr328.clash.service.store.ServiceStore
 import com.koude.aurora.designsystem.theme.AuroraTheme
@@ -13,7 +13,7 @@ import com.koude.aurora.ui.settings.NetworkSettingsUiState
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.selects.select
 
-class NetworkSettingsActivity : BaseActivity<NetworkSettingsDesign>() {
+class NetworkSettingsActivity : BaseActivity<Design<*>>() {
     override suspend fun main() {
         val serviceStore = ServiceStore(this)
         val screenState = mutableStateOf(readState(serviceStore))

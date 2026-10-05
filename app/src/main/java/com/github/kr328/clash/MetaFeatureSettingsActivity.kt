@@ -9,7 +9,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.mutableIntStateOf
 import com.github.kr328.clash.core.Clash
 import com.github.kr328.clash.core.model.ConfigurationOverride
-import com.github.kr328.clash.design.MetaFeatureSettingsDesign
+import com.github.kr328.clash.design.Design
 import com.github.kr328.clash.design.R as DesignR
 import com.github.kr328.clash.util.clashDir
 import com.github.kr328.clash.util.withClash
@@ -26,7 +26,9 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
 
-class MetaFeatureSettingsActivity : BaseActivity<MetaFeatureSettingsDesign>() {
+private enum class GeoImportKind { GeoIp, GeoSite, Country, Asn }
+
+class MetaFeatureSettingsActivity : BaseActivity<Design<*>>() {
     override suspend fun main() {
         val configuration = withClash { queryOverride(Clash.OverrideSlot.Persist) }
         val revision = mutableIntStateOf(0)
@@ -134,10 +136,10 @@ class MetaFeatureSettingsActivity : BaseActivity<MetaFeatureSettingsDesign>() {
     private suspend fun chooseGeoFile(kind: String) {
         val uri = startActivityForResult(ActivityResultContracts.GetContent(), "*/*") ?: return
         val importType = when (kind) {
-            "geoip" -> MetaFeatureSettingsDesign.Request.ImportGeoIp
-            "geosite" -> MetaFeatureSettingsDesign.Request.ImportGeoSite
-            "country" -> MetaFeatureSettingsDesign.Request.ImportCountry
-            "asn" -> MetaFeatureSettingsDesign.Request.ImportASN
+            "geoip" -> GeoImportKind.GeoIp
+            "geosite" -> GeoImportKind.GeoSite
+            "country" -> GeoImportKind.Country
+            "asn" -> GeoImportKind.Asn
             else -> return
         }
         importGeoFile(uri, importType)
@@ -145,7 +147,7 @@ class MetaFeatureSettingsActivity : BaseActivity<MetaFeatureSettingsDesign>() {
 
     private val validDatabaseExtensions = listOf(".metadb", ".db", ".dat", ".mmdb")
 
-    private suspend fun importGeoFile(uri: Uri, importType: MetaFeatureSettingsDesign.Request) {
+    private suspend fun importGeoFile(uri: Uri, importType: GeoImportKind) {
         val cursor: Cursor? = contentResolver.query(uri, null, null, null, null, null)
         cursor?.use {
             if (it.moveToFirst()) {
@@ -157,10 +159,10 @@ class MetaFeatureSettingsActivity : BaseActivity<MetaFeatureSettingsDesign>() {
                     return
                 }
                 val outputFileName = when (importType) {
-                    MetaFeatureSettingsDesign.Request.ImportGeoIp -> "geoip$ext"
-                    MetaFeatureSettingsDesign.Request.ImportGeoSite -> "geosite$ext"
-                    MetaFeatureSettingsDesign.Request.ImportCountry -> "country$ext"
-                    MetaFeatureSettingsDesign.Request.ImportASN -> "ASN$ext"
+                    GeoImportKind.GeoIp -> "geoip$ext"
+                    GeoImportKind.GeoSite -> "geosite$ext"
+                    GeoImportKind.Country -> "country$ext"
+                    GeoImportKind.Asn -> "ASN$ext"
                     else -> return
                 }
                 withContext(Dispatchers.IO) {
