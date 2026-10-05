@@ -9,7 +9,6 @@ import android.content.pm.PackageManager
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.mutableStateOf
 import androidx.core.content.getSystemService
-import com.github.kr328.clash.design.Design
 import com.github.kr328.clash.design.model.AppInfo
 import com.github.kr328.clash.design.model.AppInfoSort
 import com.github.kr328.clash.design.store.UiStore
@@ -24,7 +23,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-class AccessControlActivity : BaseActivity<Design<*>>() {
+class AccessControlActivity : BaseActivity() {
     private val selectedPackages = mutableStateOf<Set<String>>(emptySet())
     private val appList = mutableStateOf<List<AppInfo>>(emptyList())
 

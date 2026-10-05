@@ -5,7 +5,6 @@ import androidx.activity.compose.setContent
 import androidx.compose.runtime.mutableStateOf
 import com.github.kr328.clash.common.util.ticker
 import com.github.kr328.clash.core.model.Provider
-import com.github.kr328.clash.design.Design
 import com.github.kr328.clash.design.R as DesignR
 import com.github.kr328.clash.util.withClash
 import com.koude.aurora.designsystem.theme.AuroraTheme
@@ -16,7 +15,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.selects.select
 import java.util.concurrent.TimeUnit
 
-class ProvidersActivity : BaseActivity<Design<*>>() {
+class ProvidersActivity : BaseActivity() {
     private val providerRows = mutableStateOf<List<ProviderRowState>>(emptyList())
     private val currentTime = mutableStateOf(System.currentTimeMillis())
 

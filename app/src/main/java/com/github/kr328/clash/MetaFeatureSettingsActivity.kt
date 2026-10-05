@@ -9,7 +9,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.mutableIntStateOf
 import com.github.kr328.clash.core.Clash
 import com.github.kr328.clash.core.model.ConfigurationOverride
-import com.github.kr328.clash.design.Design
 import com.github.kr328.clash.design.R as DesignR
 import com.github.kr328.clash.util.clashDir
 import com.github.kr328.clash.util.withClash
@@ -28,7 +27,7 @@ import java.io.FileOutputStream
 
 private enum class GeoImportKind { GeoIp, GeoSite, Country, Asn }
 
-class MetaFeatureSettingsActivity : BaseActivity<Design<*>>() {
+class MetaFeatureSettingsActivity : BaseActivity() {
     override suspend fun main() {
         val configuration = withClash { queryOverride(Clash.OverrideSlot.Persist) }
         val revision = mutableIntStateOf(0)

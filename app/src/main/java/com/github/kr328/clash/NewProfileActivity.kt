@@ -13,7 +13,6 @@ import androidx.lifecycle.lifecycleScope
 import com.github.kr328.clash.common.constants.Intents
 import com.github.kr328.clash.common.util.intent
 import com.github.kr328.clash.common.util.setUUID
-import com.github.kr328.clash.design.Design
 import com.github.kr328.clash.design.R
 import com.github.kr328.clash.design.model.ProfileProvider
 import com.github.kr328.clash.service.model.Profile
@@ -33,7 +32,7 @@ import kotlinx.coroutines.selects.select
 import kotlinx.coroutines.withContext
 import java.util.UUID
 
-class NewProfileActivity : BaseActivity<Design<*>>() {
+class NewProfileActivity : BaseActivity() {
     private val providersState = mutableStateOf<List<ProfileProvider>>(emptyList())
     private val scanLauncher = registerForActivityResult(ScanQRCode(), ::scanResultHandler)
 

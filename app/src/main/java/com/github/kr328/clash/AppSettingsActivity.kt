@@ -4,7 +4,6 @@ import android.content.pm.PackageManager
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.mutableStateOf
 import com.github.kr328.clash.common.util.componentName
-import com.github.kr328.clash.design.Design
 import com.github.kr328.clash.design.model.Behavior
 import com.github.kr328.clash.design.model.DarkMode
 import com.github.kr328.clash.design.store.UiStore.Companion.mainActivityAlias
@@ -16,7 +15,7 @@ import com.koude.aurora.ui.settings.AppSettingsUiState
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.selects.select
 
-class AppSettingsActivity : BaseActivity<Design<*>>(), Behavior {
+class AppSettingsActivity : BaseActivity(), Behavior {
     override suspend fun main() {
         val serviceStore = ServiceStore(this)
         val screenState = mutableStateOf(readState(serviceStore))

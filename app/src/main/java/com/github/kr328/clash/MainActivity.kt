@@ -57,7 +57,6 @@ import com.github.kr328.clash.core.model.RoutePreview
 import com.github.kr328.clash.core.model.TunnelState
 import com.github.kr328.clash.core.util.trafficDownload
 import com.github.kr328.clash.core.util.trafficUpload
-import com.github.kr328.clash.design.MainDesign
 import com.github.kr328.clash.remote.FilesClient
 import com.github.kr328.clash.service.model.Profile
 import com.github.kr328.clash.util.fileName
@@ -99,7 +98,7 @@ private data class AuroraErrorDialogState(
     val details: String,
 )
 
-class MainActivity : BaseActivity<MainDesign>() {
+class MainActivity : BaseActivity() {
     private var routePreviewJob: Job? = null
     private var proxyRefreshJob: Job? = null
     private val testedProxyGroups = mutableSetOf<String>()
@@ -123,9 +122,6 @@ class MainActivity : BaseActivity<MainDesign>() {
     }
 
     override suspend fun main() {
-        val design = MainDesign(this)
-
-        setContentDesign(design)
         setContent { AuroraTheme { AuroraApp() } }
 
         fetch()
