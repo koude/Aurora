@@ -6,7 +6,6 @@ plugins {
 
 android {
     buildFeatures {
-        dataBinding = false
         compose = true
     }
 }
