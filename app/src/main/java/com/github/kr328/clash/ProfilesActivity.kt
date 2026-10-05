@@ -79,9 +79,9 @@ class ProfilesActivity : BaseActivity<ProfilesDesign>() {
                     onDeleteProfile = profilesViewModel::delete,
                     onUpdateAll = design::requestUpdateAll,
                     proxyEnabled = proxyEnabledState.value,
-                    onOpenHome = { navigateTopLevel(MainActivity::class) },
-                    onOpenProxy = { navigateTopLevel(ProxyActivity::class) },
-                    onOpenSettings = { navigateTopLevel(SettingsActivity::class) },
+                    onOpenHome = { navigateTopLevel(TopLevelDestination.Home) },
+                    onOpenProxy = { navigateTopLevel(TopLevelDestination.Proxy) },
+                    onOpenSettings = { navigateTopLevel(TopLevelDestination.Settings) },
                 )
             }
         }
@@ -106,11 +106,11 @@ class ProfilesActivity : BaseActivity<ProfilesDesign>() {
                 design.requests.onReceive {
                     when (it) {
                         ProfilesDesign.Request.OpenHome ->
-                            navigateTopLevel(MainActivity::class)
+                            navigateTopLevel(TopLevelDestination.Home)
                         ProfilesDesign.Request.OpenProxy ->
-                            navigateTopLevel(ProxyActivity::class)
+                            navigateTopLevel(TopLevelDestination.Proxy)
                         ProfilesDesign.Request.OpenSettings ->
-                            navigateTopLevel(SettingsActivity::class)
+                            navigateTopLevel(TopLevelDestination.Settings)
                         ProfilesDesign.Request.Create ->
                             design.showCreateDialog(queryProfileProviders())
                         is ProfilesDesign.Request.CreateProfile ->
