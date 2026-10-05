@@ -73,6 +73,7 @@ import com.koude.aurora.ui.connections.ConnectionsUiState
 import com.koude.aurora.ui.home.HomeScreen
 import com.koude.aurora.ui.home.HomeUiState
 import com.koude.aurora.ui.home.RouteTestUiState
+import com.koude.aurora.ui.home.WebsiteLatencySite
 import com.koude.aurora.ui.profiles.ProfilesScreen
 import com.koude.aurora.ui.profiles.ProfileImportProgress
 import com.koude.aurora.ui.profiles.ProfilesViewModel
@@ -84,6 +85,7 @@ import com.koude.aurora.ui.settings.SettingsScreen
 import io.github.g00fy2.quickie.QRResult
 import io.github.g00fy2.quickie.ScanQRCode
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -91,6 +93,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.selects.select
+import kotlinx.coroutines.withContext
 import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
@@ -104,7 +107,7 @@ private data class AuroraErrorDialogState(
 )
 
 class MainActivity : BaseActivity<MainDesign>() {
-    private var latencyTestJob: Job? = null
+    private val latencyTestJobs = mutableMapOf<WebsiteLatencySite, Job>()
     private var routePreviewJob: Job? = null
     private var proxyRefreshJob: Job? = null
     private val testedProxyGroups = mutableSetOf<String>()
@@ -234,10 +237,9 @@ class MainActivity : BaseActivity<MainDesign>() {
                         },
                         onModeSelected = { launch { design.patchMode(it) } },
                         onTestLatency = {
-                            if (latencyTestJob?.isActive != true) {
-                                latencyTestJob = launch { design.testSiteLatency() }
-                            }
+                            testAllSiteLatencies()
                         },
+                        onTestSiteLatency = ::testSiteLatency,
                         routeTestState = routeTestUiState.value,
                         onOpenConnections = { navController.navigateTopLevel(ROUTE_CONNECTIONS) },
                         onOpenLogs = {
@@ -602,39 +604,67 @@ class MainActivity : BaseActivity<MainDesign>() {
         proxyUiState.value = proxyUiState.value.copy(groups = groups)
     }
 
-    private suspend fun MainDesign.testSiteLatency() {
-        val targets = listOf(
-            MainDesign.LatencySite.Apple to "https://www.apple.com/library/test/success.html",
-            MainDesign.LatencySite.GitHub to "https://github.com/",
-            MainDesign.LatencySite.YouTube to "https://www.youtube.com/generate_204",
-            MainDesign.LatencySite.Google to "https://www.google.com/generate_204",
+    private fun testAllSiteLatencies() {
+        homeUiState.value = homeUiState.value.copy(latencyTesting = true)
+        WebsiteLatencySite.entries.forEach(::startSiteLatencyTest)
+    }
+
+    private fun testSiteLatency(site: WebsiteLatencySite) {
+        startSiteLatencyTest(site)
+    }
+
+    private fun startSiteLatencyTest(site: WebsiteLatencySite) {
+        if (latencyTestJobs[site]?.isActive == true) return
+
+        val testingSites = homeUiState.value.testingLatencySites + site
+        homeUiState.value = updateSiteLatency(
+            homeUiState.value.copy(testingLatencySites = testingSites),
+            site,
+            "检测中",
         )
-        setLatencyTesting(true)
-        homeUiState.value = homeUiState.value.copy(
-            latencyTesting = true,
-            appleLatency = "检测中",
-            githubLatency = "检测中",
-            youtubeLatency = "检测中",
-            googleLatency = "检测中",
-        )
-        try {
-            coroutineScope {
-                targets.map { (site, url) -> async(Dispatchers.IO) { site to measureHttpLatency(url) } }
-                    .awaitAll()
-            }.forEach { (site, latency) ->
-                setSiteLatency(site, latency)
-                val value = latency?.let { "$it ms" } ?: "超时"
-                homeUiState.value = when (site) {
-                    MainDesign.LatencySite.Apple -> homeUiState.value.copy(appleLatency = value)
-                    MainDesign.LatencySite.GitHub -> homeUiState.value.copy(githubLatency = value)
-                    MainDesign.LatencySite.YouTube -> homeUiState.value.copy(youtubeLatency = value)
-                    MainDesign.LatencySite.Google -> homeUiState.value.copy(googleLatency = value)
+
+        val job = launch {
+            try {
+                val latency = try {
+                    withContext(Dispatchers.IO) { measureHttpLatency(site.latencyUrl()) }
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (_: Exception) {
+                    null
                 }
+                homeUiState.value = updateSiteLatency(
+                    homeUiState.value,
+                    site,
+                    latency?.let { "$it ms" } ?: "超时",
+                )
+            } finally {
+                latencyTestJobs.remove(site)
+                val remaining = homeUiState.value.testingLatencySites - site
+                homeUiState.value = homeUiState.value.copy(
+                    testingLatencySites = remaining,
+                    latencyTesting = homeUiState.value.latencyTesting && remaining.isNotEmpty(),
+                )
             }
-        } finally {
-            setLatencyTesting(false)
-            homeUiState.value = homeUiState.value.copy(latencyTesting = false)
         }
+        latencyTestJobs[site] = job
+    }
+
+    private fun WebsiteLatencySite.latencyUrl(): String = when (this) {
+        WebsiteLatencySite.Apple -> "https://www.apple.com/library/test/success.html"
+        WebsiteLatencySite.GitHub -> "https://github.com/"
+        WebsiteLatencySite.YouTube -> "https://www.youtube.com/generate_204"
+        WebsiteLatencySite.Google -> "https://www.google.com/generate_204"
+    }
+
+    private fun updateSiteLatency(
+        state: HomeUiState,
+        site: WebsiteLatencySite,
+        value: String,
+    ): HomeUiState = when (site) {
+        WebsiteLatencySite.Apple -> state.copy(appleLatency = value)
+        WebsiteLatencySite.GitHub -> state.copy(githubLatency = value)
+        WebsiteLatencySite.YouTube -> state.copy(youtubeLatency = value)
+        WebsiteLatencySite.Google -> state.copy(googleLatency = value)
     }
 
     private fun measureHttpLatency(url: String): Long? {

@@ -62,6 +62,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.github.kr328.clash.core.model.TunnelState
@@ -81,7 +82,15 @@ data class HomeUiState(
     val githubLatency: String = "-- ms",
     val youtubeLatency: String = "-- ms",
     val googleLatency: String = "-- ms",
+    val testingLatencySites: Set<WebsiteLatencySite> = emptySet(),
 )
+
+enum class WebsiteLatencySite {
+    Apple,
+    GitHub,
+    YouTube,
+    Google,
+}
 
 data class RouteTestUiState(
     val isOpen: Boolean = false,
@@ -97,6 +106,7 @@ fun HomeScreen(
     onToggleConnection: () -> Unit,
     onModeSelected: (TunnelState.Mode) -> Unit,
     onTestLatency: () -> Unit,
+    onTestSiteLatency: (WebsiteLatencySite) -> Unit,
     routeTestState: RouteTestUiState,
     onOpenConnections: () -> Unit,
     onOpenLogs: () -> Unit,
@@ -155,7 +165,11 @@ fun HomeScreen(
                 onToggleConnection = onToggleConnection,
             )
 
-            LatencyCard(state = state, onTestLatency = onTestLatency)
+            LatencyCard(
+                state = state,
+                onTestLatency = onTestLatency,
+                onTestSiteLatency = onTestSiteLatency,
+            )
 
             QuickTools(
                 onOpenConnections = onOpenConnections,
@@ -431,7 +445,11 @@ private fun ModeMenu(
 }
 
 @Composable
-private fun LatencyCard(state: HomeUiState, onTestLatency: () -> Unit) {
+private fun LatencyCard(
+    state: HomeUiState,
+    onTestLatency: () -> Unit,
+    onTestSiteLatency: (WebsiteLatencySite) -> Unit,
+) {
     Card(
         shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
@@ -462,21 +480,39 @@ private fun LatencyCard(state: HomeUiState, onTestLatency: () -> Unit) {
             }
 
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                LatencyCell("Apple", state.appleLatency, Modifier.weight(1f))
-                LatencyCell("GitHub", state.githubLatency, Modifier.weight(1f))
+                LatencyCell(
+                    "Apple", state.appleLatency, state.testingLatencySites.contains(WebsiteLatencySite.Apple),
+                    Modifier.weight(1f), onClick = { onTestSiteLatency(WebsiteLatencySite.Apple) },
+                )
+                LatencyCell(
+                    "GitHub", state.githubLatency, state.testingLatencySites.contains(WebsiteLatencySite.GitHub),
+                    Modifier.weight(1f), onClick = { onTestSiteLatency(WebsiteLatencySite.GitHub) },
+                )
             }
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                LatencyCell("YouTube", state.youtubeLatency, Modifier.weight(1f))
-                LatencyCell("Google", state.googleLatency, Modifier.weight(1f))
+                LatencyCell(
+                    "YouTube", state.youtubeLatency, state.testingLatencySites.contains(WebsiteLatencySite.YouTube),
+                    Modifier.weight(1f), onClick = { onTestSiteLatency(WebsiteLatencySite.YouTube) },
+                )
+                LatencyCell(
+                    "Google", state.googleLatency, state.testingLatencySites.contains(WebsiteLatencySite.Google),
+                    Modifier.weight(1f), onClick = { onTestSiteLatency(WebsiteLatencySite.Google) },
+                )
             }
         }
     }
 }
 
 @Composable
-private fun LatencyCell(label: String, value: String, modifier: Modifier = Modifier) {
+private fun LatencyCell(
+    label: String,
+    value: String,
+    testing: Boolean,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+) {
     Surface(
-        modifier = modifier,
+        modifier = modifier.clickable(role = Role.Button, onClick = onClick),
         shape = MaterialTheme.shapes.medium,
         color = MaterialTheme.colorScheme.surfaceContainerLow,
         border = ButtonDefaults.outlinedButtonBorder(enabled = true),
@@ -487,11 +523,15 @@ private fun LatencyCell(label: String, value: String, modifier: Modifier = Modif
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(label, style = MaterialTheme.typography.titleMedium)
-            Text(
-                text = value,
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.primary,
-            )
+            if (testing) {
+                CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+            } else {
+                Text(
+                    text = value,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
         }
     }
 }
@@ -614,6 +654,7 @@ private fun HomeScreenPreview() {
             onToggleConnection = {},
             onModeSelected = {},
             onTestLatency = {},
+            onTestSiteLatency = {},
             routeTestState = RouteTestUiState(),
             onOpenConnections = {},
             onOpenLogs = {},

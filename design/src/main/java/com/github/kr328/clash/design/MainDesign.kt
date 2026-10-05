@@ -36,13 +36,6 @@ class MainDesign(context: Context) : Design<MainDesign.Request>(context) {
         Placeholder,
     }
 
-    enum class LatencySite {
-        Apple,
-        GitHub,
-        YouTube,
-        Google,
-    }
-
     private var currentMode = TunnelState.Mode.Rule
     private val binding = DesignMainBinding
         .inflate(context.layoutInflater, context.root, false)
@@ -84,35 +77,6 @@ class MainDesign(context: Context) : Design<MainDesign.Request>(context) {
                 TunnelState.Mode.Global -> context.getString(R.string.aurora_mode_global)
                 TunnelState.Mode.Rule -> context.getString(R.string.aurora_mode_rule)
                 else -> context.getString(R.string.aurora_mode_rule)
-            }
-        }
-    }
-
-    suspend fun setLatencyTesting(testing: Boolean) {
-        withContext(Dispatchers.Main) {
-            binding.latencyTesting = testing
-
-            if (testing) {
-                val pending = context.getString(R.string.aurora_latency_testing)
-                binding.appleLatency = pending
-                binding.githubLatency = pending
-                binding.youtubeLatency = pending
-                binding.googleLatency = pending
-            }
-        }
-    }
-
-    suspend fun setSiteLatency(site: LatencySite, latencyMillis: Long?) {
-        withContext(Dispatchers.Main) {
-            val value = latencyMillis?.let {
-                context.getString(R.string.aurora_latency_value, it)
-            } ?: context.getString(R.string.aurora_latency_timeout)
-
-            when (site) {
-                LatencySite.Apple -> binding.appleLatency = value
-                LatencySite.GitHub -> binding.githubLatency = value
-                LatencySite.YouTube -> binding.youtubeLatency = value
-                LatencySite.Google -> binding.googleLatency = value
             }
         }
     }
