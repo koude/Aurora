@@ -45,6 +45,7 @@ import com.koude.aurora.ui.components.AuroraDestination
 import com.koude.aurora.ui.components.AuroraPageHeader
 import com.koude.aurora.ui.components.AuroraPageSpacing
 import com.koude.aurora.ui.components.AuroraSectionTitle
+import com.koude.aurora.ui.components.AuroraCardStyle
 
 @Composable
 fun SettingsScreen(
@@ -140,9 +141,9 @@ private fun SettingsSectionTitle(text: String, modifier: Modifier = Modifier) {
 @Composable
 private fun SettingsGroup(content: @Composable () -> Unit) {
     Card(
-        shape = MaterialTheme.shapes.large,
+        shape = AuroraCardStyle.groupShape(),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+            containerColor = AuroraCardStyle.groupColor(),
         ),
     ) {
         Column(content = { content() })

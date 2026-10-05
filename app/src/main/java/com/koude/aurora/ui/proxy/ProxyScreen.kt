@@ -58,6 +58,7 @@ import com.github.kr328.clash.core.model.ProxySort
 import com.koude.aurora.designsystem.theme.AuroraTheme
 import com.koude.aurora.ui.components.AuroraPageHeader
 import com.koude.aurora.ui.components.AuroraPageSpacing
+import com.koude.aurora.ui.components.AuroraCardStyle
 
 data class ProxyGroupUiState(
     val name: String,
@@ -316,8 +317,8 @@ private fun ProxyGroupCard(
     }
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.extraLarge,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        shape = AuroraCardStyle.groupShape(),
+        colors = CardDefaults.cardColors(containerColor = AuroraCardStyle.groupColor()),
     ) {
         Column {
             Row(
@@ -497,10 +498,10 @@ private fun ProxyCard(
         modifier = Modifier.fillMaxWidth(),
         onClick = onClick,
         enabled = enabled,
-        shape = MaterialTheme.shapes.large,
+        shape = AuroraCardStyle.itemShape(),
         colors = CardDefaults.cardColors(
             containerColor = if (selected) MaterialTheme.colorScheme.primaryContainer
-            else MaterialTheme.colorScheme.surfaceContainer,
+            else AuroraCardStyle.itemColor(),
             contentColor = if (selected) MaterialTheme.colorScheme.onPrimaryContainer
             else MaterialTheme.colorScheme.onSurface,
         ),

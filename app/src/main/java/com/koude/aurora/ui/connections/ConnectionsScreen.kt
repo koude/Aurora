@@ -44,6 +44,7 @@ import com.github.kr328.clash.core.model.ConnectionInfo
 import com.koude.aurora.designsystem.theme.AuroraTheme
 import com.koude.aurora.ui.components.AuroraPageHeader
 import com.koude.aurora.ui.components.AuroraPageSpacing
+import com.koude.aurora.ui.components.AuroraCardStyle
 import java.text.DateFormat
 import java.util.Date
 
@@ -172,8 +173,8 @@ fun ConnectionsScreen(
 @Composable
 private fun ConnectionCard(connection: ConnectionInfo, onClose: () -> Unit) {
     Card(
-        shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        shape = AuroraCardStyle.groupShape(),
+        colors = CardDefaults.cardColors(containerColor = AuroraCardStyle.groupColor()),
     ) {
         Column(modifier = Modifier.padding(start = 16.dp, top = 14.dp, end = 8.dp, bottom = 12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -236,8 +237,8 @@ private fun ConnectionCard(connection: ConnectionInfo, onClose: () -> Unit) {
 private fun ConnectionsEmptyState(title: String) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        shape = AuroraCardStyle.groupShape(),
+        colors = CardDefaults.cardColors(containerColor = AuroraCardStyle.groupColor()),
     ) {
         Box(Modifier.padding(28.dp), contentAlignment = Alignment.Center) {
             Text(title, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)

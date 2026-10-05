@@ -77,6 +77,7 @@ import com.koude.aurora.ui.components.AuroraDestination
 import com.koude.aurora.ui.components.AuroraPageHeader
 import com.koude.aurora.ui.components.AuroraPageSpacing
 import com.koude.aurora.ui.components.AuroraSectionTitle
+import com.koude.aurora.ui.components.AuroraCardStyle
 
 data class HomeUiState(
     val running: Boolean = false,
@@ -447,11 +448,11 @@ private fun LatencyCard(
     onTestSiteLatency: (WebsiteLatencySite) -> Unit,
 ) {
     Card(
-        shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        shape = AuroraCardStyle.groupShape(),
+        colors = CardDefaults.cardColors(containerColor = AuroraCardStyle.groupColor()),
     ) {
         Column(
-            modifier = Modifier.padding(18.dp),
+            modifier = Modifier.padding(AuroraCardStyle.ContentPadding),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             Row(
@@ -510,8 +511,8 @@ private fun LatencyCell(
 ) {
     Surface(
         modifier = modifier.clickable(role = Role.Button, onClick = onClick),
-        shape = MaterialTheme.shapes.medium,
-        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        shape = AuroraCardStyle.itemShape(),
+        color = AuroraCardStyle.itemColor(),
         border = ButtonDefaults.outlinedButtonBorder(enabled = true),
     ) {
         Column(
@@ -607,13 +608,13 @@ private fun QuickTool(icon: ImageVector, label: String, onClick: () -> Unit) {
 private fun ProfileCard(profileName: String?, onOpenProfiles: () -> Unit) {
     Card(
         onClick = onOpenProfiles,
-        shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        shape = AuroraCardStyle.groupShape(),
+        colors = CardDefaults.cardColors(containerColor = AuroraCardStyle.groupColor()),
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(18.dp),
+                .padding(AuroraCardStyle.ContentPadding),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
