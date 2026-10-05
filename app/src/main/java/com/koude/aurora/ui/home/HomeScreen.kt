@@ -152,7 +152,7 @@ fun HomeScreen(
                     end = AuroraPageSpacing.Horizontal,
                     bottom = padding.calculateBottomPadding() + AuroraPageSpacing.Bottom,
                 ),
-            verticalArrangement = Arrangement.spacedBy(22.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             AuroraPageHeader(title = "Aurora")
 
@@ -453,7 +453,7 @@ private fun LatencyCard(
     ) {
         Column(
             modifier = Modifier.padding(AuroraCardStyle.ContentPadding),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -518,7 +518,7 @@ private fun LatencyCell(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 12.dp),
+                .padding(horizontal = 12.dp, vertical = 10.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Row(

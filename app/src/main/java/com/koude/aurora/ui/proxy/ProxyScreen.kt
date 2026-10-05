@@ -229,7 +229,7 @@ private fun ProxyContent(
                 end = contentPadding.calculateRightPadding(androidx.compose.ui.unit.LayoutDirection.Ltr),
                 bottom = contentPadding.calculateBottomPadding(),
             ),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             item {
                 Row(
@@ -322,7 +322,7 @@ private fun ProxyGroupCard(
     ) {
         Column {
             Row(
-                modifier = Modifier.fillMaxWidth().clickable(onClick = onExpand).padding(horizontal = 16.dp, vertical = 14.dp),
+                modifier = Modifier.fillMaxWidth().clickable(onClick = onExpand).padding(horizontal = 16.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
@@ -376,7 +376,10 @@ private fun ProxyGroupCard(
                         Text(if (group.testing) "测速中" else "测速")
                     }
                 }
-                Column(Modifier.padding(start = 10.dp, end = 10.dp, bottom = 8.dp)) {
+                Column(
+                    Modifier.padding(start = 10.dp, end = 10.dp, bottom = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
                     visibleProxies.forEach { proxy ->
                         ProxyCard(
                             proxy = proxy,
@@ -509,7 +512,7 @@ private fun ProxyCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 17.dp, vertical = 12.dp),
+                .padding(horizontal = 16.dp, vertical = 10.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
