@@ -110,8 +110,20 @@ jobs:
         run: |
           RELEASE_TAG="v${AURORA_VERSION}"
           RELEASE_TITLE="Aurora ${AURORA_VERSION} (arm64-v8a)"
-          git tag --force "$RELEASE_TAG" "$GITHUB_SHA"
-          git push origin "refs/tags/$RELEASE_TAG" --force
+          REMOTE_TAG_COMMIT="$(git ls-remote origin "refs/tags/${RELEASE_TAG}" "refs/tags/${RELEASE_TAG}^{}" | awk -v tag="$RELEASE_TAG" '
+            $2 == "refs/tags/" tag "^{}" { peeled = $1 }
+            $2 == "refs/tags/" tag { direct = $1 }
+            END { print peeled ? peeled : direct }
+          ')"
+          if [ -n "$REMOTE_TAG_COMMIT" ]; then
+            if [ "$REMOTE_TAG_COMMIT" != "$GITHUB_SHA" ]; then
+              echo "Release tag $RELEASE_TAG already points to $REMOTE_TAG_COMMIT, not $GITHUB_SHA" >&2
+              exit 1
+            fi
+          else
+            git tag "$RELEASE_TAG" "$GITHUB_SHA"
+            git push origin "refs/tags/$RELEASE_TAG"
+          fi
 
           if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
             gh release edit "$RELEASE_TAG" \
