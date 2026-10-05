@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -19,17 +18,15 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.github.kr328.clash.core.model.Provider
 import com.github.kr328.clash.design.R as DesignR
 import com.github.kr328.clash.design.util.type
+import com.koude.aurora.ui.components.AuroraDetailTopBar
 
 data class ProviderRowState(
     val provider: Provider,
@@ -37,7 +34,6 @@ data class ProviderRowState(
     val updating: Boolean = false,
 )
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProvidersScreen(
     providers: List<ProviderRowState>,
@@ -49,19 +45,12 @@ fun ProvidersScreen(
     Scaffold(
         modifier = modifier,
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(DesignR.string.providers), fontWeight = FontWeight.Medium) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
-                    }
-                },
-            )
+            AuroraDetailTopBar(title = stringResource(DesignR.string.providers), onBack = onBack)
         },
     ) { insets ->
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(insets),
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 24.dp),
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 20.dp, top = 12.dp, end = 20.dp, bottom = 28.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             items(providers.indices.toList(), key = { providers[it].provider.name + providers[it].provider.type.name }) { index ->

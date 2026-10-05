@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import com.github.kr328.clash.core.model.LogMessage
 import com.github.kr328.clash.design.R as DesignR
 import com.github.kr328.clash.design.util.format
+import com.koude.aurora.ui.components.AuroraDetailTopBar
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -46,9 +47,9 @@ fun LogcatScreen(
     Scaffold(
         modifier = modifier,
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(if (streaming) DesignR.string.clash_logcat else DesignR.string.logcat), fontWeight = FontWeight.Medium) },
-                navigationIcon = { IconButton(onClick = onClose) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回") } },
+            AuroraDetailTopBar(
+                title = stringResource(if (streaming) DesignR.string.clash_logcat else DesignR.string.logcat),
+                onBack = onClose,
                 actions = {
                     if (streaming) {
                         IconButton(onClick = onClose) { Icon(painterResource(DesignR.drawable.ic_baseline_stop), contentDescription = stringResource(DesignR.string.close)) }
@@ -70,7 +71,7 @@ fun LogcatScreen(
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 reverseLayout = streaming,
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 20.dp, top = 12.dp, end = 20.dp, bottom = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 itemsIndexed(messages, key = { index, message -> "${message.time.time}-${message.level}-$index" }) { _, message ->

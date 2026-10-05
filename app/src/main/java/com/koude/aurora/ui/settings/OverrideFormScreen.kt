@@ -39,6 +39,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.koude.aurora.ui.components.AuroraDetailTopBar
 
 enum class ConfigFieldEditor { Text, Lines, Choices }
 
@@ -75,9 +76,9 @@ fun OverrideFormScreen(
     Scaffold(
         modifier = modifier,
         topBar = {
-            TopAppBar(
-                title = { Text(title, fontWeight = FontWeight.Medium) },
-                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回") } },
+            AuroraDetailTopBar(
+                title = title,
+                onBack = onBack,
                 actions = {
                     IconButton(onClick = { resetMenu = true }) { Icon(Icons.Default.MoreVert, contentDescription = "更多") }
                     DropdownMenu(expanded = resetMenu, onDismissRequest = { resetMenu = false }) {
@@ -89,7 +90,7 @@ fun OverrideFormScreen(
     ) { insets ->
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(insets),
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 28.dp),
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 20.dp, top = 12.dp, end = 20.dp, bottom = 28.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             val fieldsBySection = fields.groupBy { it.section }

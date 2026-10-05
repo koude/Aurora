@@ -21,14 +21,12 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.safeDrawing
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
@@ -83,6 +81,7 @@ import com.koude.aurora.designsystem.theme.AuroraTheme
 import com.koude.aurora.model.ProfileKind
 import com.koude.aurora.model.ProfileSummary
 import com.koude.aurora.ui.components.AuroraBottomNavigation
+import com.koude.aurora.ui.components.AuroraDetailTopBar
 import com.koude.aurora.ui.components.AuroraDestination
 import java.util.UUID
 
@@ -123,22 +122,7 @@ fun ProfilesScreen(
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.surface,
         topBar = {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .statusBarsPadding()
-                    .padding(start = 8.dp, top = 4.dp, end = 20.dp, bottom = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
-                }
-                Text(
-                    text = "配置与订阅",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Medium,
-                )
-            }
+            AuroraDetailTopBar(title = "配置与订阅", onBack = onBack)
         },
         contentWindowInsets = if (showBottomNavigation) ScaffoldDefaults.contentWindowInsets
         else WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal),

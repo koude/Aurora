@@ -11,14 +11,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
@@ -40,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import com.github.kr328.clash.design.R as DesignR
 import com.github.kr328.clash.service.model.AccessControlMode
 import com.koude.aurora.designsystem.theme.AuroraTheme
+import com.koude.aurora.ui.components.AuroraDetailTopBar
 
 data class NetworkSettingsUiState(
     val running: Boolean = false,
@@ -75,21 +73,7 @@ fun NetworkSettingsScreen(
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.surface,
         topBar = {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 8.dp, top = 8.dp, end = 20.dp, bottom = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
-                }
-                Text(
-                    text = stringResource(DesignR.string.network),
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Medium,
-                )
-            }
+            AuroraDetailTopBar(title = stringResource(DesignR.string.network), onBack = onBack)
         },
     ) { padding ->
         LazyColumn(
@@ -98,7 +82,7 @@ fun NetworkSettingsScreen(
                 .padding(padding),
             contentPadding = androidx.compose.foundation.layout.PaddingValues(
                 start = 20.dp,
-                top = 8.dp,
+                top = 12.dp,
                 end = 20.dp,
                 bottom = 28.dp,
             ),

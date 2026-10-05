@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.dp
 import com.github.kr328.clash.design.R as DesignR
 import com.github.kr328.clash.design.model.AppInfo
 import com.github.kr328.clash.design.model.AppInfoSort
+import com.koude.aurora.ui.components.AuroraDetailTopBar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -77,11 +78,9 @@ fun AccessControlScreen(
     Scaffold(
         modifier = modifier,
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(DesignR.string.access_control_packages), fontWeight = FontWeight.Medium) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回") }
-                },
+            AuroraDetailTopBar(
+                title = stringResource(DesignR.string.access_control_packages),
+                onBack = onBack,
                 actions = {
                     IconButton(onClick = { searchVisible = !searchVisible; searchText = "" }) {
                         Icon(Icons.Default.Search, contentDescription = stringResource(DesignR.string.search))

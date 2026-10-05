@@ -37,6 +37,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.github.kr328.clash.design.R as DesignR
 import com.github.kr328.clash.design.model.DarkMode
+import com.koude.aurora.ui.components.AuroraDetailTopBar
 
 data class AppSettingsUiState(
     val autoRestart: Boolean = false,
@@ -63,14 +64,7 @@ fun AppSettingsScreen(
     Scaffold(
         modifier = modifier,
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(DesignR.string.app), fontWeight = FontWeight.Medium) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
-                    }
-                },
-            )
+            AuroraDetailTopBar(title = stringResource(DesignR.string.app), onBack = onBack)
         },
     ) { insets ->
         LazyColumn(

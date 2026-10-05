@@ -36,6 +36,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.github.kr328.clash.design.R as DesignR
 import com.github.kr328.clash.service.model.Profile
+import com.koude.aurora.ui.components.AuroraDetailTopBar
 import java.util.concurrent.TimeUnit
 
 private enum class PropertyField { Name, Url, AgeSecretKey, Interval }
@@ -67,13 +68,9 @@ fun ProfilePropertiesScreen(
     Scaffold(
         modifier = modifier,
         topBar = {
-            TopAppBar(
-                title = { Text("配置详情", fontWeight = FontWeight.Medium) },
-                navigationIcon = {
-                    IconButton(onClick = ::requestBack, enabled = !saving) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
-                    }
-                },
+            AuroraDetailTopBar(
+                title = "配置详情",
+                onBack = ::requestBack,
                 actions = {
                     if (saving) CircularProgressIndicator(Modifier.padding(horizontal = 16.dp), strokeWidth = 2.dp)
                     else TextButton(onClick = onSave) { Text("保存") }

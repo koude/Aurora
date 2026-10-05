@@ -44,6 +44,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.koude.aurora.ui.components.AuroraDetailTopBar
 import com.github.kr328.clash.design.R as DesignR
 import com.github.kr328.clash.design.model.File
 import com.github.kr328.clash.design.util.format
@@ -94,9 +95,9 @@ fun FilesScreen(
 
     BackHandler { if (selected != null) selected = null else onBack() }
     Scaffold(topBar = {
-        TopAppBar(
-            title = { Text(stringResource(DesignR.string.files), fontWeight = FontWeight.Medium) },
-            navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回") } },
+        AuroraDetailTopBar(
+            title = stringResource(DesignR.string.files),
+            onBack = onBack,
             actions = {
                 if (!currentInBase) IconButton(onClick = { pendingImport = null; importPicker.launch("*/*") }) {
                     Icon(painterResource(DesignR.drawable.ic_baseline_add), contentDescription = stringResource(DesignR.string._new))
@@ -110,7 +111,7 @@ fun FilesScreen(
             }
         } else LazyColumn(
             Modifier.fillMaxSize().padding(insets),
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 20.dp, top = 12.dp, end = 20.dp, bottom = 28.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             items(files, key = { it.id }) { file ->

@@ -18,7 +18,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -33,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
 import com.github.kr328.clash.design.R as DesignR
 import com.github.kr328.clash.design.model.ProfileProvider
+import com.koude.aurora.ui.components.AuroraDetailTopBar
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -43,15 +43,10 @@ fun NewProfileScreen(
     onProviderDetails: (ProfileProvider.External) -> Unit,
 ) {
     val context = LocalContext.current
-    Scaffold(topBar = {
-        TopAppBar(
-            title = { Text(stringResource(DesignR.string.create_profile), fontWeight = FontWeight.Medium) },
-            navigationIcon = { IconButton(onClick = onBack) { Icon(painterResource(DesignR.drawable.ic_baseline_arrow_back), contentDescription = "返回") } },
-        )
-    }) { insets ->
+    Scaffold(topBar = { AuroraDetailTopBar(title = stringResource(DesignR.string.create_profile), onBack = onBack) }) { insets ->
         LazyColumn(
             Modifier.fillMaxSize().padding(insets),
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 20.dp, top = 12.dp, end = 20.dp, bottom = 28.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             items(providers) { provider ->
