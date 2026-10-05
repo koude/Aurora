@@ -4,7 +4,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.runtime.mutableStateOf
 import com.github.kr328.clash.common.util.intent
 import com.github.kr328.clash.common.util.setFileName
-import com.github.kr328.clash.design.LogsDesign
+import com.github.kr328.clash.design.Design
 import com.github.kr328.clash.design.model.LogFile
 import com.github.kr328.clash.util.logsDir
 import com.koude.aurora.designsystem.theme.AuroraTheme
@@ -14,7 +14,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-class LogsActivity : BaseActivity<LogsDesign>() {
+class LogsActivity : BaseActivity<Design<*>>() {
     private val filesState = mutableStateOf<List<LogFile>>(emptyList())
 
     override suspend fun main() {

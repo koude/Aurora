@@ -2,7 +2,7 @@ package com.github.kr328.clash
 
 import com.github.kr328.clash.common.compat.versionCodeCompat
 import com.github.kr328.clash.common.log.Log
-import com.github.kr328.clash.design.AppCrashedDesign
+import com.github.kr328.clash.design.Design
 import com.github.kr328.clash.log.SystemLogcat
 import com.koude.aurora.designsystem.theme.AuroraTheme
 import com.koude.aurora.ui.misc.AppCrashedScreen
@@ -12,7 +12,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
 
-class AppCrashedActivity : BaseActivity<AppCrashedDesign>() {
+class AppCrashedActivity : BaseActivity<Design<*>>() {
     private val logsState = mutableStateOf("")
 
     override suspend fun main() {

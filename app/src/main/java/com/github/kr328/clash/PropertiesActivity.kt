@@ -7,7 +7,7 @@ import com.github.kr328.clash.common.util.intent
 import com.github.kr328.clash.common.util.setUUID
 import com.github.kr328.clash.common.util.uuid
 import com.github.kr328.clash.core.model.FetchStatus
-import com.github.kr328.clash.design.PropertiesDesign
+import com.github.kr328.clash.design.Design
 import com.github.kr328.clash.service.model.Profile
 import com.github.kr328.clash.util.withProfile
 import com.koude.aurora.designsystem.theme.AuroraTheme
@@ -17,7 +17,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.selects.select
 
-class PropertiesActivity : BaseActivity<PropertiesDesign>() {
+class PropertiesActivity : BaseActivity<Design<*>>() {
     private var canceled: Boolean = false
     private lateinit var original: Profile
     private lateinit var profileState: androidx.compose.runtime.MutableState<Profile>

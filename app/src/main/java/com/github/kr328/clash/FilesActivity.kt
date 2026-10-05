@@ -11,7 +11,7 @@ import androidx.compose.runtime.mutableStateOf
 import com.github.kr328.clash.common.util.grantPermissions
 import com.github.kr328.clash.common.util.intent
 import com.github.kr328.clash.common.util.uuid
-import com.github.kr328.clash.design.FilesDesign
+import com.github.kr328.clash.design.Design
 import com.github.kr328.clash.design.model.File
 import com.github.kr328.clash.remote.FilesClient
 import com.github.kr328.clash.service.model.Profile
@@ -25,7 +25,7 @@ import kotlinx.coroutines.selects.select
 import kotlinx.coroutines.withContext
 import java.util.Stack
 
-class FilesActivity : BaseActivity<FilesDesign>() {
+class FilesActivity : BaseActivity<Design<*>>() {
     private val filesState = mutableStateOf<List<File>>(emptyList())
     private val currentInBaseState = mutableStateOf(true)
     private var editable = false

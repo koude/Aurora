@@ -19,7 +19,7 @@ import com.github.kr328.clash.common.util.fileName
 import com.github.kr328.clash.common.util.intent
 import com.github.kr328.clash.common.util.ticker
 import com.github.kr328.clash.core.model.LogMessage
-import com.github.kr328.clash.design.LogcatDesign
+import com.github.kr328.clash.design.Design
 import com.github.kr328.clash.design.R as DesignR
 import com.github.kr328.clash.design.model.LogFile
 import com.github.kr328.clash.log.LogcatFilter
@@ -36,7 +36,7 @@ import java.io.OutputStreamWriter
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
-class LogcatActivity : BaseActivity<LogcatDesign>() {
+class LogcatActivity : BaseActivity<Design<*>>() {
     private var conn: ServiceConnection? = null
     private val messagesState = mutableStateOf<List<LogMessage>>(emptyList())
     private val streamingState = mutableStateOf(false)
