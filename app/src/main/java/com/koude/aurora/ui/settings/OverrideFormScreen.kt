@@ -44,6 +44,8 @@ enum class ConfigFieldEditor { Text, Lines, Choices }
 
 data class ConfigChoice(val value: String?, val label: String)
 
+data class ConfigAction(val id: String, val section: String, val title: String, val summary: String)
+
 data class ConfigField(
     val section: String,
     val title: String,
@@ -61,6 +63,8 @@ data class ConfigField(
 fun OverrideFormScreen(
     title: String,
     fields: List<ConfigField>,
+    actions: List<ConfigAction> = emptyList(),
+    onAction: (String) -> Unit = {},
     onBack: () -> Unit,
     onReset: () -> Unit,
     modifier: Modifier = Modifier,
@@ -88,12 +92,24 @@ fun OverrideFormScreen(
             contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 28.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            fields.groupBy { it.section }.forEach { (section, sectionFields) ->
+            val fieldsBySection = fields.groupBy { it.section }
+            val actionsBySection = actions.groupBy { it.section }
+            (actions.map { it.section } + fields.map { it.section }).distinct().forEach { section ->
+                val sectionFields = fieldsBySection[section].orEmpty()
+                val sectionActions = actionsBySection[section].orEmpty()
                 item(key = "section:$section") {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(section, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(start = 4.dp))
                         Card(shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
                             Column {
+                                sectionActions.forEach { action ->
+                                    ListItem(
+                                        modifier = Modifier.fillMaxWidth().clickable { onAction(action.id) },
+                                        headlineContent = { Text(action.title) },
+                                        supportingContent = { Text(action.summary) },
+                                    )
+                                    if (sectionFields.isNotEmpty() || action != sectionActions.last()) HorizontalDivider(Modifier.padding(start = 16.dp))
+                                }
                                 sectionFields.forEachIndexed { index, field ->
                                     ListItem(
                                         modifier = Modifier.fillMaxWidth().clickable(enabled = field.enabled) { selected = field },
