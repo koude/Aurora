@@ -126,9 +126,9 @@ class MainActivity : BaseActivity<MainDesign>() {
         val design = MainDesign(this)
 
         setContentDesign(design)
-        setContent { AuroraTheme { AuroraApp(design) } }
+        setContent { AuroraTheme { AuroraApp() } }
 
-        design.fetch()
+        fetch()
         refreshProxy()
 
         val ticker = ticker(TimeUnit.SECONDS.toMillis(1))
@@ -137,16 +137,16 @@ class MainActivity : BaseActivity<MainDesign>() {
                 events.onReceive { event ->
                     when (event) {
                         Event.ActivityStart, Event.ServiceRecreated, Event.ProfileChanged -> {
-                            design.fetch()
+                            fetch()
                             if (activeRoute.value == ROUTE_CONNECTIONS) refreshConnections()
                         }
                         Event.ClashStart -> {
-                            design.fetch()
+                            fetch()
                             refreshProxy()
                             if (activeRoute.value == ROUTE_CONNECTIONS) refreshConnections()
                         }
                         Event.ClashStop -> {
-                            design.fetch()
+                            fetch()
                             testedProxyGroups.clear()
                             testedActiveProxies.clear()
                             proxyUiState.value = ProxyUiState(serviceRunning = false)
@@ -154,7 +154,7 @@ class MainActivity : BaseActivity<MainDesign>() {
                             homeViewModel.clearTraffic()
                         }
                         Event.ProfileLoaded -> {
-                            design.fetch()
+                            fetch()
                             testedProxyGroups.clear()
                             testedActiveProxies.clear()
                             refreshProxy()
@@ -164,7 +164,7 @@ class MainActivity : BaseActivity<MainDesign>() {
                     }
                 }
                 if (clashRunning) ticker.onReceive {
-                    design.fetchTraffic()
+                    fetchTraffic()
                     if (activeRoute.value == ROUTE_CONNECTIONS) refreshConnections()
                 }
             }
@@ -172,7 +172,7 @@ class MainActivity : BaseActivity<MainDesign>() {
     }
 
     @Composable
-    private fun AuroraApp(design: MainDesign) {
+    private fun AuroraApp() {
         val navController = rememberNavController()
         val startDestination = remember {
             uiStore.lastMainRoute.takeIf { it in PERSISTED_MAIN_ROUTES } ?: ROUTE_HOME
@@ -229,9 +229,9 @@ class MainActivity : BaseActivity<MainDesign>() {
                     HomeScreen(
                         state = homeState,
                         onToggleConnection = {
-                            launch { if (clashRunning) stopClashService() else design.startClash() }
+                            launch { if (clashRunning) stopClashService() else startClash() }
                         },
-                        onModeSelected = { launch { design.patchMode(it) } },
+                        onModeSelected = { launch { patchMode(it) } },
                         onTestLatency = {
                             homeViewModel.testAllSiteLatencies()
                         },
@@ -347,21 +347,15 @@ class MainActivity : BaseActivity<MainDesign>() {
         }
     }
 
-    private suspend fun MainDesign.fetch() {
-        setClashRunning(clashRunning)
+    private suspend fun fetch() {
         val state = withClash { queryTunnelState() }
-        val providers = withClash { queryProviders() }
         val profileName = withProfile { queryActive()?.name }
 
-        setMode(state.mode)
-        setHasProviders(providers.isNotEmpty())
-        setProfileName(profileName)
         homeViewModel.updateConnection(clashRunning, state.mode, profileName)
     }
 
-    private suspend fun MainDesign.fetchTraffic() {
+    private suspend fun fetchTraffic() {
         withClash {
-            setForwarded(queryTrafficTotal())
             val traffic = queryTrafficNow()
             homeViewModel.updateTraffic(
                 uploadSpeed = "${traffic.trafficUpload()}/s",
@@ -370,13 +364,12 @@ class MainActivity : BaseActivity<MainDesign>() {
         }
     }
 
-    private suspend fun MainDesign.patchMode(mode: TunnelState.Mode) {
+    private suspend fun patchMode(mode: TunnelState.Mode) {
         withClash {
             val override = queryOverride(Clash.OverrideSlot.Session)
             override.mode = mode
             patchOverride(Clash.OverrideSlot.Session, override)
         }
-        setMode(mode)
         homeViewModel.updateMode(mode)
     }
 
@@ -596,7 +589,7 @@ class MainActivity : BaseActivity<MainDesign>() {
         proxyUiState.value = proxyUiState.value.copy(groups = groups)
     }
 
-    private suspend fun MainDesign.startClash() {
+    private suspend fun startClash() {
         val active = withProfile { queryActive() }
         if (active == null || !active.imported) {
             Toast.makeText(this@MainActivity, DesignR.string.no_profile_selected, Toast.LENGTH_LONG).show()
