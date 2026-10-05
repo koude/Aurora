@@ -515,37 +515,50 @@ private fun LatencyCell(
         color = MaterialTheme.colorScheme.surfaceContainerLow,
         border = ButtonDefaults.outlinedButtonBorder(enabled = true),
     ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 18.dp),
-            horizontalArrangement = Arrangement.spacedBy(7.dp),
-            verticalAlignment = Alignment.CenterVertically,
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Surface(
-                modifier = Modifier.size(26.dp),
-                shape = CircleShape,
-                color = Color.White,
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Icon(
-                    painter = painterResource(iconRes),
-                    contentDescription = null,
-                    modifier = Modifier.padding(4.dp),
-                    tint = Color.Unspecified,
+                Surface(
+                    modifier = Modifier.size(24.dp),
+                    shape = CircleShape,
+                    color = Color.White,
+                ) {
+                    Icon(
+                        painter = painterResource(iconRes),
+                        contentDescription = null,
+                        modifier = Modifier.padding(4.dp),
+                        tint = Color.Unspecified,
+                    )
+                }
+                Text(
+                    label,
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.titleSmall,
+                    maxLines = 2,
                 )
             }
-            Text(
-                label,
-                modifier = Modifier.weight(1f),
-                style = MaterialTheme.typography.titleSmall,
-                maxLines = 1,
-            )
-            if (testing) {
-                CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
-            } else {
-                Text(
-                    text = value,
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary,
-                )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                if (testing) {
+                    CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+                } else {
+                    Text(
+                        text = value,
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
             }
         }
     }
