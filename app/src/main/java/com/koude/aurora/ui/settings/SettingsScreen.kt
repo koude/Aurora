@@ -44,6 +44,7 @@ import com.koude.aurora.ui.components.AuroraBottomNavigation
 import com.koude.aurora.ui.components.AuroraDestination
 import com.koude.aurora.ui.components.AuroraPageHeader
 import com.koude.aurora.ui.components.AuroraPageSpacing
+import com.koude.aurora.ui.components.AuroraSectionTitle
 
 @Composable
 fun SettingsScreen(
@@ -133,12 +134,7 @@ fun SettingsScreen(
 
 @Composable
 private fun SettingsSectionTitle(text: String, modifier: Modifier = Modifier) {
-    Text(
-        text = text,
-        modifier = modifier.padding(start = 8.dp, bottom = 2.dp),
-        style = MaterialTheme.typography.labelLarge,
-        color = MaterialTheme.colorScheme.primary,
-    )
+    AuroraSectionTitle(text, modifier.padding(start = 8.dp, bottom = 2.dp))
 }
 
 @Composable

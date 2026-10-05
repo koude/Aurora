@@ -38,6 +38,7 @@ import com.github.kr328.clash.design.R as DesignR
 import com.github.kr328.clash.service.model.AccessControlMode
 import com.koude.aurora.designsystem.theme.AuroraTheme
 import com.koude.aurora.ui.components.AuroraDetailTopBar
+import com.koude.aurora.ui.components.AuroraSectionTitle
 
 data class NetworkSettingsUiState(
     val running: Boolean = false,
@@ -208,12 +209,7 @@ private enum class NetworkSettingSelection { TunStack, AccessMode }
 @Composable
 private fun NetworkSection(title: String, content: @Composable () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(
-            text = title,
-            modifier = Modifier.padding(start = 8.dp),
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.primary,
-        )
+        AuroraSectionTitle(title, Modifier.padding(start = 8.dp))
         Card(
             shape = MaterialTheme.shapes.large,
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),

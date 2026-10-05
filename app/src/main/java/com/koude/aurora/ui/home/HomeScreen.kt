@@ -76,6 +76,7 @@ import com.koude.aurora.ui.components.AuroraBottomNavigation
 import com.koude.aurora.ui.components.AuroraDestination
 import com.koude.aurora.ui.components.AuroraPageHeader
 import com.koude.aurora.ui.components.AuroraPageSpacing
+import com.koude.aurora.ui.components.AuroraSectionTitle
 
 data class HomeUiState(
     val running: Boolean = false,
@@ -570,11 +571,7 @@ private fun QuickTools(
     onOpenDns: () -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text(
-            text = "快捷工具",
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        AuroraSectionTitle("快捷工具", color = MaterialTheme.colorScheme.onSurfaceVariant)
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,

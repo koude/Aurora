@@ -40,6 +40,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.koude.aurora.ui.components.AuroraDetailTopBar
+import com.koude.aurora.ui.components.AuroraSectionTitle
 
 enum class ConfigFieldEditor { Text, Lines, Choices }
 
@@ -100,7 +101,7 @@ fun OverrideFormScreen(
                 val sectionActions = actionsBySection[section].orEmpty()
                 item(key = "section:$section") {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(section, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(start = 4.dp))
+                        AuroraSectionTitle(section, Modifier.padding(start = 4.dp))
                         Card(shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
                             Column {
                                 sectionActions.forEach { action ->

@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import com.github.kr328.clash.design.R as DesignR
 import com.github.kr328.clash.design.model.DarkMode
 import com.koude.aurora.ui.components.AuroraDetailTopBar
+import com.koude.aurora.ui.components.AuroraSectionTitle
 
 data class AppSettingsUiState(
     val autoRestart: Boolean = false,
@@ -124,7 +125,7 @@ fun AppSettingsScreen(
 @Composable
 private fun SettingsSection(title: String, content: @Composable ColumnScope.() -> Unit) {
     Column {
-        Text(title, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(start = 4.dp, bottom = 8.dp))
+        AuroraSectionTitle(title, Modifier.padding(start = 4.dp, bottom = 8.dp))
         Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
             Column(content = content)
         }
