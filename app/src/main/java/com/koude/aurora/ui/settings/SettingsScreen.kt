@@ -42,6 +42,8 @@ import androidx.compose.ui.unit.dp
 import com.koude.aurora.designsystem.theme.AuroraTheme
 import com.koude.aurora.ui.components.AuroraBottomNavigation
 import com.koude.aurora.ui.components.AuroraDestination
+import com.koude.aurora.ui.components.AuroraPageHeader
+import com.koude.aurora.ui.components.AuroraPageSpacing
 
 @Composable
 fun SettingsScreen(
@@ -80,19 +82,15 @@ fun SettingsScreen(
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(
-                start = 20.dp,
-                top = padding.calculateTopPadding() + 18.dp,
-                end = 20.dp,
-                bottom = padding.calculateBottomPadding() + 24.dp,
+                start = AuroraPageSpacing.Horizontal,
+                top = padding.calculateTopPadding() + AuroraPageSpacing.Top,
+                end = AuroraPageSpacing.Horizontal,
+                bottom = padding.calculateBottomPadding() + AuroraPageSpacing.Bottom,
             ),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             item {
-                Text(
-                    text = "设置",
-                    style = MaterialTheme.typography.headlineLarge,
-                    fontWeight = FontWeight.Medium,
-                )
+                AuroraPageHeader(title = "设置")
             }
             item { Spacer(Modifier.height(12.dp)) }
 

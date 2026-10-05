@@ -74,6 +74,8 @@ import com.koude.aurora.model.WebsiteLatencySite
 import com.koude.aurora.designsystem.theme.AuroraTheme
 import com.koude.aurora.ui.components.AuroraBottomNavigation
 import com.koude.aurora.ui.components.AuroraDestination
+import com.koude.aurora.ui.components.AuroraPageHeader
+import com.koude.aurora.ui.components.AuroraPageSpacing
 
 data class HomeUiState(
     val running: Boolean = false,
@@ -143,18 +145,14 @@ fun HomeScreen(
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
                 .padding(
-                    start = 20.dp,
-                    top = padding.calculateTopPadding() + 18.dp,
-                    end = 20.dp,
-                    bottom = padding.calculateBottomPadding() + 24.dp,
+                    start = AuroraPageSpacing.Horizontal,
+                    top = padding.calculateTopPadding() + AuroraPageSpacing.Top,
+                    end = AuroraPageSpacing.Horizontal,
+                    bottom = padding.calculateBottomPadding() + AuroraPageSpacing.Bottom,
                 ),
             verticalArrangement = Arrangement.spacedBy(22.dp),
         ) {
-            Text(
-                text = "Aurora",
-                style = MaterialTheme.typography.headlineLarge,
-                fontWeight = FontWeight.SemiBold,
-            )
+            AuroraPageHeader(title = "Aurora")
 
             ConnectionControls(
                 state = state,

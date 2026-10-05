@@ -56,6 +56,8 @@ import androidx.compose.ui.unit.dp
 import com.github.kr328.clash.core.model.Proxy
 import com.github.kr328.clash.core.model.ProxySort
 import com.koude.aurora.designsystem.theme.AuroraTheme
+import com.koude.aurora.ui.components.AuroraPageHeader
+import com.koude.aurora.ui.components.AuroraPageSpacing
 
 data class ProxyGroupUiState(
     val name: String,
@@ -136,10 +138,10 @@ fun ProxyScreen(
                 onSortChanged = onSortChanged,
                 onHideUnselectableChanged = onHideUnselectableChanged,
                 contentPadding = PaddingValues(
-                    start = 20.dp,
-                    top = padding.calculateTopPadding() + 18.dp,
-                    end = 20.dp,
-                    bottom = padding.calculateBottomPadding() + 24.dp,
+                    start = AuroraPageSpacing.Horizontal,
+                    top = padding.calculateTopPadding() + AuroraPageSpacing.Top,
+                    end = AuroraPageSpacing.Horizontal,
+                    bottom = padding.calculateBottomPadding() + AuroraPageSpacing.Bottom,
                 ),
             )
         }
@@ -172,24 +174,17 @@ private fun ProxyContent(
     }
 
     Column(Modifier.fillMaxSize()) {
-        Row(
+        AuroraPageHeader(
+            title = "代理",
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(
-                    start = 20.dp,
+                    start = AuroraPageSpacing.Horizontal,
                     top = contentPadding.calculateTopPadding(),
                     end = 12.dp,
                     bottom = 8.dp,
                 ),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = "代理",
-                style = MaterialTheme.typography.headlineLarge,
-                fontWeight = FontWeight.SemiBold,
-            )
-            Row {
+            actions = {
                 IconButton(
                     onClick = {
                         searchVisible = !searchVisible
@@ -208,14 +203,14 @@ private fun ProxyContent(
                     if (state.loading || state.activeEndpointsTesting) CircularProgressIndicator(Modifier.size(22.dp), strokeWidth = 2.dp)
                     else Icon(Icons.Default.Refresh, contentDescription = "刷新")
                 }
-            }
-        }
+            },
+        )
 
         if (searchVisible) {
             OutlinedTextField(
                 value = query,
                 onValueChange = { query = it },
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = AuroraPageSpacing.Horizontal, vertical = 4.dp),
                 singleLine = true,
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                 trailingIcon = if (query.isNotEmpty()) {

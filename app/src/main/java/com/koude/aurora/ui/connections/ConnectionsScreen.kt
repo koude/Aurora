@@ -42,6 +42,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.github.kr328.clash.core.model.ConnectionInfo
 import com.koude.aurora.designsystem.theme.AuroraTheme
+import com.koude.aurora.ui.components.AuroraPageHeader
+import com.koude.aurora.ui.components.AuroraPageSpacing
 import java.text.DateFormat
 import java.util.Date
 
@@ -83,32 +85,18 @@ fun ConnectionsScreen(
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(
-                start = 20.dp,
-                top = padding.calculateTopPadding() + 18.dp,
-                end = 20.dp,
-                bottom = padding.calculateBottomPadding() + 24.dp,
+                start = AuroraPageSpacing.Horizontal,
+                top = padding.calculateTopPadding() + AuroraPageSpacing.Top,
+                end = AuroraPageSpacing.Horizontal,
+                bottom = padding.calculateBottomPadding() + AuroraPageSpacing.Bottom,
             ),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text(
-                            text = "连接",
-                            style = MaterialTheme.typography.headlineLarge,
-                            fontWeight = FontWeight.Medium,
-                        )
-                        Text(
-                            text = if (state.serviceRunning) "${state.connections.size} 条活动连接" else "未连接",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    Row {
+                AuroraPageHeader(
+                    title = "连接",
+                    subtitle = if (state.serviceRunning) "${state.connections.size} 条活动连接" else "未连接",
+                    actions = {
                         IconButton(onClick = onRefresh, enabled = !state.loading) {
                             if (state.loading) CircularProgressIndicator(Modifier.size(22.dp), strokeWidth = 2.dp)
                             else Icon(Icons.Default.Refresh, contentDescription = "刷新")
@@ -119,8 +107,8 @@ fun ConnectionsScreen(
                         ) {
                             Icon(Icons.Default.Close, contentDescription = "关闭全部连接")
                         }
-                    }
-                }
+                    },
+                )
             }
 
             if (state.connections.isNotEmpty()) {
