@@ -3,6 +3,7 @@ package com.koude.aurora.ui.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.github.kr328.clash.core.model.RoutePreview
 import com.github.kr328.clash.core.model.TunnelState
 import com.koude.aurora.data.home.WebsiteLatencyRepository
 import com.koude.aurora.data.home.WebsiteLatencyRepositoryProvider
@@ -14,6 +15,12 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.net.URI
+
+class RouteTestRequest internal constructor(
+    val target: String,
+    internal val id: Long,
+)
 
 class HomeViewModel(
     private val latencyRepository: WebsiteLatencyRepository,
@@ -21,6 +28,10 @@ class HomeViewModel(
     private val mutableUiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = mutableUiState.asStateFlow()
     private val latencyJobs = mutableMapOf<WebsiteLatencySite, Job>()
+    private val mutableRouteTestState = MutableStateFlow(RouteTestUiState())
+    val routeTestState: StateFlow<RouteTestUiState> = mutableRouteTestState.asStateFlow()
+    private var nextRouteTestRequestId = 0L
+    private var activeRouteTestRequestId: Long? = null
 
     fun updateConnection(running: Boolean, mode: TunnelState.Mode, profileName: String?) {
         mutableUiState.update { it.copy(running = running, mode = mode, profileName = profileName) }
@@ -37,6 +48,84 @@ class HomeViewModel(
     fun clearTraffic() {
         updateTraffic("-- B/s", "-- B/s")
     }
+
+    fun openRouteTest() {
+        activeRouteTestRequestId = null
+        mutableRouteTestState.update {
+            it.copy(isOpen = true, isTesting = false, errorMessage = null, preview = null)
+        }
+    }
+
+    fun dismissRouteTest() {
+        activeRouteTestRequestId = null
+        mutableRouteTestState.update { it.copy(isOpen = false, isTesting = false) }
+    }
+
+    fun cancelRouteTestRequest() {
+        activeRouteTestRequestId = null
+        mutableRouteTestState.update { it.copy(isTesting = false) }
+    }
+
+    fun changeRouteTestTarget(target: String) {
+        mutableRouteTestState.update {
+            it.copy(target = target, errorMessage = null, preview = null)
+        }
+    }
+
+    fun prepareRouteTest(
+        serviceRunning: Boolean,
+        invalidTargetMessage: String,
+        serviceRequiredMessage: String,
+    ): RouteTestRequest? {
+        val state = mutableRouteTestState.value
+        val target = normalizeRouteTarget(state.target.trim())
+        if (target == null) {
+            mutableRouteTestState.update {
+                it.copy(errorMessage = invalidTargetMessage, preview = null)
+            }
+            return null
+        }
+        if (!serviceRunning) {
+            mutableRouteTestState.update {
+                it.copy(errorMessage = serviceRequiredMessage, preview = null)
+            }
+            return null
+        }
+
+        val request = RouteTestRequest(target, ++nextRouteTestRequestId)
+        activeRouteTestRequestId = request.id
+        mutableRouteTestState.update {
+            it.copy(
+                target = target,
+                isTesting = true,
+                errorMessage = null,
+                preview = null,
+            )
+        }
+        return request
+    }
+
+    fun completeRouteTest(request: RouteTestRequest, preview: RoutePreview) {
+        mutableRouteTestState.update { state ->
+            if (!isCurrentRouteTestRequest(state, request)) state
+            else state.copy(
+                isTesting = false,
+                errorMessage = preview.error,
+                preview = preview.takeIf { it.error == null },
+            )
+        }
+    }
+
+    fun failRouteTest(request: RouteTestRequest, errorMessage: String) {
+        mutableRouteTestState.update { state ->
+            if (!isCurrentRouteTestRequest(state, request)) state
+            else state.copy(isTesting = false, errorMessage = errorMessage, preview = null)
+        }
+    }
+
+    private fun isCurrentRouteTestRequest(state: RouteTestUiState, request: RouteTestRequest): Boolean =
+        state.isOpen && state.isTesting && state.target == request.target &&
+            activeRouteTestRequestId == request.id
 
     fun testAllSiteLatencies() {
         mutableUiState.update { it.copy(latencyTesting = true) }
@@ -85,6 +174,14 @@ class HomeViewModel(
         WebsiteLatencySite.GitHub -> state.copy(githubLatency = value)
         WebsiteLatencySite.YouTube -> state.copy(youtubeLatency = value)
         WebsiteLatencySite.Google -> state.copy(googleLatency = value)
+    }
+
+    private fun normalizeRouteTarget(value: String): String? {
+        if (value.isBlank() || value.any(Char::isWhitespace)) return null
+        return runCatching {
+            val uri = URI(if ("://" in value) value else "https://$value")
+            uri.host?.trimEnd('.')?.takeIf { it.isNotBlank() }
+        }.getOrNull()
     }
 
     companion object {

@@ -53,6 +53,7 @@ import com.github.kr328.clash.core.Clash
 import com.github.kr328.clash.core.model.FetchStatus
 import com.github.kr328.clash.core.model.Proxy
 import com.github.kr328.clash.core.model.ProxyGroup
+import com.github.kr328.clash.core.model.RoutePreview
 import com.github.kr328.clash.core.model.TunnelState
 import com.github.kr328.clash.core.util.trafficDownload
 import com.github.kr328.clash.core.util.trafficUpload
@@ -71,7 +72,6 @@ import com.koude.aurora.ui.connections.ConnectionsScreen
 import com.koude.aurora.ui.connections.ConnectionsUiState
 import com.koude.aurora.ui.home.HomeScreen
 import com.koude.aurora.ui.home.HomeViewModel
-import com.koude.aurora.ui.home.RouteTestUiState
 import com.koude.aurora.ui.profiles.ProfilesScreen
 import com.koude.aurora.ui.profiles.ProfileImportProgress
 import com.koude.aurora.ui.profiles.ProfilesViewModel
@@ -104,7 +104,6 @@ class MainActivity : BaseActivity<MainDesign>() {
     private var proxyRefreshJob: Job? = null
     private val testedProxyGroups = mutableSetOf<String>()
     private val testedActiveProxies = mutableSetOf<String>()
-    private val routeTestUiState = mutableStateOf(RouteTestUiState())
     private val proxyUiState = mutableStateOf(ProxyUiState())
     private val connectionsUiState = mutableStateOf(ConnectionsUiState())
     private val errorDialogState = mutableStateOf<AuroraErrorDialogState?>(null)
@@ -116,6 +115,12 @@ class MainActivity : BaseActivity<MainDesign>() {
     private val profilesViewModel: ProfilesViewModel by viewModels { ProfilesViewModel.Factory }
     private val homeViewModel: HomeViewModel by viewModels { HomeViewModel.Factory }
     private val scanLauncher = registerForActivityResult(ScanQRCode(), ::scanResultHandler)
+
+    override fun onDestroy() {
+        routePreviewJob?.cancel()
+        homeViewModel.cancelRouteTestRequest()
+        super.onDestroy()
+    }
 
     override suspend fun main() {
         val design = MainDesign(this)
@@ -175,6 +180,7 @@ class MainActivity : BaseActivity<MainDesign>() {
         val backStackEntry by navController.currentBackStackEntryAsState()
         val currentRoute = backStackEntry?.destination?.route ?: ROUTE_HOME
         val homeState by homeViewModel.uiState.collectAsStateWithLifecycle()
+        val routeTestState by homeViewModel.routeTestState.collectAsStateWithLifecycle()
 
         LaunchedEffect(requestedRoute.value, backStackEntry) {
             val route = requestedRoute.value
@@ -188,7 +194,7 @@ class MainActivity : BaseActivity<MainDesign>() {
 
         LaunchedEffect(currentRoute, homeState.running) {
             activeRoute.value = currentRoute
-            if (currentRoute != ROUTE_HOME && routeTestUiState.value.isOpen) {
+            if (currentRoute != ROUTE_HOME && routeTestState.isOpen) {
                 dismissRouteTest()
             }
             if (currentRoute != ROUTE_PROXY && proxyUiState.value.expandedGroups.isNotEmpty()) {
@@ -230,7 +236,7 @@ class MainActivity : BaseActivity<MainDesign>() {
                             homeViewModel.testAllSiteLatencies()
                         },
                         onTestSiteLatency = homeViewModel::testSiteLatency,
-                        routeTestState = routeTestUiState.value,
+                        routeTestState = routeTestState,
                         onOpenConnections = { navController.navigateTopLevel(ROUTE_CONNECTIONS) },
                         onOpenLogs = {
                             if (LogcatService.running) startActivity(LogcatActivity::class.intent)
@@ -729,83 +735,41 @@ class MainActivity : BaseActivity<MainDesign>() {
     }
 
     private fun openRouteTest() {
-        routeTestUiState.value = routeTestUiState.value.copy(
-            isOpen = true,
-            isTesting = false,
-            errorMessage = null,
-            preview = null,
-        )
+        homeViewModel.openRouteTest()
     }
 
     private fun dismissRouteTest() {
         routePreviewJob?.cancel()
         routePreviewJob = null
-        routeTestUiState.value = routeTestUiState.value.copy(isOpen = false, isTesting = false)
+        homeViewModel.dismissRouteTest()
     }
 
     private fun changeRouteTestTarget(target: String) {
-        routeTestUiState.value = routeTestUiState.value.copy(
-            target = target,
-            errorMessage = null,
-            preview = null,
-        )
+        homeViewModel.changeRouteTestTarget(target)
     }
 
     private fun submitRouteTest() {
-        val rawTarget = routeTestUiState.value.target.trim()
-        val target = normalizeRouteTarget(rawTarget)
-        if (target == null) {
-            routeTestUiState.value = routeTestUiState.value.copy(
-                errorMessage = getString(DesignR.string.aurora_route_invalid_target),
-                preview = null,
-            )
-            return
-        }
-        if (!clashRunning) {
-            routeTestUiState.value = routeTestUiState.value.copy(
-                errorMessage = getString(DesignR.string.aurora_route_service_required),
-                preview = null,
-            )
-            return
-        }
+        val request = homeViewModel.prepareRouteTest(
+            serviceRunning = clashRunning,
+            invalidTargetMessage = getString(DesignR.string.aurora_route_invalid_target),
+            serviceRequiredMessage = getString(DesignR.string.aurora_route_service_required),
+        ) ?: return
+        val target = request.target
 
         routePreviewJob?.cancel()
-        routeTestUiState.value = routeTestUiState.value.copy(
-            target = target,
-            isTesting = true,
-            errorMessage = null,
-            preview = null,
-        )
         routePreviewJob = launch {
-            runCatching { withClash { queryRoutePreview(target) } }
-                .onSuccess { preview ->
-                    if (routeTestUiState.value.isOpen && routeTestUiState.value.target == target) {
-                        routeTestUiState.value = routeTestUiState.value.copy(
-                            isTesting = false,
-                            errorMessage = preview.error,
-                            preview = preview.takeIf { it.error == null },
-                        )
-                    }
-                }
-                .onFailure {
-                    if (routeTestUiState.value.isOpen && routeTestUiState.value.target == target) {
-                        routeTestUiState.value = routeTestUiState.value.copy(
-                            isTesting = false,
-                            errorMessage = getString(DesignR.string.aurora_route_test_failed),
-                            preview = null,
-                        )
-                    }
-                }
+            try {
+                val preview: RoutePreview = withClash { queryRoutePreview(target) }
+                homeViewModel.completeRouteTest(request, preview)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                homeViewModel.failRouteTest(
+                    request,
+                    getString(DesignR.string.aurora_route_test_failed),
+                )
+            }
         }
-    }
-
-    private fun normalizeRouteTarget(value: String): String? {
-        if (value.isBlank() || value.any(Char::isWhitespace)) return null
-
-        return runCatching {
-            val uri = java.net.URI(if ("://" in value) value else "https://$value")
-            uri.host?.trimEnd('.')?.takeIf { it.isNotBlank() }
-        }.getOrNull()
     }
 
     private fun showError(error: Throwable, title: String) {

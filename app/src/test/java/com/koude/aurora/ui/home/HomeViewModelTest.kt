@@ -95,6 +95,79 @@ class HomeViewModelTest {
         assertEquals("25 ms", viewModel.uiState.value.youtubeLatency)
     }
 
+    @Test
+    fun routeTestNormalizesTargetAndStartsOnlyWhenServiceIsRunning() {
+        val viewModel = HomeViewModel(FakeWebsiteLatencyRepository { null })
+        viewModel.openRouteTest()
+        viewModel.changeRouteTestTarget(" https://github.com/example/path ")
+
+        val target = viewModel.prepareRouteTest(
+            serviceRunning = true,
+            invalidTargetMessage = "invalid",
+            serviceRequiredMessage = "offline",
+        )
+
+        assertEquals("github.com", target?.target)
+        assertEquals("github.com", viewModel.routeTestState.value.target)
+        assertTrue(viewModel.routeTestState.value.isTesting)
+        assertEquals(null, viewModel.routeTestState.value.errorMessage)
+    }
+
+    @Test
+    fun routeTestReportsInvalidTargetAndRequiresRunningService() {
+        val viewModel = HomeViewModel(FakeWebsiteLatencyRepository { null })
+        viewModel.openRouteTest()
+        viewModel.changeRouteTestTarget("not a target")
+
+        assertEquals(
+            null,
+            viewModel.prepareRouteTest(true, "invalid", "offline"),
+        )
+        assertEquals("invalid", viewModel.routeTestState.value.errorMessage)
+        assertFalse(viewModel.routeTestState.value.isTesting)
+
+        viewModel.changeRouteTestTarget("example.com")
+        assertEquals(
+            null,
+            viewModel.prepareRouteTest(false, "invalid", "offline"),
+        )
+        assertEquals("offline", viewModel.routeTestState.value.errorMessage)
+        assertFalse(viewModel.routeTestState.value.isTesting)
+    }
+
+    @Test
+    fun dismissedRouteTestCannotBeChangedByLateFailure() {
+        val viewModel = HomeViewModel(FakeWebsiteLatencyRepository { null })
+        viewModel.openRouteTest()
+        val target = viewModel.prepareRouteTest(true, "invalid", "offline")
+        assertEquals("github.com", target?.target)
+
+        viewModel.dismissRouteTest()
+        viewModel.failRouteTest(target!!, "late failure")
+
+        assertFalse(viewModel.routeTestState.value.isOpen)
+        assertFalse(viewModel.routeTestState.value.isTesting)
+        assertEquals(null, viewModel.routeTestState.value.errorMessage)
+    }
+
+    @Test
+    fun lateResultFromPreviousRequestCannotOverwriteCurrentRequest() {
+        val viewModel = HomeViewModel(FakeWebsiteLatencyRepository { null })
+        viewModel.openRouteTest()
+        val previous = viewModel.prepareRouteTest(true, "invalid", "offline")!!
+        val current = viewModel.prepareRouteTest(true, "invalid", "offline")!!
+
+        viewModel.failRouteTest(previous, "stale failure")
+
+        assertTrue(viewModel.routeTestState.value.isTesting)
+        assertEquals(null, viewModel.routeTestState.value.errorMessage)
+
+        viewModel.failRouteTest(current, "current failure")
+
+        assertFalse(viewModel.routeTestState.value.isTesting)
+        assertEquals("current failure", viewModel.routeTestState.value.errorMessage)
+    }
+
     private class FakeWebsiteLatencyRepository(
         private val result: suspend (WebsiteLatencySite) -> Long?,
     ) : WebsiteLatencyRepository {
