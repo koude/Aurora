@@ -3,10 +3,12 @@ package com.koude.aurora.ui.settings
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -31,8 +33,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.github.kr328.clash.design.R as DesignR
@@ -108,11 +112,17 @@ fun AppSettingsScreen(
         text = {
             Column {
                 DarkMode.values().forEach { mode ->
-                    androidx.compose.foundation.layout.Row(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                    Row(
+                        modifier = Modifier.fillMaxWidth()
+                            .selectable(
+                                selected = state.darkMode == mode,
+                                role = Role.RadioButton,
+                                onClick = { onDarkModeChanged(mode); darkModeDialog = false },
+                            )
+                            .padding(vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        RadioButton(selected = state.darkMode == mode, onClick = { onDarkModeChanged(mode); darkModeDialog = false })
+                        RadioButton(selected = state.darkMode == mode, onClick = null)
                         Text(darkModeLabel(mode), modifier = Modifier.padding(start = 8.dp))
                     }
                 }
@@ -135,10 +145,10 @@ private fun SettingsSection(title: String, content: @Composable ColumnScope.() -
 @Composable
 private fun AppSwitchRow(title: Int, summary: Int, checked: Boolean, onChanged: (Boolean) -> Unit, enabled: Boolean = true) {
     ListItem(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().clickable(enabled = enabled, role = Role.Switch) { onChanged(!checked) },
         headlineContent = { Text(stringResource(title)) },
         supportingContent = { Text(stringResource(summary)) },
-        trailingContent = { Switch(checked, onCheckedChange = onChanged, enabled = enabled) },
+        trailingContent = { Switch(checked, onCheckedChange = null, enabled = enabled) },
     )
 }
 

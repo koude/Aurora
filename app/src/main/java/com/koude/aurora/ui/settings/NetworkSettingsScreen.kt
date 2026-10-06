@@ -1,6 +1,7 @@
 package com.koude.aurora.ui.settings
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -31,6 +32,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -192,7 +194,7 @@ private fun NetworkSwitchRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(enabled = enabled) { onChanged(!checked) }
+            .clickable(enabled = enabled, role = Role.Switch) { onChanged(!checked) }
             .padding(horizontal = 14.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -204,7 +206,7 @@ private fun NetworkSwitchRow(
             style = MaterialTheme.typography.bodyLarge,
             color = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = .38f),
         )
-        Switch(checked = checked, onCheckedChange = onChanged, enabled = enabled)
+        Switch(checked = checked, onCheckedChange = null, enabled = enabled)
     }
 }
 
@@ -271,12 +273,12 @@ private fun ChoiceDialog(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { onSelected(value) }
+                            .selectable(selected = selected == value, role = Role.RadioButton) { onSelected(value) }
                             .padding(vertical = 4.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(label, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
-                        RadioButton(selected = selected == value, onClick = { onSelected(value) })
+                        RadioButton(selected = selected == value, onClick = null)
                     }
                 }
             }
