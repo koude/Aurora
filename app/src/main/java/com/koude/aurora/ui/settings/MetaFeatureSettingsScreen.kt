@@ -43,7 +43,7 @@ fun MetaFeatureSettingsScreen(
         ConfigAction("asn", stringResource(DesignR.string.geox_files), stringResource(DesignR.string.import_asn_file), stringResource(DesignR.string.press_to_import)),
     )
     OverrideFormScreen(
-        title = stringResource(DesignR.string.meta_features),
+        title = stringResource(DesignR.string.aurora_settings_core_features),
         fields = fields,
         actions = actions,
         onAction = { id ->

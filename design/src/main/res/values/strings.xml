@@ -470,10 +470,8 @@
     <string name="aurora_settings_profiles">Profiles</string>
     <string name="aurora_settings_general">General</string>
     <string name="aurora_settings_app_preferences">App preferences</string>
-    <string name="aurora_settings_network">Network</string>
     <string name="aurora_settings_network_settings">Network settings</string>
-    <string name="aurora_settings_advanced">Advanced</string>
-    <string name="aurora_settings_mihomo_features">Mihomo features</string>
+    <string name="aurora_settings_core_features">Core features</string>
     <string name="aurora_settings_config_override">Configuration overrides</string>
     <string name="aurora_network_mode">Operating mode</string>
     <string name="aurora_network_vpn_service">VPN service</string>

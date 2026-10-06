@@ -46,7 +46,6 @@ import com.koude.aurora.ui.components.AuroraBottomNavigation
 import com.koude.aurora.ui.components.AuroraDestination
 import com.koude.aurora.ui.components.AuroraPageHeader
 import com.koude.aurora.ui.components.AuroraPageSpacing
-import com.koude.aurora.ui.components.AuroraSectionTitle
 import com.koude.aurora.ui.components.AuroraCardStyle
 
 @Composable
@@ -101,38 +100,18 @@ fun SettingsScreen(
             item {
                 SettingsGroup {
                     SettingsRow(Icons.Default.Menu, stringResource(DesignR.string.aurora_settings_profiles), onOpenProfiles)
-                }
-            }
-
-            item { SettingsSectionTitle(stringResource(DesignR.string.aurora_settings_general)) }
-            item {
-                SettingsGroup {
+                    SettingsDivider()
                     SettingsRow(Icons.Default.Settings, stringResource(DesignR.string.aurora_settings_app_preferences), onOpenApp)
-                }
-            }
-
-            item { SettingsSectionTitle(stringResource(DesignR.string.aurora_settings_network), Modifier.padding(top = 10.dp)) }
-            item {
-                SettingsGroup {
+                    SettingsDivider()
                     SettingsRow(Icons.AutoMirrored.Filled.List, stringResource(DesignR.string.aurora_settings_network_settings), onOpenNetwork)
-                }
-            }
-
-            item { SettingsSectionTitle(stringResource(DesignR.string.aurora_settings_advanced), Modifier.padding(top = 10.dp)) }
-            item {
-                SettingsGroup {
-                    SettingsRow(Icons.Default.Refresh, stringResource(DesignR.string.aurora_settings_mihomo_features), onOpenMetaFeature)
+                    SettingsDivider()
+                    SettingsRow(Icons.Default.Refresh, stringResource(DesignR.string.aurora_settings_core_features), onOpenMetaFeature)
                     SettingsDivider()
                     SettingsRow(Icons.Default.Edit, stringResource(DesignR.string.aurora_settings_config_override), onOpenOverride)
                 }
             }
         }
     }
-}
-
-@Composable
-private fun SettingsSectionTitle(text: String, modifier: Modifier = Modifier) {
-    AuroraSectionTitle(text, modifier.padding(start = 8.dp, bottom = 2.dp))
 }
 
 @Composable
