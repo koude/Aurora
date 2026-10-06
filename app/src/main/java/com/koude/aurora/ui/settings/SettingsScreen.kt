@@ -55,7 +55,6 @@ fun SettingsScreen(
     onOpenConnections: () -> Unit = {},
     onOpenProfiles: () -> Unit,
     onOpenNetwork: () -> Unit,
-    onOpenPerAppProxy: () -> Unit,
     onOpenApp: () -> Unit,
     onOpenMetaFeature: () -> Unit,
     onOpenOverride: () -> Unit,
@@ -113,9 +112,7 @@ fun SettingsScreen(
             item { SettingsSectionTitle("网络", Modifier.padding(top = 10.dp)) }
             item {
                 SettingsGroup {
-                    SettingsRow(Icons.AutoMirrored.Filled.List, "VPN 设置", onOpenNetwork)
-                    SettingsDivider()
-                    SettingsRow(Icons.Default.Settings, "分应用代理", onOpenPerAppProxy)
+                    SettingsRow(Icons.AutoMirrored.Filled.List, "网络设置", onOpenNetwork)
                 }
             }
 
@@ -210,7 +207,6 @@ private fun SettingsScreenPreview() {
             onOpenProxy = {},
             onOpenProfiles = {},
             onOpenNetwork = {},
-            onOpenPerAppProxy = {},
             onOpenApp = {},
             onOpenMetaFeature = {},
             onOpenOverride = {},

@@ -2,20 +2,28 @@ package com.koude.aurora.ui.settings
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -28,6 +36,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -58,18 +69,20 @@ fun NetworkSettingsScreen(
     onAllowIpv6Changed: (Boolean) -> Unit,
     onSystemProxyChanged: (Boolean) -> Unit,
     onTunStackChanged: (String) -> Unit,
+    onOpenPerAppProxy: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var selection by remember { mutableStateOf<NetworkSettingSelection?>(null) }
     var confirmManualMode by remember { mutableStateOf(false) }
+    var showDnsInfo by remember { mutableStateOf(false) }
     val vpnSettingsEnabled = !state.running && state.routeSystemTraffic
 
     Scaffold(
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.surface,
         topBar = {
-            AuroraDetailTopBar(title = stringResource(DesignR.string.aurora_network_vpn_settings), onBack = onBack)
+            AuroraDetailTopBar(title = stringResource(DesignR.string.aurora_network_title), onBack = onBack)
         },
     ) { padding ->
         LazyColumn(
@@ -85,93 +98,123 @@ fun NetworkSettingsScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             item {
-                NetworkSection(stringResource(DesignR.string.aurora_network_connection)) {
-                    NetworkChoiceRow(
-                        title = stringResource(DesignR.string.aurora_proxy_method),
-                        value = stringResource(if (state.routeSystemTraffic)
-                            DesignR.string.aurora_proxy_method_auto else DesignR.string.aurora_proxy_method_manual),
-                        enabled = !state.running,
-                        onClick = { selection = NetworkSettingSelection.ProxyMethod },
-                    )
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    AuroraSectionTitle(stringResource(DesignR.string.aurora_network_mode), Modifier.padding(start = 8.dp))
+                    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                        listOf(
+                            true to DesignR.string.aurora_network_vpn_service,
+                            false to DesignR.string.aurora_network_proxy_service,
+                        ).forEachIndexed { index, (vpn, label) ->
+                            SegmentedButton(
+                                modifier = Modifier.weight(1f),
+                                shape = SegmentedButtonDefaults.itemShape(index = index, count = 2),
+                                selected = state.routeSystemTraffic == vpn,
+                                onClick = {
+                                    if (state.routeSystemTraffic != vpn) {
+                                        if (vpn) onRouteSystemTrafficChanged(true) else confirmManualMode = true
+                                    }
+                                },
+                                enabled = !state.running,
+                                icon = {},
+                                label = { Text(stringResource(label)) },
+                            )
+                        }
+                    }
                 }
             }
-            if (state.running || !state.routeSystemTraffic) {
+            if (state.running) {
                 item {
                     Text(
-                        stringResource(if (state.running)
-                            DesignR.string.aurora_network_stop_to_edit else DesignR.string.aurora_network_vpn_required),
+                        stringResource(DesignR.string.aurora_network_stop_to_edit),
                         modifier = Modifier.padding(horizontal = 8.dp),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
-            item {
-                NetworkSection(stringResource(DesignR.string.aurora_network_vpn_traffic)) {
-                    NetworkSwitchRow(
-                        stringResource(DesignR.string.bypass_private_network),
-                        state.bypassPrivateNetwork,
-                        enabled = vpnSettingsEnabled,
-                        onChanged = onBypassPrivateNetworkChanged,
-                    )
-                    NetworkDivider()
-                    NetworkSwitchRow(
-                        stringResource(DesignR.string.aurora_network_dns_capture),
-                        state.dnsHijacking,
-                        enabled = vpnSettingsEnabled,
-                        onChanged = onDnsHijackingChanged,
-                    )
-                    NetworkDivider()
-                    NetworkSwitchRow(
-                        stringResource(DesignR.string.allow_ipv6),
-                        state.allowIpv6,
-                        enabled = vpnSettingsEnabled,
-                        onChanged = onAllowIpv6Changed,
-                    )
-                }
-            }
-            item {
-                NetworkSection(stringResource(DesignR.string.aurora_network_advanced)) {
-                    if (state.showSystemProxy) {
-                        NetworkSwitchRow(
-                            stringResource(DesignR.string.aurora_network_system_http_proxy),
-                            state.systemProxy,
-                            enabled = vpnSettingsEnabled,
-                            onChanged = onSystemProxyChanged,
+            if (state.routeSystemTraffic) {
+                item {
+                    NetworkSection(stringResource(DesignR.string.aurora_network_vpn_traffic)) {
+                        NetworkChoiceRow(
+                            title = stringResource(DesignR.string.aurora_network_per_app_proxy),
+                            value = null,
+                            enabled = true,
+                            onClick = onOpenPerAppProxy,
                         )
                         NetworkDivider()
+                        NetworkSwitchRow(
+                            stringResource(DesignR.string.bypass_private_network),
+                            state.bypassPrivateNetwork,
+                            enabled = vpnSettingsEnabled,
+                            onChanged = onBypassPrivateNetworkChanged,
+                        )
+                        NetworkDivider()
+                        NetworkSwitchRow(
+                            stringResource(DesignR.string.aurora_network_dns_capture),
+                            state.dnsHijacking,
+                            enabled = vpnSettingsEnabled,
+                            onChanged = onDnsHijackingChanged,
+                            onInfoClick = { showDnsInfo = true },
+                        )
+                        NetworkDivider()
+                        NetworkSwitchRow(
+                            stringResource(DesignR.string.allow_ipv6),
+                            state.allowIpv6,
+                            enabled = vpnSettingsEnabled,
+                            onChanged = onAllowIpv6Changed,
+                        )
                     }
-                    NetworkSwitchRow(
-                        stringResource(DesignR.string.aurora_network_allow_app_bypass),
-                        state.allowBypass,
-                        enabled = vpnSettingsEnabled,
-                        onChanged = onAllowBypassChanged,
-                    )
-                    NetworkDivider()
-                    NetworkChoiceRow(
-                        title = stringResource(DesignR.string.tun_stack_mode),
-                        value = stackLabel(state.tunStack),
-                        enabled = vpnSettingsEnabled,
-                        onClick = { selection = NetworkSettingSelection.TunStack },
-                    )
+                }
+                item {
+                    NetworkSection(stringResource(DesignR.string.aurora_network_advanced)) {
+                        if (state.showSystemProxy) {
+                            NetworkSwitchRow(
+                                stringResource(DesignR.string.aurora_network_system_http_proxy),
+                                state.systemProxy,
+                                enabled = vpnSettingsEnabled,
+                                onChanged = onSystemProxyChanged,
+                            )
+                            NetworkDivider()
+                        }
+                        NetworkSwitchRow(
+                            stringResource(DesignR.string.aurora_network_allow_app_bypass),
+                            state.allowBypass,
+                            enabled = vpnSettingsEnabled,
+                            onChanged = onAllowBypassChanged,
+                        )
+                        NetworkDivider()
+                        NetworkChoiceRow(
+                            title = stringResource(DesignR.string.tun_stack_mode),
+                            value = stackLabel(state.tunStack),
+                            enabled = vpnSettingsEnabled,
+                            onClick = { selection = NetworkSettingSelection.TunStack },
+                        )
+                    }
+                }
+            } else {
+                item {
+                    Column(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 36.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Text(
+                            stringResource(DesignR.string.aurora_network_proxy_service_empty),
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                        Text(
+                            stringResource(DesignR.string.aurora_network_proxy_service_hint),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
             }
         }
     }
 
     when (selection) {
-        NetworkSettingSelection.ProxyMethod -> ProxyMethodDialog(
-            useVpn = state.routeSystemTraffic,
-            onSelectAuto = {
-                selection = null
-                if (!state.routeSystemTraffic) onRouteSystemTrafficChanged(true)
-            },
-            onSelectManual = {
-                selection = null
-                if (state.routeSystemTraffic) confirmManualMode = true
-            },
-            onDismiss = { selection = null },
-        )
         NetworkSettingSelection.TunStack -> ChoiceDialog(
             title = stringResource(DesignR.string.tun_stack_mode),
             selected = state.tunStack,
@@ -203,9 +246,21 @@ fun NetworkSettingsScreen(
             },
         )
     }
+    if (showDnsInfo) {
+        AlertDialog(
+            onDismissRequest = { showDnsInfo = false },
+            title = { Text(stringResource(DesignR.string.aurora_network_dns_capture)) },
+            text = { Text(stringResource(DesignR.string.aurora_network_dns_capture_explanation)) },
+            confirmButton = {
+                TextButton(onClick = { showDnsInfo = false }) {
+                    Text(stringResource(DesignR.string.close))
+                }
+            },
+        )
+    }
 }
 
-private enum class NetworkSettingSelection { ProxyMethod, TunStack }
+private enum class NetworkSettingSelection { TunStack }
 
 @Composable
 private fun NetworkSection(title: String, content: @Composable () -> Unit) {
@@ -226,6 +281,7 @@ private fun NetworkSwitchRow(
     checked: Boolean,
     enabled: Boolean,
     onChanged: (Boolean) -> Unit,
+    onInfoClick: (() -> Unit)? = null,
 ) {
     Row(
         modifier = Modifier
@@ -240,6 +296,25 @@ private fun NetworkSwitchRow(
             style = MaterialTheme.typography.bodyLarge,
             color = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = .38f),
         )
+        if (onInfoClick != null) {
+            val infoDescription = stringResource(DesignR.string.aurora_network_dns_capture_info)
+            IconButton(
+                onClick = onInfoClick,
+                modifier = Modifier.size(40.dp).semantics { contentDescription = infoDescription },
+            ) {
+                Box(
+                    modifier = Modifier.size(18.dp).border(1.dp, MaterialTheme.colorScheme.onSurfaceVariant, CircleShape),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        "!",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
         Switch(checked = checked, onCheckedChange = null, enabled = enabled)
     }
 }
@@ -279,47 +354,6 @@ private fun NetworkChoiceRow(
 @Composable
 private fun NetworkDivider() {
     HorizontalDivider(modifier = Modifier.padding(start = 16.dp), color = MaterialTheme.colorScheme.outlineVariant)
-}
-
-@Composable
-private fun ProxyMethodDialog(
-    useVpn: Boolean,
-    onSelectAuto: () -> Unit,
-    onSelectManual: () -> Unit,
-    onDismiss: () -> Unit,
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(DesignR.string.aurora_proxy_method)) },
-        text = {
-            Column {
-                listOf(
-                    Triple(true, DesignR.string.aurora_proxy_method_auto, DesignR.string.aurora_proxy_method_auto_summary),
-                    Triple(false, DesignR.string.aurora_proxy_method_manual, DesignR.string.aurora_proxy_method_manual_summary),
-                ).forEach { (vpn, label, summary) ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth()
-                            .selectable(selected = useVpn == vpn, role = Role.RadioButton) {
-                                if (vpn) onSelectAuto() else onSelectManual()
-                            }
-                            .padding(vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        RadioButton(selected = useVpn == vpn, onClick = null)
-                        Column(Modifier.padding(start = 12.dp)) {
-                            Text(stringResource(label), style = MaterialTheme.typography.bodyLarge)
-                            Text(
-                                stringResource(summary),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    }
-                }
-            }
-        },
-        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(DesignR.string.close)) } },
-    )
 }
 
 @Composable
@@ -374,6 +408,7 @@ private fun NetworkSettingsScreenPreview() {
             onAllowIpv6Changed = {},
             onSystemProxyChanged = {},
             onTunStackChanged = {},
+            onOpenPerAppProxy = {},
             onBack = {},
         )
     }

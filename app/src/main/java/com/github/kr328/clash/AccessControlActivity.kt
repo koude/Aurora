@@ -84,6 +84,7 @@ class AccessControlActivity : BaseActivity() {
                         if (!applying.value && (mode.value != AccessControlMode.AcceptSelected || selectedPackages.value.isNotEmpty())) {
                             val requestedMode = mode.value
                             val requestedPackages = selectedPackages.value.toSet()
+                            val applyToRunningVpn = clashRunning && uiStore.enableVpn
                             applying.value = true
                             launch {
                                 var stored = false
@@ -96,7 +97,7 @@ class AccessControlActivity : BaseActivity() {
                                         service.accessControlMode = requestedMode
                                         service.accessControlPackages = requestedPackages
                                         stored = true
-                                        if (clashRunning && behaviorChanged &&
+                                        if (applyToRunningVpn && behaviorChanged &&
                                             !(previousMode == AccessControlMode.AcceptAll &&
                                                 requestedMode == AccessControlMode.DenySelected && requestedPackages.isEmpty())) {
                                             stopClashService()
@@ -123,7 +124,8 @@ class AccessControlActivity : BaseActivity() {
                                     applying.value = false
                                     Toast.makeText(
                                         this@AccessControlActivity,
-                                        if (failure == null) "已保存并应用" else if (stored)
+                                        if (failure == null && applyToRunningVpn) "已保存并应用" else if (failure == null)
+                                            "已保存，启动 VPN 服务后生效" else if (stored)
                                             "名单已保存，代理重启失败，请手动重新连接" else "保存失败，请重试",
                                         Toast.LENGTH_LONG,
                                     ).show()
