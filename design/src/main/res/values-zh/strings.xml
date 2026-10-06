@@ -374,10 +374,16 @@
     <string name="aurora_network_vpn_service">VPN 服务</string>
     <string name="aurora_network_proxy_service">代理服务</string>
     <string name="aurora_network_per_app_proxy">分应用代理</string>
+    <string name="aurora_network_app_scope">应用范围</string>
+    <string name="tun_stack_mode">TUN 协议栈</string>
+    <string name="tun_stack_system">系统</string>
+    <string name="tun_stack_gvisor">gVisor</string>
+    <string name="tun_stack_mixed">混合</string>
+    <string name="tun_stack_mips">MIPS</string>
     <string name="aurora_network_proxy_service_empty">代理服务模式下无设置项</string>
     <string name="aurora_network_proxy_service_hint">可在应用或系统中设置 Aurora 的代理地址与端口。</string>
     <string name="aurora_network_vpn_traffic">VPN 流量处理</string>
-    <string name="aurora_network_advanced">高级兼容</string>
+    <string name="aurora_network_advanced">高级</string>
     <string name="aurora_network_stop_to_edit">停止服务后可切换模式或修改 VPN 设置</string>
     <string name="aurora_network_vpn_required">以下选项仅在自动接管（VPN）模式下可用</string>
     <string name="aurora_network_dns_capture">接管 DNS</string>

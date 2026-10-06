@@ -13,10 +13,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
@@ -99,7 +102,7 @@ fun NetworkSettingsScreen(
         ) {
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    AuroraSectionTitle(stringResource(DesignR.string.aurora_network_mode), Modifier.padding(start = 8.dp))
+                    AuroraSectionTitle(stringResource(DesignR.string.aurora_proxy_method), Modifier.padding(start = 8.dp))
                     SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
                         listOf(
                             true to DesignR.string.aurora_network_vpn_service,
@@ -134,14 +137,18 @@ fun NetworkSettingsScreen(
             }
             if (state.routeSystemTraffic) {
                 item {
-                    NetworkSection(stringResource(DesignR.string.aurora_network_vpn_traffic)) {
+                    NetworkSection(stringResource(DesignR.string.aurora_network_app_scope)) {
                         NetworkChoiceRow(
                             title = stringResource(DesignR.string.aurora_network_per_app_proxy),
                             value = null,
                             enabled = true,
                             onClick = onOpenPerAppProxy,
+                            showChevron = true,
                         )
-                        NetworkDivider()
+                    }
+                }
+                item {
+                    NetworkSection(stringResource(DesignR.string.aurora_network_vpn_traffic)) {
                         NetworkSwitchRow(
                             stringResource(DesignR.string.bypass_private_network),
                             state.bypassPrivateNetwork,
@@ -188,6 +195,7 @@ fun NetworkSettingsScreen(
                             value = stackLabel(state.tunStack),
                             enabled = vpnSettingsEnabled,
                             onClick = { selection = NetworkSettingSelection.TunStack },
+                            showChevron = true,
                         )
                     }
                 }
@@ -325,6 +333,7 @@ private fun NetworkChoiceRow(
     value: String?,
     enabled: Boolean,
     onClick: () -> Unit,
+    showChevron: Boolean = false,
 ) {
     Row(
         modifier = Modifier
@@ -346,6 +355,14 @@ private fun NetworkChoiceRow(
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (enabled) 1f else .38f),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
+            )
+        }
+        if (showChevron) {
+            Icon(
+                Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = null,
+                modifier = Modifier.padding(start = 4.dp).size(20.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (enabled) 1f else .38f),
             )
         }
     }

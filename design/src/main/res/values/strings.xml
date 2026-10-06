@@ -256,11 +256,11 @@
     <string name="always_dark">Always Dark</string>
     <string name="always_light">Always Light</string>
 
-    <string name="tun_stack_mode">Stack Mode</string>
-    <string name="tun_stack_system">System Stack</string>
-    <string name="tun_stack_gvisor">Gvisor Stack</string>
-    <string name="tun_stack_mixed">Mixed Stack</string>
-    <string name="tun_stack_mips">Mips Stack</string>
+    <string name="tun_stack_mode">TUN stack</string>
+    <string name="tun_stack_system">System</string>
+    <string name="tun_stack_gvisor">gVisor</string>
+    <string name="tun_stack_mixed">Mixed</string>
+    <string name="tun_stack_mips">MIPS</string>
 
     <string name="allow_all_apps">Allow all apps</string>
     <string name="allow_selected_apps">Allow selected apps</string>
@@ -470,10 +470,11 @@
     <string name="aurora_network_vpn_service">VPN service</string>
     <string name="aurora_network_proxy_service">Proxy service</string>
     <string name="aurora_network_per_app_proxy">Per-app proxy</string>
+    <string name="aurora_network_app_scope">App scope</string>
     <string name="aurora_network_proxy_service_empty">No settings for proxy service mode</string>
     <string name="aurora_network_proxy_service_hint">You can set Aurora’s proxy address and port in an app or in system settings.</string>
     <string name="aurora_network_vpn_traffic">VPN traffic</string>
-    <string name="aurora_network_advanced">Advanced compatibility</string>
+    <string name="aurora_network_advanced">Advanced</string>
     <string name="aurora_network_stop_to_edit">Stop the service to change its mode or VPN settings</string>
     <string name="aurora_network_vpn_required">These options require automatic VPN capture</string>
     <string name="aurora_network_dns_capture">Capture DNS</string>
