@@ -36,7 +36,6 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.HorizontalDivider
@@ -316,12 +315,16 @@ private fun ProxyGroupCard(
                 .any { searchQuery in it.lowercase() }
         }
     }
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(AuroraCardStyle.groupShape())
+            .background(MaterialTheme.colorScheme.surfaceContainerLow),
+    ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(AuroraCardStyle.groupShape())
-                .background(MaterialTheme.colorScheme.surfaceContainerHigh, AuroraCardStyle.groupShape())
+                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                 .clickable(onClick = onExpand)
                 .heightIn(min = 56.dp)
                 .padding(horizontal = 16.dp, vertical = 12.dp),
@@ -373,37 +376,34 @@ private fun ProxyGroupCard(
             }
         }
         if (expanded) {
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shape = AuroraCardStyle.groupShape(),
-                color = MaterialTheme.colorScheme.surfaceContainerLow,
-            ) {
-                Column(Modifier.padding(4.dp)) {
-                    visibleProxies.forEachIndexed { index, proxy ->
-                        if (index > 0) {
-                            HorizontalDivider(
-                                modifier = Modifier.padding(horizontal = 12.dp),
-                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = .45f),
-                            )
-                        }
-                        ProxyCard(
-                            proxy = proxy,
-                            selected = proxy.name == group.selectedProxy,
-                            selecting = proxy.name == group.selectingProxy,
-                            route = group.nestedRoutes[proxy.name],
-                            showDelay = group.delayTested,
-                            enabled = group.selectable && group.selectingProxy == null,
-                            onClick = { onSelectProxy(proxy.name) },
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = .75f),
+            )
+            Column(Modifier.padding(4.dp)) {
+                visibleProxies.forEachIndexed { index, proxy ->
+                    if (index > 0) {
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = 12.dp),
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = .32f),
                         )
                     }
-                    if (visibleProxies.isEmpty()) {
-                        Text(
-                            "没有匹配的节点",
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 20.dp),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            style = MaterialTheme.typography.bodyMedium,
-                        )
-                    }
+                    ProxyCard(
+                        proxy = proxy,
+                        selected = proxy.name == group.selectedProxy,
+                        selecting = proxy.name == group.selectingProxy,
+                        route = group.nestedRoutes[proxy.name],
+                        showDelay = group.delayTested,
+                        enabled = group.selectable && group.selectingProxy == null,
+                        onClick = { onSelectProxy(proxy.name) },
+                    )
+                }
+                if (visibleProxies.isEmpty()) {
+                    Text(
+                        "没有匹配的节点",
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 20.dp),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
                 }
             }
         }
