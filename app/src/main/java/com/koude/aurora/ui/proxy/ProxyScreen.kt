@@ -1,6 +1,7 @@
 package com.koude.aurora.ui.proxy
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -25,8 +27,6 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -36,6 +36,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.HorizontalDivider
@@ -47,6 +48,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -230,7 +232,7 @@ private fun ProxyContent(
                 end = contentPadding.calculateRightPadding(androidx.compose.ui.unit.LayoutDirection.Ltr),
                 bottom = contentPadding.calculateBottomPadding(),
             ),
-            verticalArrangement = Arrangement.spacedBy(6.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             item {
                 Row(
@@ -314,55 +316,76 @@ private fun ProxyGroupCard(
                 .any { searchQuery in it.lowercase() }
         }
     }
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = AuroraCardStyle.groupShape(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-    ) {
-        Column {
-            Row(
-                modifier = Modifier.fillMaxWidth().clickable(onClick = onExpand).padding(horizontal = 16.dp, vertical = 14.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                val current = group.nestedRoutes[group.selectedProxy]?.names?.lastOrNull()
-                    ?: group.selectedProxy
-                BoxWithConstraints(Modifier.weight(1f)) {
-                    val availableWidth = maxWidth
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(AuroraCardStyle.groupShape())
+                .background(MaterialTheme.colorScheme.surfaceContainerHigh, AuroraCardStyle.groupShape())
+                .clickable(onClick = onExpand)
+                .heightIn(min = 56.dp)
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            val current = group.nestedRoutes[group.selectedProxy]?.names?.lastOrNull()
+                ?: group.selectedProxy
+            BoxWithConstraints(Modifier.weight(1f)) {
+                val availableWidth = maxWidth
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = group.name,
+                        modifier = Modifier.weight(1f, fill = false),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    if (current.isNotBlank()) {
                         Text(
-                            text = if (current.isBlank()) group.name else "${group.name} → $current",
-                            modifier = Modifier.weight(1f),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold,
+                            text = " → ",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Text(
+                            text = current,
+                            modifier = Modifier.weight(1f, fill = false),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
-                        if (availableWidth >= 270.dp) {
-                            Text(
-                                displayGroupType(group.type),
-                                modifier = Modifier.padding(start = 8.dp),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = 1,
-                                softWrap = false,
-                            )
-                        }
                     }
-                }
-                Box(Modifier.width(64.dp), contentAlignment = Alignment.CenterEnd) {
-                    if (group.activeDelayTested) {
-                        ProxyDelayText(group.activeDelay)
+                    if (availableWidth >= 270.dp) {
+                        Text(
+                            displayGroupType(group.type),
+                            modifier = Modifier.padding(start = 8.dp),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            softWrap = false,
+                        )
                     }
                 }
             }
-            if (expanded) {
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = .55f))
-                Column(
-                    Modifier.padding(start = 10.dp, end = 10.dp, bottom = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
-                ) {
-                    visibleProxies.forEach { proxy ->
+            Box(Modifier.width(64.dp), contentAlignment = Alignment.CenterEnd) {
+                if (group.activeDelayTested) ProxyDelayText(group.activeDelay)
+            }
+        }
+        if (expanded) {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = AuroraCardStyle.groupShape(),
+                color = MaterialTheme.colorScheme.surfaceContainerLow,
+            ) {
+                Column(Modifier.padding(4.dp)) {
+                    visibleProxies.forEachIndexed { index, proxy ->
+                        if (index > 0) {
+                            HorizontalDivider(
+                                modifier = Modifier.padding(horizontal = 12.dp),
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = .45f),
+                            )
+                        }
                         ProxyCard(
                             proxy = proxy,
                             selected = proxy.name == group.selectedProxy,
@@ -480,44 +503,37 @@ private fun ProxyCard(
     onClick: () -> Unit,
 ) {
     val itemColor = if (selected) MaterialTheme.colorScheme.secondaryContainer
-    else AuroraCardStyle.itemColor()
+    else MaterialTheme.colorScheme.surfaceContainerLow
     val itemContentColor = if (selected) MaterialTheme.colorScheme.onSecondaryContainer
     else MaterialTheme.colorScheme.onSurface
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        onClick = onClick,
-        enabled = enabled,
-        shape = AuroraCardStyle.itemShape(),
-        colors = CardDefaults.cardColors(
-            containerColor = itemColor,
-            contentColor = itemContentColor,
-            disabledContainerColor = itemColor,
-            disabledContentColor = itemContentColor,
-        ),
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(AuroraCardStyle.itemShape())
+            .background(itemColor, AuroraCardStyle.itemShape())
+            .clickable(enabled = enabled, onClick = onClick)
+            .heightIn(min = 48.dp)
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 10.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            val routeNames = if (proxy.isGroup) route?.names else null
-            Text(
-                text = routeNames?.joinToString(" → ") ?: if (proxy.isGroup) proxy.name else proxy.title,
-                modifier = Modifier.weight(1f),
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            val delay = if (proxy.isGroup) route?.delay ?: proxy.delay else proxy.delay
-            Box(Modifier.width(64.dp), contentAlignment = Alignment.CenterEnd) {
-                if (selecting) {
-                    CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
-                } else if (showDelay && (delay == 65535 || delay in 1..65534)) {
-                    ProxyDelayText(delay)
-                }
+        val finalEndpoint = if (proxy.isGroup) route?.names?.lastOrNull() else null
+        Text(
+            text = if (finalEndpoint.isNullOrBlank() || finalEndpoint == proxy.name) proxy.title
+                else "${proxy.name} → $finalEndpoint",
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.bodyMedium,
+            color = itemContentColor,
+            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        val delay = if (proxy.isGroup) route?.delay ?: proxy.delay else proxy.delay
+        Box(Modifier.width(64.dp), contentAlignment = Alignment.CenterEnd) {
+            if (selecting) {
+                CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+            } else if (showDelay && (delay == 65535 || delay in 1..65534)) {
+                ProxyDelayText(delay)
             }
         }
     }
