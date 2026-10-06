@@ -305,9 +305,9 @@ class MainActivity : BaseActivity() {
                                 refreshConnections()
                             }
                         },
-                        onCloseAll = {
+                        onCloseVisible = { ids ->
                             launch {
-                                runCatching { withClash { closeAllConnections() } }
+                                runCatching { withClash { ids.forEach { id -> closeConnection(id) } } }
                                     .onFailure(::showError)
                                 refreshConnections()
                             }

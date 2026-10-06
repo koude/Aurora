@@ -193,9 +193,6 @@ private fun ProxyContent(
                         contentDescription = if (searchVisible) "关闭搜索" else "搜索策略组或节点",
                     )
                 }
-                IconButton(onClick = { settingsVisible = true }) {
-                    Icon(Icons.Default.MoreVert, contentDescription = "代理设置")
-                }
                 val expandedGroupIndex = state.groups.indexOfFirst { state.expandedGroups[it.name] == true }
                     .takeIf { it >= 0 }
                 val expandedGroupTesting = expandedGroupIndex?.let { state.groups[it].testing } == true
@@ -205,6 +202,9 @@ private fun ProxyContent(
                 ) {
                     if (state.loading || state.activeEndpointsTesting || expandedGroupTesting) CircularProgressIndicator(Modifier.size(22.dp), strokeWidth = 2.dp)
                     else Icon(Icons.Default.Refresh, contentDescription = "测速")
+                }
+                IconButton(onClick = { settingsVisible = true }) {
+                    Icon(Icons.Default.MoreVert, contentDescription = "代理设置")
                 }
             },
         )
@@ -233,21 +233,6 @@ private fun ProxyContent(
             ),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = if (normalizedQuery.isBlank()) "${state.groups.size} 个策略组"
-                        else "${filteredGroups.size} / ${state.groups.size} 个策略组",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-
             if (state.errorMessage != null) {
                 item {
                     Text(

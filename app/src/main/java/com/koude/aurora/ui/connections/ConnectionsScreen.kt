@@ -10,6 +10,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -60,113 +64,139 @@ fun ConnectionsScreen(
     state: ConnectionsUiState,
     onRefresh: () -> Unit,
     onCloseConnection: (String) -> Unit,
-    onCloseAll: () -> Unit,
+    onCloseVisible: (List<String>) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var query by remember { mutableStateOf("") }
-    var confirmCloseAll by remember { mutableStateOf(false) }
+    var searchVisible by remember { mutableStateOf(false) }
+    var pendingCloseIds by remember { mutableStateOf<List<String>?>(null) }
     val filtered = remember(state.connections, query) {
-        val normalized = query.trim().lowercase()
-        if (normalized.isEmpty()) state.connections else state.connections.filter { connection ->
-            listOf(
-                connection.host,
-                connection.process,
-                connection.network,
-                connection.rule,
-                connection.rulePayload,
-                connection.chains.joinToString(" "),
-            ).any { normalized in it.lowercase() }
-        }
+        filterConnections(state.connections, query)
     }
 
     Scaffold(
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.surface,
+        contentWindowInsets = WindowInsets.safeDrawing.only(
+            WindowInsetsSides.Top + WindowInsetsSides.Horizontal,
+        ),
     ) { padding ->
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(
-                start = AuroraPageSpacing.Horizontal,
-                top = padding.calculateTopPadding() + AuroraPageSpacing.Top,
-                end = AuroraPageSpacing.Horizontal,
-                bottom = padding.calculateBottomPadding() + AuroraPageSpacing.Bottom,
-            ),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            item {
-                AuroraPageHeader(
-                    title = "连接",
-                    subtitle = if (state.serviceRunning) "${state.connections.size} 条活动连接" else "未连接",
-                    actions = {
-                        IconButton(onClick = onRefresh, enabled = !state.loading) {
-                            if (state.loading) CircularProgressIndicator(Modifier.size(22.dp), strokeWidth = 2.dp)
-                            else Icon(Icons.Default.Refresh, contentDescription = "刷新")
-                        }
-                        IconButton(
-                            onClick = { confirmCloseAll = true },
-                            enabled = state.connections.isNotEmpty(),
-                        ) {
-                            Icon(Icons.Default.Close, contentDescription = "关闭全部连接")
-                        }
-                    },
+        Column(Modifier.fillMaxSize()) {
+            AuroraPageHeader(
+                title = "连接",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        start = AuroraPageSpacing.Horizontal,
+                        top = padding.calculateTopPadding() + AuroraPageSpacing.Top,
+                        end = 12.dp,
+                        bottom = 8.dp,
+                    ),
+                actions = {
+                    IconButton(onClick = {
+                        searchVisible = !searchVisible
+                        if (!searchVisible) query = ""
+                    }) {
+                        Icon(
+                            if (searchVisible) Icons.Default.Close else Icons.Default.Search,
+                            contentDescription = if (searchVisible) "关闭搜索" else "搜索连接",
+                        )
+                    }
+                    IconButton(onClick = onRefresh, enabled = !state.loading) {
+                        if (state.loading) CircularProgressIndicator(Modifier.size(22.dp), strokeWidth = 2.dp)
+                        else Icon(Icons.Default.Refresh, contentDescription = "刷新")
+                    }
+                    IconButton(
+                        onClick = { pendingCloseIds = filtered.map(ConnectionInfo::id) },
+                        enabled = state.serviceRunning && filtered.isNotEmpty(),
+                    ) {
+                        Icon(Icons.Default.Close, contentDescription = "关闭所示连接")
+                    }
+                },
+            )
+
+            if (searchVisible) {
+                OutlinedTextField(
+                    value = query,
+                    onValueChange = { query = it },
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = AuroraPageSpacing.Horizontal, vertical = 4.dp),
+                    singleLine = true,
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                    trailingIcon = if (query.isNotEmpty()) {
+                        { IconButton(onClick = { query = "" }) { Icon(Icons.Default.Close, contentDescription = "清除搜索") } }
+                    } else null,
+                    placeholder = { Text("搜索应用、域名或规则") },
+                    shape = MaterialTheme.shapes.large,
                 )
             }
-
-            if (state.connections.isNotEmpty()) {
-                item {
-                    OutlinedTextField(
-                        value = query,
-                        onValueChange = { query = it },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                        placeholder = { Text("搜索应用、域名或规则") },
-                        shape = MaterialTheme.shapes.large,
-                    )
-                }
-            }
-
-            state.errorMessage?.let { message ->
-                item {
-                    Text(
-                        text = message,
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                }
-            }
-
-            if (!state.serviceRunning) {
-                item { ConnectionsEmptyState("代理未运行") }
-            } else if (state.loading && state.connections.isEmpty()) {
-                item {
-                    Box(Modifier.fillMaxWidth().padding(36.dp), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(
+                    start = AuroraPageSpacing.Horizontal,
+                    top = 8.dp,
+                    end = AuroraPageSpacing.Horizontal,
+                    bottom = padding.calculateBottomPadding() + AuroraPageSpacing.Bottom,
+                ),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                state.errorMessage?.let { message ->
+                    item {
+                        Text(
+                            text = message,
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
                     }
                 }
-            } else if (filtered.isEmpty()) {
-                item { ConnectionsEmptyState(if (query.isBlank()) "暂无活动连接" else "没有匹配的连接") }
-            } else {
-                items(filtered, key = ConnectionInfo::id) { connection ->
-                    ConnectionCard(connection, onClose = { onCloseConnection(connection.id) })
+
+                if (!state.serviceRunning) {
+                    item { ConnectionsEmptyState("代理未运行") }
+                } else if (state.loading && state.connections.isEmpty()) {
+                    item {
+                        Box(Modifier.fillMaxWidth().padding(36.dp), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator()
+                        }
+                    }
+                } else if (filtered.isEmpty()) {
+                    item { ConnectionsEmptyState(if (query.isBlank()) "暂无活动连接" else "没有匹配的连接") }
+                } else {
+                    items(filtered, key = ConnectionInfo::id) { connection ->
+                        ConnectionCard(connection, onClose = { onCloseConnection(connection.id) })
+                    }
                 }
             }
         }
     }
 
-    if (confirmCloseAll) {
+    pendingCloseIds?.let { ids ->
         AlertDialog(
-            onDismissRequest = { confirmCloseAll = false },
-            title = { Text("关闭全部连接？") },
-            text = { Text("当前 ${state.connections.size} 条活动连接将被中断。") },
+            onDismissRequest = { pendingCloseIds = null },
+            title = { Text("关闭所示连接？") },
+            text = { Text("将中断列表中显示的 ${ids.size} 条连接。") },
             confirmButton = {
                 TextButton(onClick = {
-                    confirmCloseAll = false
-                    onCloseAll()
-                }) { Text("关闭全部") }
+                    pendingCloseIds = null
+                    onCloseVisible(ids)
+                }) { Text("关闭") }
             },
-            dismissButton = { TextButton(onClick = { confirmCloseAll = false }) { Text("取消") } },
+            dismissButton = { TextButton(onClick = { pendingCloseIds = null }) { Text("取消") } },
         )
+    }
+}
+
+internal fun filterConnections(connections: List<ConnectionInfo>, query: String): List<ConnectionInfo> {
+    val normalizedQuery = query.trim().lowercase()
+    if (normalizedQuery.isEmpty()) return connections
+    return connections.filter { connection ->
+        listOf(
+            connection.host,
+            connection.destination,
+            connection.process,
+            connection.network,
+            connection.rule,
+            connection.rulePayload,
+            connection.chains.joinToString(" "),
+        ).any { normalizedQuery in it.lowercase() }
     }
 }
 
@@ -285,7 +315,7 @@ private fun ConnectionsScreenPreview() {
             ),
             onRefresh = {},
             onCloseConnection = {},
-            onCloseAll = {},
+            onCloseVisible = {},
         )
     }
 }
