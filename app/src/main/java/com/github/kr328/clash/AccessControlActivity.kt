@@ -28,6 +28,8 @@ class AccessControlActivity : BaseActivity() {
     private val mode = mutableStateOf(AccessControlMode.DenySelected)
     private val selectedPackages = mutableStateOf<Set<String>>(emptySet())
     private val appList = mutableStateOf<List<AppInfo>>(emptyList())
+    private val applying = mutableStateOf(false)
+    private var applyRequested = false
 
     override suspend fun main() {
         val service = ServiceStore(this)
@@ -41,6 +43,7 @@ class AccessControlActivity : BaseActivity() {
         appList.value = loadApps(selectedPackages.value)
 
         defer {
+            if (!applyRequested) return@defer
             withContext(Dispatchers.IO) {
                 val selected = selectedPackages.value
                 val selectedMode = mode.value
@@ -64,6 +67,8 @@ class AccessControlActivity : BaseActivity() {
                     apps = appList.value,
                     mode = mode.value,
                     selectedPackages = selectedPackages.value,
+                    hasUnsavedChanges = mode.value != initialMode || selectedPackages.value != initialPackages,
+                    applying = applying.value,
                     showSystemApps = uiStore.accessControlSystemApp,
                     sort = uiStore.accessControlSort,
                     reverse = uiStore.accessControlReverse,
@@ -90,6 +95,13 @@ class AccessControlActivity : BaseActivity() {
                     },
                     onImport = ::importPackages,
                     onExport = ::exportPackages,
+                    onApply = {
+                        if (!applying.value && (mode.value != AccessControlMode.AcceptSelected || selectedPackages.value.isNotEmpty())) {
+                            applyRequested = true
+                            applying.value = true
+                            finish()
+                        }
+                    },
                     onBack = ::finish,
                 )
             }

@@ -445,5 +445,11 @@
     <string name="aurora_per_app_blacklist">Blacklist</string>
     <string name="aurora_per_app_whitelist">Whitelist</string>
     <string name="aurora_per_app_blacklist_summary">Selected apps bypass Aurora; all other apps use it.</string>
-    <string name="aurora_per_app_whitelist_summary">Only selected apps use Aurora. With no apps selected, other apps bypass Aurora.</string>
+    <string name="aurora_per_app_whitelist_summary">Only selected apps use Aurora; all others bypass it.</string>
+    <string name="aurora_per_app_whitelist_empty">Select at least one app before applying a whitelist.</string>
+    <string name="aurora_per_app_apply">Save and apply</string>
+    <string name="aurora_per_app_applying">Applying…</string>
+    <string name="aurora_per_app_discard_title">Discard changes?</string>
+    <string name="aurora_per_app_discard_summary">Your app selection has not been saved.</string>
+    <string name="aurora_per_app_discard">Discard</string>
 </resources>

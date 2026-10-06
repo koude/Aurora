@@ -349,5 +349,11 @@
     <string name="aurora_per_app_blacklist">黑名单</string>
     <string name="aurora_per_app_whitelist">白名单</string>
     <string name="aurora_per_app_blacklist_summary">选中的应用绕过 Aurora，其余应用经过 Aurora。</string>
-    <string name="aurora_per_app_whitelist_summary">只有选中的应用经过 Aurora；未选择应用时，其他应用均不经过 Aurora。</string>
+    <string name="aurora_per_app_whitelist_summary">只有选中的应用经过 Aurora，其余应用绕过 Aurora。</string>
+    <string name="aurora_per_app_whitelist_empty">请至少选择一个应用，再保存白名单。</string>
+    <string name="aurora_per_app_apply">保存并应用</string>
+    <string name="aurora_per_app_applying">正在应用…</string>
+    <string name="aurora_per_app_discard_title">放弃更改？</string>
+    <string name="aurora_per_app_discard_summary">应用名单尚未保存。</string>
+    <string name="aurora_per_app_discard">放弃</string>
 </resources>

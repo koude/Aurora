@@ -157,8 +157,12 @@ class TunService : VpnService(), CoroutineScope by CoroutineScope(Dispatchers.De
             when (store.accessControlMode) {
                 AccessControlMode.AcceptAll -> Unit
                 AccessControlMode.AcceptSelected -> {
-                    (store.accessControlPackages + packageName).forEach {
-                        runCatching { addAllowedApplication(it) }
+                    // An empty allowlist would route only Aurora itself through the VPN.
+                    // Keep existing installations connected until the user selects apps.
+                    store.accessControlPackages.takeIf { it.isNotEmpty() }?.let { packages ->
+                        (packages + packageName).forEach {
+                            runCatching { addAllowedApplication(it) }
+                        }
                     }
                 }
                 AccessControlMode.DenySelected -> {

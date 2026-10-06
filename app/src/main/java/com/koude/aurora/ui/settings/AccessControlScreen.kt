@@ -3,6 +3,7 @@ package com.koude.aurora.ui.settings
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.drawable.Drawable
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -18,6 +19,8 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
@@ -29,6 +32,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -54,6 +58,8 @@ fun AccessControlScreen(
     apps: List<AppInfo>,
     mode: AccessControlMode,
     selectedPackages: Set<String>,
+    hasUnsavedChanges: Boolean,
+    applying: Boolean,
     showSystemApps: Boolean,
     sort: AppInfoSort,
     reverse: Boolean,
@@ -67,12 +73,18 @@ fun AccessControlScreen(
     onReverseChanged: (Boolean) -> Unit,
     onImport: () -> Unit,
     onExport: () -> Unit,
+    onApply: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var searchVisible by remember { mutableStateOf(false) }
     var searchText by remember { mutableStateOf("") }
     var menuVisible by remember { mutableStateOf(false) }
+    var confirmDiscard by remember { mutableStateOf(false) }
+    val emptyWhitelist = mode == AccessControlMode.AcceptSelected && selectedPackages.isEmpty()
+    BackHandler(enabled = hasUnsavedChanges || applying) {
+        if (!applying) confirmDiscard = true
+    }
     val visibleApps = remember(apps, searchText) {
         if (searchText.isBlank()) apps else apps.filter {
             it.label.contains(searchText, ignoreCase = true) || it.packageName.contains(searchText, ignoreCase = true)
@@ -84,7 +96,11 @@ fun AccessControlScreen(
         topBar = {
             AuroraDetailTopBar(
                 title = stringResource(DesignR.string.aurora_per_app_proxy),
-                onBack = onBack,
+                onBack = {
+                    if (applying) Unit
+                    else if (hasUnsavedChanges) confirmDiscard = true
+                    else onBack()
+                },
                 actions = {
                     IconButton(onClick = { searchVisible = !searchVisible; searchText = "" }) {
                         Icon(Icons.Default.Search, contentDescription = stringResource(DesignR.string.search))
@@ -116,6 +132,17 @@ fun AccessControlScreen(
                 },
             )
         },
+        bottomBar = {
+            if (hasUnsavedChanges || applying) {
+                Button(
+                    onClick = onApply,
+                    enabled = !emptyWhitelist && !applying,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp),
+                ) {
+                    Text(stringResource(if (applying) DesignR.string.aurora_per_app_applying else DesignR.string.aurora_per_app_apply))
+                }
+            }
+        },
     ) { insets ->
         Column(Modifier.fillMaxSize().padding(insets)) {
             Row(
@@ -134,8 +161,11 @@ fun AccessControlScreen(
                 )
             }
             Text(
-                text = stringResource(if (mode == AccessControlMode.AcceptSelected)
-                    DesignR.string.aurora_per_app_whitelist_summary else DesignR.string.aurora_per_app_blacklist_summary),
+                text = stringResource(when {
+                    emptyWhitelist -> DesignR.string.aurora_per_app_whitelist_empty
+                    mode == AccessControlMode.AcceptSelected -> DesignR.string.aurora_per_app_whitelist_summary
+                    else -> DesignR.string.aurora_per_app_blacklist_summary
+                }),
                 modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 8.dp),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -164,6 +194,23 @@ fun AccessControlScreen(
                 }
             }
         }
+    }
+    if (confirmDiscard) {
+        AlertDialog(
+            onDismissRequest = { confirmDiscard = false },
+            title = { Text(stringResource(DesignR.string.aurora_per_app_discard_title)) },
+            text = { Text(stringResource(DesignR.string.aurora_per_app_discard_summary)) },
+            confirmButton = {
+                TextButton(onClick = { confirmDiscard = false; onBack() }) {
+                    Text(stringResource(DesignR.string.aurora_per_app_discard))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmDiscard = false }) {
+                    Text(stringResource(DesignR.string.cancel))
+                }
+            },
+        )
     }
 }
 
