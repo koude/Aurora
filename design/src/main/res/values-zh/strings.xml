@@ -43,6 +43,14 @@
     <string name="aurora_override_port_invalid">请输入 0 至 65535 之间的端口。</string>
     <string name="aurora_override_map_hint">每行一项，格式为 键=值。</string>
     <string name="aurora_override_map_invalid">第 %1$d 行格式有误：请填写不重复的 键=值。</string>
+    <string name="aurora_override_reset_title">重置全部覆写？</string>
+    <string name="aurora_override_reset_scope">这会清除“配置覆写”和“内核功能”中保存的所有覆写设置；配置文件和导入的 Geo 数据不会删除。</string>
+    <string name="aurora_override_value_set">已设置</string>
+    <string name="aurora_override_show_value">显示</string>
+    <string name="aurora_override_hide_value">隐藏</string>
+    <string name="aurora_override_lines_hint">每行一项；使用“恢复”可清除此覆写。</string>
+    <string name="aurora_override_text_hint">留空值会按该设置项的默认行为处理。</string>
+    <string name="aurora_override_restore_unmodified">恢复不修改</string>
     <string name="hide_app_icon_desc">可以在拨号盘输入 *#*#252746382#*#* 打开应用</string>
     <string name="aurora_hide_icon_warning">应用图标将消失。之后可在拨号盘输入以下代码打开 Aurora：</string>
     <string name="aurora_hide_icon_dialer_note">部分拨号盘可能不支持此代码。隐藏前请妥善保存。</string>

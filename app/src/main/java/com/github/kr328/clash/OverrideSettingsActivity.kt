@@ -56,12 +56,13 @@ class OverrideSettingsActivity : BaseActivity() {
         val dns = getString(DesignR.string.dns)
         val disabled = getString(DesignR.string.disabled)
 
-        fun text(section: String, title: Int, current: String?, emptyLabel: String = getString(DesignR.string.default_), set: (String?) -> Unit) = ConfigField(
+        fun text(section: String, title: Int, current: String?, emptyLabel: String = getString(DesignR.string.default_), sensitive: Boolean = false, set: (String?) -> Unit) = ConfigField(
             section = section,
             title = getString(title),
-            value = current?.let { if (it.isEmpty()) emptyLabel else it } ?: noChange,
+            value = current?.let { if (it.isEmpty()) emptyLabel else if (sensitive) getString(DesignR.string.aurora_override_value_set) else it } ?: noChange,
             editor = ConfigFieldEditor.Text,
             initialText = current.orEmpty(),
+            sensitive = sensitive,
             onSet = { set(it); changed() },
         )
         fun lines(section: String, title: Int, current: List<String>?, set: (List<String>?) -> Unit) = ConfigField(
@@ -151,7 +152,7 @@ class OverrideSettingsActivity : BaseActivity() {
         fields += text(general, DesignR.string.external_controller_tls, config.externalControllerTLS) { config.externalControllerTLS = it }
         fields += lines(general, DesignR.string.allow_origins, config.externalControllerCors.allowOrigins) { config.externalControllerCors.allowOrigins = it }
         fields += bool(general, DesignR.string.allow_private_network, config.externalControllerCors.allowPrivateNetwork) { config.externalControllerCors.allowPrivateNetwork = it }
-        fields += text(general, DesignR.string.secret, config.secret) { config.secret = it }
+        fields += text(general, DesignR.string.secret, config.secret, sensitive = true) { config.secret = it }
         fields += choice(general, DesignR.string.mode, config.mode?.name, listOf(
             ConfigChoice(null, noChange), ConfigChoice(TunnelState.Mode.Direct.name, getString(DesignR.string.direct_mode)),
             ConfigChoice(TunnelState.Mode.Global.name, getString(DesignR.string.global_mode)), ConfigChoice(TunnelState.Mode.Rule.name, getString(DesignR.string.rule_mode)),

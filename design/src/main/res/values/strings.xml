@@ -365,6 +365,14 @@
     <string name="aurora_override_port_invalid">Enter a port from 0 to 65535.</string>
     <string name="aurora_override_map_hint">One key=value entry per line.</string>
     <string name="aurora_override_map_invalid">Line %1$d: enter a unique key=value pair with both parts filled in.</string>
+    <string name="aurora_override_reset_title">Reset all overrides?</string>
+    <string name="aurora_override_reset_scope">This clears saved overrides from both Configuration Override and Core Features. Profiles and imported Geo files are not deleted.</string>
+    <string name="aurora_override_value_set">Set</string>
+    <string name="aurora_override_show_value">Show</string>
+    <string name="aurora_override_hide_value">Hide</string>
+    <string name="aurora_override_lines_hint">One item per line. Use Restore to remove this override.</string>
+    <string name="aurora_override_text_hint">An empty value uses this setting’s default behavior.</string>
+    <string name="aurora_override_restore_unmodified">Restore</string>
     <string name="hide_app_icon_desc">You can dial *#*#252746382#*#* to open this App</string>
     <string name="aurora_hide_icon_warning">The app icon will disappear. You can open Aurora by entering this code in the dialer:</string>
     <string name="aurora_hide_icon_dialer_note">Some dialers may not support this code. Keep a copy before hiding the icon.</string>
