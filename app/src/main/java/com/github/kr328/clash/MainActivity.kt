@@ -174,7 +174,8 @@ class MainActivity : BaseActivity() {
             uiStore.lastMainRoute.takeIf { it in PERSISTED_MAIN_ROUTES } ?: ROUTE_HOME
         }
         val backStackEntry by navController.currentBackStackEntryAsState()
-        val currentRoute = backStackEntry?.destination?.route ?: ROUTE_HOME
+        val destinationRoute = backStackEntry?.destination?.route
+        val currentRoute = destinationRoute ?: startDestination
         val homeState by homeViewModel.uiState.collectAsStateWithLifecycle()
         val routeTestState by homeViewModel.routeTestState.collectAsStateWithLifecycle()
 
@@ -188,18 +189,19 @@ class MainActivity : BaseActivity() {
             }
         }
 
-        LaunchedEffect(currentRoute, homeState.running) {
-            activeRoute.value = currentRoute
-            if (currentRoute != ROUTE_HOME && routeTestState.isOpen) {
+        LaunchedEffect(destinationRoute, homeState.running) {
+            val route = destinationRoute ?: return@LaunchedEffect
+            activeRoute.value = route
+            if (route != ROUTE_HOME && routeTestState.isOpen) {
                 dismissRouteTest()
             }
-            if (currentRoute != ROUTE_PROXY && proxyUiState.value.expandedGroups.isNotEmpty()) {
+            if (route != ROUTE_PROXY && proxyUiState.value.expandedGroups.isNotEmpty()) {
                 proxyUiState.value = proxyUiState.value.copy(expandedGroups = emptyMap())
             }
-            if (currentRoute in PERSISTED_MAIN_ROUTES) {
-                uiStore.lastMainRoute = currentRoute
+            if (route in PERSISTED_MAIN_ROUTES) {
+                uiStore.lastMainRoute = route
             }
-            if (currentRoute == ROUTE_CONNECTIONS) refreshConnections()
+            if (route == ROUTE_CONNECTIONS) refreshConnections()
         }
 
         Scaffold(
@@ -799,12 +801,12 @@ class MainActivity : BaseActivity() {
         requestedRoute.value = routeFromIntent(intent)
     }
 
-    private fun routeFromIntent(intent: Intent): String =
+    private fun routeFromIntent(intent: Intent): String? =
         intent.getStringExtra(EXTRA_TOP_LEVEL_ROUTE)
             ?.takeIf { it in TOP_LEVEL_ROUTES }
             ?: if (intent.action == Intent.ACTION_APPLICATION_PREFERENCES ||
                 intent.action == "android.service.quicksettings.action.QS_TILE_PREFERENCES"
-            ) ROUTE_SETTINGS else ROUTE_HOME
+            ) ROUTE_SETTINGS else null
 
     private fun setupShortcuts() {
         if (uiStore.hideAppIcon) return
