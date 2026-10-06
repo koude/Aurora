@@ -367,5 +367,22 @@
     <string name="aurora_per_app_selected_only">只看已选</string>
     <string name="aurora_files_empty">此目录为空</string>
     <string name="aurora_files_import">导入文件</string>
+    <string name="aurora_network_connection">连接</string>
+    <string name="aurora_network_vpn_settings">VPN 设置</string>
+    <string name="aurora_network_vpn_traffic">VPN 流量处理</string>
+    <string name="aurora_network_advanced">高级兼容</string>
+    <string name="aurora_network_stop_to_edit">停止代理后可修改网络设置</string>
+    <string name="aurora_network_vpn_required">以下选项仅在自动接管（VPN）模式下可用</string>
+    <string name="aurora_network_dns_capture">接管 DNS</string>
+    <string name="aurora_network_system_http_proxy">系统 HTTP 代理</string>
+    <string name="aurora_network_allow_app_bypass">允许应用自行绕过 VPN</string>
+    <string name="aurora_proxy_method">代理方式</string>
+    <string name="aurora_proxy_method_auto">自动接管（VPN）</string>
+    <string name="aurora_proxy_method_manual">手动设置代理</string>
+    <string name="aurora_proxy_method_auto_summary">推荐 · 无需逐个应用设置代理</string>
+    <string name="aurora_proxy_method_manual_summary">仅供手动配置代理的应用使用</string>
+    <string name="aurora_proxy_method_manual_warning_title">切换为手动设置代理？</string>
+    <string name="aurora_proxy_method_manual_warning">Aurora 将不再通过 VPN 接管应用流量。仅当当前配置开放代理端口、应用也手动设置了代理地址与端口时，该应用才会使用 Aurora。</string>
+    <string name="aurora_proxy_method_manual_confirm">仍要切换</string>
     <string name="aurora_per_app_no_matches">没有匹配的应用</string>
 </resources>

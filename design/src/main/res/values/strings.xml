@@ -463,5 +463,22 @@
     <string name="aurora_per_app_selected_only">Selected only</string>
     <string name="aurora_files_empty">This folder is empty</string>
     <string name="aurora_files_import">Import file</string>
+    <string name="aurora_network_connection">Connection</string>
+    <string name="aurora_network_vpn_settings">VPN settings</string>
+    <string name="aurora_network_vpn_traffic">VPN traffic</string>
+    <string name="aurora_network_advanced">Advanced compatibility</string>
+    <string name="aurora_network_stop_to_edit">Stop the proxy to change network settings</string>
+    <string name="aurora_network_vpn_required">These options require automatic VPN capture</string>
+    <string name="aurora_network_dns_capture">Capture DNS</string>
+    <string name="aurora_network_system_http_proxy">System HTTP proxy</string>
+    <string name="aurora_network_allow_app_bypass">Allow apps to bypass VPN themselves</string>
+    <string name="aurora_proxy_method">Proxy method</string>
+    <string name="aurora_proxy_method_auto">Automatic capture (VPN)</string>
+    <string name="aurora_proxy_method_manual">Manual proxy setup</string>
+    <string name="aurora_proxy_method_auto_summary">Recommended · No per-app proxy setup needed</string>
+    <string name="aurora_proxy_method_manual_summary">Only apps configured to use a proxy</string>
+    <string name="aurora_proxy_method_manual_warning_title">Switch to manual proxy setup?</string>
+    <string name="aurora_proxy_method_manual_warning">Aurora will no longer capture app traffic through VPN. Apps can use Aurora only if they are configured with a proxy address and port, and the current profile exposes a proxy port.</string>
+    <string name="aurora_proxy_method_manual_confirm">Switch anyway</string>
     <string name="aurora_per_app_no_matches">No matching apps</string>
 </resources>
