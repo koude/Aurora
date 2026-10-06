@@ -80,6 +80,8 @@ import com.koude.aurora.ui.proxy.ProxyGroupUiState
 import com.koude.aurora.ui.proxy.ProxyRouteUiState
 import com.koude.aurora.ui.proxy.ProxyScreen
 import com.koude.aurora.ui.proxy.ProxyUiState
+import com.koude.aurora.ui.proxy.expandedProxyGroup
+import com.koude.aurora.ui.proxy.expandedProxyGroupsForRoute
 import com.koude.aurora.ui.settings.SettingsScreen
 import io.github.g00fy2.quickie.QRResult
 import io.github.g00fy2.quickie.ScanQRCode
@@ -205,8 +207,11 @@ class MainActivity : BaseActivity() {
             if (route != ROUTE_HOME && routeTestState.isOpen) {
                 dismissRouteTest()
             }
-            if (route != ROUTE_PROXY && proxyUiState.value.expandedGroups.isNotEmpty()) {
-                proxyUiState.value = proxyUiState.value.copy(expandedGroups = emptyMap())
+            val expandedGroups = expandedProxyGroupsForRoute(
+                route, ROUTE_PROXY, proxyUiState.value.expandedGroups,
+            )
+            if (expandedGroups != proxyUiState.value.expandedGroups) {
+                proxyUiState.value = proxyUiState.value.copy(expandedGroups = expandedGroups)
             }
             if (route in PERSISTED_MAIN_ROUTES) {
                 uiStore.lastMainRoute = route
@@ -508,7 +513,7 @@ class MainActivity : BaseActivity() {
     }
 
     private fun setProxyGroupExpanded(name: String, expanded: Boolean) {
-        val expandedGroups = if (expanded) mapOf(name to true) else emptyMap()
+        val expandedGroups = expandedProxyGroup(name, expanded)
         proxyUiState.value = proxyUiState.value.copy(expandedGroups = expandedGroups)
     }
 
