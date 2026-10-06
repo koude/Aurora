@@ -22,30 +22,33 @@ UI engineering, not a source for VPN or proxy business logic.
 Data flows upward. User actions flow downward. Compose code must not call Binder interfaces,
 activities, databases or the mihomo runtime directly.
 
-## Module migration map
+## Current state (2026-10-07)
 
-- `:app`: single-activity application shell and top-level navigation.
-- `:designsystem`: Aurora Material 3 tokens and reusable Compose components.
-- Future `:data`: repository implementations and service adapters.
-- Future feature modules: home, proxy, profiles and settings.
-- Legacy `:design`: XML/Data Binding screens retained only until their Compose replacements ship.
-- Existing `:service`: retained first, then simplified behind repositories without changing behavior.
-- Existing `:core`: retained unchanged.
+- `:app` has a Compose single-activity shell. Home, Proxy, Connections and Settings are the four
+  peer destinations. Profiles is a child destination reached from Settings.
+- `:designsystem` supplies Material 3 theme tokens and reusable components.
+- Home, Profiles and Connections have ViewModels. Connection queries/closing and profile import
+  have repository or coordinator boundaries with unit tests. Proxy presentation and several
+  runtime/settings actions are still coordinated by `MainActivity`.
+- The existing `:service` and `:core` runtime remain in use. This is an incremental migration,
+  not a replacement of the mihomo engine or VPN service.
+- Legacy resources must be removed only when their remaining references have been audited.
 
-## Migration order
+## Remaining migration order
 
-1. Establish the Compose design system and dependency baseline.
-2. Add repository contracts and adapters around existing service/Binder calls.
-3. Build a single-activity Compose shell with four parallel top-level destinations.
-4. Migrate Profiles first because its service operations and modal navigation are well bounded.
-5. Migrate Home, Proxy and Settings in that order.
-6. Migrate secondary screens and replace activity transitions with destination or modal semantics.
-7. Remove legacy Data Binding layouts and obsolete activities only after behavior parity tests pass.
-8. Add screenshot, ViewModel, repository and navigation tests; then add baseline profiles.
+1. Preserve the regression baseline for navigation, profile import/rollback, connections and
+   proxy-group expansion; add tests whenever a runtime action is moved.
+2. Extract the remaining Proxy and settings orchestration from `MainActivity` in small,
+   behavior-preserving slices. Keep Binder/service interactions behind adapters.
+3. Add UI/screenshot coverage for the four top-level destinations and critical sheets.
+4. Audit remaining legacy resources and remove only proven-unreferenced assets and configuration.
+5. Profile startup and scrolling before considering module splits or new dependencies.
 
 ## Navigation semantics
 
-- Home, Proxy, Profiles and Settings are peer destinations and never animate like child pages.
+- Home, Proxy, Connections and Settings are peer destinations and never animate like child pages.
+- Profiles is a Settings child destination; returning to it must not overwrite the remembered
+  top-level destination.
 - Short input or source-selection tasks use Material bottom sheets or dialogs.
 - System-owned tasks, such as choosing a local file, use the Android system picker.
 - Advanced editing and detail views are child destinations and may use forward/back transitions.
@@ -66,3 +69,10 @@ in the app drawer. The option is hidden from users who have not enabled it. User
 in an earlier release retain a recovery action in General settings to restore the launcher alias.
 Do not advertise this as a working privacy feature until launcher behavior and recovery are
 validated on supported devices.
+
+## Other deferred features
+
+- In-app editing of proxy strategy groups/configuration is not part of the present migration.
+- Connection-to-app attribution requires a reliable Android-side source before it can be
+  advertised as exact; current labels are best effort.
+- TLS interception/MITM is out of scope.

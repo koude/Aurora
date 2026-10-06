@@ -73,6 +73,8 @@ import com.koude.aurora.ui.connections.ConnectionsScreen
 import com.koude.aurora.ui.connections.ConnectionsViewModel
 import com.koude.aurora.ui.home.HomeScreen
 import com.koude.aurora.ui.home.HomeViewModel
+import com.koude.aurora.ui.navigation.initialMainRoute
+import com.koude.aurora.ui.navigation.persistedMainRoutes
 import com.koude.aurora.ui.profiles.ProfilesScreen
 import com.koude.aurora.ui.profiles.ProfileImportProgress
 import com.koude.aurora.ui.profiles.ProfilesViewModel
@@ -179,7 +181,7 @@ class MainActivity : BaseActivity() {
     private fun AuroraApp() {
         val navController = rememberNavController()
         val startDestination = remember {
-            uiStore.lastMainRoute.takeIf { it in PERSISTED_MAIN_ROUTES } ?: ROUTE_HOME
+            initialMainRoute(uiStore.lastMainRoute)
         }
         val backStackEntry by navController.currentBackStackEntryAsState()
         val destinationRoute = backStackEntry?.destination?.route
@@ -210,7 +212,7 @@ class MainActivity : BaseActivity() {
             if (expandedGroups != proxyUiState.value.expandedGroups) {
                 proxyUiState.value = proxyUiState.value.copy(expandedGroups = expandedGroups)
             }
-            if (route in PERSISTED_MAIN_ROUTES) {
+            if (route in persistedMainRoutes) {
                 uiStore.lastMainRoute = route
             }
             if (route == ROUTE_CONNECTIONS) connectionsViewModel.refresh(clashRunning)
@@ -798,7 +800,6 @@ class MainActivity : BaseActivity() {
         const val ROUTE_PROFILES = "profiles"
         const val ROUTE_SETTINGS = "settings"
         private val TOP_LEVEL_ROUTES = setOf(ROUTE_HOME, ROUTE_PROXY, ROUTE_CONNECTIONS, ROUTE_PROFILES, ROUTE_SETTINGS)
-        private val PERSISTED_MAIN_ROUTES = setOf(ROUTE_HOME, ROUTE_PROXY, ROUTE_CONNECTIONS, ROUTE_SETTINGS)
     }
 }
 
