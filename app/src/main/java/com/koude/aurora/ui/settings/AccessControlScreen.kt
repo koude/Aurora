@@ -89,6 +89,7 @@ fun AccessControlScreen(
     var searchText by remember { mutableStateOf("") }
     var selectedOnly by remember { mutableStateOf(false) }
     var menuVisible by remember { mutableStateOf(false) }
+    var bulkDialog by remember { mutableStateOf(false) }
     var sortDialog by remember { mutableStateOf(false) }
     var confirmDiscard by remember { mutableStateOf(false) }
     val emptyWhitelist = mode == AccessControlMode.AcceptSelected && selectedPackages.isEmpty()
@@ -117,19 +118,12 @@ fun AccessControlScreen(
                     IconButton(onClick = { searchVisible = !searchVisible; searchText = "" }) {
                         Icon(Icons.Default.Search, contentDescription = stringResource(DesignR.string.search))
                     }
-                    IconButton(onClick = { menuVisible = true }) {
+                    IconButton(onClick = { menuVisible = true }, enabled = !applying) {
                         Icon(Icons.Default.MoreVert, contentDescription = stringResource(DesignR.string.more))
                     }
                     DropdownMenu(expanded = menuVisible, onDismissRequest = { menuVisible = false }) {
-                        DropdownMenuItem(text = { Text(stringResource(DesignR.string.select_all)) }, onClick = { menuVisible = false; onSelectAll() })
-                        DropdownMenuItem(text = { Text(stringResource(DesignR.string.select_none)) }, onClick = { menuVisible = false; onSelectNone() })
-                        DropdownMenuItem(text = { Text(stringResource(DesignR.string.select_invert)) }, onClick = { menuVisible = false; onSelectInvert() })
-                        HorizontalDivider()
-                        DropdownMenuItem(
-                            text = { Text(stringResource(DesignR.string.system_apps) + if (showSystemApps) " ✓" else "") },
-                            onClick = { menuVisible = false; onShowSystemAppsChanged(!showSystemApps) },
-                        )
-                        DropdownMenuItem(text = { Text(stringResource(DesignR.string.sort)) }, onClick = { menuVisible = false; sortDialog = true })
+                        DropdownMenuItem(text = { Text(stringResource(DesignR.string.aurora_per_app_batch)) }, onClick = { menuVisible = false; bulkDialog = true })
+                        DropdownMenuItem(text = { Text(stringResource(DesignR.string.aurora_per_app_list_options)) }, onClick = { menuVisible = false; sortDialog = true })
                         HorizontalDivider()
                         DropdownMenuItem(text = { Text(stringResource(DesignR.string.import_from_clipboard)) }, onClick = { menuVisible = false; onImport() })
                         DropdownMenuItem(text = { Text(stringResource(DesignR.string.export_to_clipboard)) }, onClick = { menuVisible = false; onExport() })
@@ -140,6 +134,14 @@ fun AccessControlScreen(
         bottomBar = {
             Column(Modifier.navigationBarsPadding()) {
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                if (emptyWhitelist) {
+                    Text(
+                        stringResource(DesignR.string.aurora_per_app_whitelist_empty),
+                        modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 10.dp),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
                 Button(
                     onClick = onApply,
                     enabled = hasUnsavedChanges && !emptyWhitelist && !applying,
@@ -156,11 +158,21 @@ fun AccessControlScreen(
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
             ) {
                 Column(Modifier.padding(16.dp)) {
-                    Text(
-                        stringResource(DesignR.string.aurora_per_app_mode),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            stringResource(DesignR.string.aurora_per_app_mode),
+                            modifier = Modifier.weight(1f),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                        Text(
+                            stringResource(if (mode == AccessControlMode.AcceptSelected)
+                                DesignR.string.aurora_per_app_whitelist_summary else DesignR.string.aurora_per_app_blacklist_summary),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                        )
+                    }
                     Spacer(Modifier.height(12.dp))
                     SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
                         listOf(
@@ -168,6 +180,7 @@ fun AccessControlScreen(
                             AccessControlMode.AcceptSelected to DesignR.string.aurora_per_app_whitelist,
                         ).forEachIndexed { index, (value, label) ->
                             SegmentedButton(
+                                enabled = !applying,
                                 selected = if (value == AccessControlMode.DenySelected)
                                     mode != AccessControlMode.AcceptSelected else mode == value,
                                 onClick = { onModeChanged(value) },
@@ -176,16 +189,6 @@ fun AccessControlScreen(
                             )
                         }
                     }
-                    Spacer(Modifier.height(10.dp))
-                    Text(
-                        text = stringResource(when {
-                            emptyWhitelist -> DesignR.string.aurora_per_app_whitelist_empty
-                            mode == AccessControlMode.AcceptSelected -> DesignR.string.aurora_per_app_whitelist_summary
-                            else -> DesignR.string.aurora_per_app_blacklist_summary
-                        }),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = if (emptyWhitelist) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
                 }
             }
             Row(
@@ -228,7 +231,7 @@ fun AccessControlScreen(
                 }
                 items(visibleApps, key = { it.packageName }) { app ->
                     Row(
-                        modifier = Modifier.fillMaxWidth().clickable { onToggleApp(app.packageName) }.padding(vertical = 10.dp),
+                        modifier = Modifier.fillMaxWidth().clickable(enabled = !applying) { onToggleApp(app.packageName) }.padding(vertical = 10.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         AppIcon(app.icon)
@@ -243,19 +246,49 @@ fun AccessControlScreen(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
-                        Checkbox(checked = app.packageName in selectedPackages, onCheckedChange = { onToggleApp(app.packageName) })
+                        Checkbox(checked = app.packageName in selectedPackages, enabled = !applying, onCheckedChange = { onToggleApp(app.packageName) })
                     }
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 }
             }
         }
     }
+    if (bulkDialog) {
+        AlertDialog(
+            onDismissRequest = { bulkDialog = false },
+            title = { Text(stringResource(DesignR.string.aurora_per_app_batch)) },
+            text = {
+                Column {
+                    listOf(
+                        DesignR.string.select_none to onSelectNone,
+                        DesignR.string.select_all to onSelectAll,
+                        DesignR.string.select_invert to onSelectInvert,
+                    ).forEach { (label, action) ->
+                        Text(
+                            stringResource(label),
+                            modifier = Modifier.fillMaxWidth().clickable { bulkDialog = false; action() }.padding(vertical = 14.dp),
+                            style = MaterialTheme.typography.bodyLarge,
+                        )
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { bulkDialog = false }) { Text(stringResource(DesignR.string.close)) } },
+        )
+    }
     if (sortDialog) {
         AlertDialog(
             onDismissRequest = { sortDialog = false },
-            title = { Text(stringResource(DesignR.string.sort)) },
+            title = { Text(stringResource(DesignR.string.aurora_per_app_list_options)) },
             text = {
                 Column {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().clickable { onShowSystemAppsChanged(!showSystemApps) }.padding(vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(stringResource(DesignR.string.system_apps), modifier = Modifier.weight(1f))
+                        Checkbox(checked = showSystemApps, onCheckedChange = onShowSystemAppsChanged)
+                    }
+                    HorizontalDivider()
                     AppInfoSort.values().forEach { value ->
                         Row(
                             modifier = Modifier.fillMaxWidth().clickable { onSortChanged(value); sortDialog = false }.padding(vertical = 6.dp),

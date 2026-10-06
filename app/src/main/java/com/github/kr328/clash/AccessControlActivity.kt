@@ -6,6 +6,7 @@ import android.content.ClipboardManager
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
+import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.mutableStateOf
 import androidx.core.content.getSystemService
@@ -20,16 +21,17 @@ import com.github.kr328.clash.util.stopClashService
 import com.koude.aurora.designsystem.theme.AuroraTheme
 import com.koude.aurora.ui.settings.AccessControlScreen
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 
 class AccessControlActivity : BaseActivity() {
     private val mode = mutableStateOf(AccessControlMode.DenySelected)
     private val selectedPackages = mutableStateOf<Set<String>>(emptySet())
     private val appList = mutableStateOf<List<AppInfo>>(emptyList())
     private val applying = mutableStateOf(false)
-    private var applyRequested = false
 
     override suspend fun main() {
         val service = ServiceStore(this)
@@ -38,28 +40,9 @@ class AccessControlActivity : BaseActivity() {
         // The legacy "all apps" mode is equivalent to an empty exclusion list.
         mode.value = if (originalMode == AccessControlMode.AcceptAll) AccessControlMode.DenySelected else originalMode
         selectedPackages.value = if (originalMode == AccessControlMode.AcceptAll) emptySet() else originalPackages
-        val initialMode = mode.value
-        val initialPackages = selectedPackages.value
+        val savedMode = mutableStateOf(mode.value)
+        val savedPackages = mutableStateOf(selectedPackages.value)
         appList.value = loadApps(selectedPackages.value)
-
-        defer {
-            if (!applyRequested) return@defer
-            withContext(Dispatchers.IO) {
-                val selected = selectedPackages.value
-                val selectedMode = mode.value
-                val changed = selectedMode != initialMode || selected != initialPackages
-                if (!changed) return@withContext
-                val behaviorChanged = !(originalMode == AccessControlMode.AcceptAll &&
-                    selectedMode == AccessControlMode.DenySelected && selected.isEmpty())
-                service.accessControlMode = selectedMode
-                service.accessControlPackages = selected
-                if (clashRunning && behaviorChanged) {
-                    stopClashService()
-                    while (clashRunning) delay(200)
-                    startClashService()
-                }
-            }
-        }
 
         setContent {
             AuroraTheme {
@@ -67,15 +50,17 @@ class AccessControlActivity : BaseActivity() {
                     apps = appList.value,
                     mode = mode.value,
                     selectedPackages = selectedPackages.value,
-                    hasUnsavedChanges = mode.value != initialMode || selectedPackages.value != initialPackages,
+                    hasUnsavedChanges = mode.value != savedMode.value || selectedPackages.value != savedPackages.value,
                     applying = applying.value,
                     showSystemApps = uiStore.accessControlSystemApp,
                     sort = uiStore.accessControlSort,
                     reverse = uiStore.accessControlReverse,
-                    onModeChanged = { mode.value = it },
+                    onModeChanged = { if (!applying.value) mode.value = it },
                     onToggleApp = { packageName ->
-                        selectedPackages.value = selectedPackages.value.toMutableSet().apply {
-                            if (!add(packageName)) remove(packageName)
+                        if (!applying.value) {
+                            selectedPackages.value = selectedPackages.value.toMutableSet().apply {
+                                if (!add(packageName)) remove(packageName)
+                            }
                         }
                     },
                     onSelectAll = { selectedPackages.value = appList.value.map(AppInfo::packageName).toSet() },
@@ -97,9 +82,53 @@ class AccessControlActivity : BaseActivity() {
                     onExport = ::exportPackages,
                     onApply = {
                         if (!applying.value && (mode.value != AccessControlMode.AcceptSelected || selectedPackages.value.isNotEmpty())) {
-                            applyRequested = true
+                            val requestedMode = mode.value
+                            val requestedPackages = selectedPackages.value.toSet()
                             applying.value = true
-                            finish()
+                            launch {
+                                var stored = false
+                                var failure: Throwable? = null
+                                try {
+                                    withContext(NonCancellable + Dispatchers.IO) {
+                                        val previousMode = service.accessControlMode
+                                        val previousPackages = service.accessControlPackages.toSet()
+                                        val behaviorChanged = previousMode != requestedMode || previousPackages != requestedPackages
+                                        service.accessControlMode = requestedMode
+                                        service.accessControlPackages = requestedPackages
+                                        stored = true
+                                        if (clashRunning && behaviorChanged &&
+                                            !(previousMode == AccessControlMode.AcceptAll &&
+                                                requestedMode == AccessControlMode.DenySelected && requestedPackages.isEmpty())) {
+                                            stopClashService()
+                                            val stopped = withTimeoutOrNull(15_000) {
+                                                while (clashRunning) delay(200)
+                                                true
+                                            } == true
+                                            if (!stopped) error("VPN stop timed out")
+                                            if (startClashService() != null) error("VPN permission required")
+                                        }
+                                    }
+                                } catch (error: Exception) {
+                                    failure = error
+                                } finally {
+                                    if (stored) {
+                                        savedMode.value = requestedMode
+                                        savedPackages.value = requestedPackages
+                                        try {
+                                            appList.value = withContext(NonCancellable) { loadApps(requestedPackages) }
+                                        } catch (_: Exception) {
+                                            // The saved selection is still valid if refreshing the list fails.
+                                        }
+                                    }
+                                    applying.value = false
+                                    Toast.makeText(
+                                        this@AccessControlActivity,
+                                        if (failure == null) "已保存并应用" else if (stored)
+                                            "名单已保存，代理重启失败，请手动重新连接" else "保存失败，请重试",
+                                        Toast.LENGTH_LONG,
+                                    ).show()
+                                }
+                            }
                         }
                     },
                     onBack = ::finish,

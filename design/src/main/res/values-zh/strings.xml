@@ -348,9 +348,11 @@
     <string name="aurora_per_app_proxy">分应用代理</string>
     <string name="aurora_per_app_blacklist">黑名单</string>
     <string name="aurora_per_app_whitelist">白名单</string>
-    <string name="aurora_per_app_blacklist_summary">选中的应用绕过 Aurora，其余应用经过 Aurora。</string>
-    <string name="aurora_per_app_whitelist_summary">只有选中的应用经过 Aurora，其余应用绕过 Aurora。</string>
-    <string name="aurora_per_app_whitelist_empty">请至少选择一个应用，再保存白名单。</string>
+    <string name="aurora_per_app_blacklist_summary">绕过选中的应用</string>
+    <string name="aurora_per_app_whitelist_summary">绕过未选的应用</string>
+    <string name="aurora_per_app_whitelist_empty">请至少选择一个应用，再应用白名单。</string>
+    <string name="aurora_per_app_batch">批量选择</string>
+    <string name="aurora_per_app_list_options">列表显示</string>
     <string name="aurora_per_app_apply">保存并应用</string>
     <string name="aurora_per_app_applying">正在应用…</string>
     <string name="aurora_per_app_discard_title">放弃更改？</string>
