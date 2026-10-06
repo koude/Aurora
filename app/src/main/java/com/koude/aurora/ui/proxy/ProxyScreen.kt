@@ -379,11 +379,11 @@ private fun ProxyGroupCard(
             HorizontalDivider(
                 color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = .75f),
             )
-            Column(Modifier.padding(4.dp)) {
+            Column {
                 visibleProxies.forEachIndexed { index, proxy ->
                     if (index > 0) {
                         HorizontalDivider(
-                            modifier = Modifier.padding(horizontal = 12.dp),
+                            modifier = Modifier.padding(horizontal = 20.dp),
                             color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = .32f),
                         )
                     }
@@ -509,11 +509,10 @@ private fun ProxyCard(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(AuroraCardStyle.itemShape())
-            .background(itemColor, AuroraCardStyle.itemShape())
+            .background(itemColor)
             .clickable(enabled = enabled, onClick = onClick)
             .heightIn(min = 48.dp)
-            .padding(horizontal = 16.dp, vertical = 10.dp),
+            .padding(horizontal = 20.dp, vertical = 10.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
