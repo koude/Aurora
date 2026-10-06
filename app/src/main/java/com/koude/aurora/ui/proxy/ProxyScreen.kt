@@ -1,6 +1,8 @@
 package com.koude.aurora.ui.proxy
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -11,10 +13,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.only
@@ -22,7 +24,10 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
@@ -323,32 +328,49 @@ private fun ProxyGroupCard(
     ) {
         Column {
             Row(
-                modifier = Modifier.fillMaxWidth().clickable(onClick = onExpand).padding(horizontal = 16.dp, vertical = 12.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(onClick = onExpand)
+                    .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                    .padding(horizontal = 14.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 val current = group.nestedRoutes[group.selectedProxy]?.names?.lastOrNull()
                     ?: group.selectedProxy
                 BoxWithConstraints(Modifier.weight(1f)) {
                     val availableWidth = maxWidth
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         Text(
-                            text = if (current.isBlank()) group.name else "${group.name} → $current",
-                            modifier = Modifier.weight(1f),
+                            text = group.name,
+                            modifier = Modifier.weight(.42f),
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Medium,
+                            fontWeight = FontWeight.SemiBold,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
-                        if (availableWidth >= 270.dp) {
-                            Text(
-                                displayGroupType(group.type),
-                                modifier = Modifier.padding(start = 8.dp),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = .72f),
-                                maxLines = 1,
-                                softWrap = false,
-                            )
+                        Text(
+                            text = if (current.isBlank()) "" else "→ $current",
+                            modifier = Modifier.weight(1f),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        if (availableWidth >= 205.dp) {
+                            Surface(
+                                shape = MaterialTheme.shapes.small,
+                                color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                                contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            ) {
+                                Text(
+                                    displayGroupType(group.type),
+                                    modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    maxLines = 1,
+                                    softWrap = false,
+                                )
+                            }
                         }
                     }
                 }
@@ -357,12 +379,16 @@ private fun ProxyGroupCard(
                         ProxyDelayText(group.activeDelay)
                     }
                 }
+                Icon(
+                    imageVector = if (expanded) Icons.Default.KeyboardArrowDown else Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
             if (expanded) {
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = .55f))
                 Column(
-                    Modifier.padding(start = 10.dp, end = 10.dp, bottom = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                    Modifier.padding(start = 14.dp, end = 10.dp, top = 4.dp, bottom = 8.dp),
                 ) {
                     visibleProxies.forEach { proxy ->
                         ProxyCard(
@@ -481,67 +507,43 @@ private fun ProxyCard(
     showDelay: Boolean,
     onClick: () -> Unit,
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        onClick = onClick,
-        enabled = enabled,
-        shape = AuroraCardStyle.itemShape(),
-        colors = CardDefaults.cardColors(
-            containerColor = if (selected) MaterialTheme.colorScheme.primaryContainer
-            else AuroraCardStyle.itemColor(),
-            contentColor = if (selected) MaterialTheme.colorScheme.onPrimaryContainer
-            else MaterialTheme.colorScheme.onSurface,
-        ),
+    val routeNames = if (proxy.isGroup) route?.names else null
+    val displayName = routeNames?.joinToString(" → ") ?: if (proxy.isGroup) proxy.name else proxy.title
+    val delay = if (proxy.isGroup) route?.delay ?: proxy.delay else proxy.delay
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 48.dp)
+            .clip(MaterialTheme.shapes.small)
+            .clickable(enabled = enabled, onClick = onClick)
+            .padding(horizontal = 10.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 10.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            if (selected) {
-                Box(
-                    Modifier
-                        .size(width = 4.dp, height = 34.dp)
-                        .padding(vertical = 1.dp),
-                ) {
-                    Surface(Modifier.fillMaxSize(), shape = MaterialTheme.shapes.extraSmall, color = MaterialTheme.colorScheme.primary) {}
-                }
+        Box(Modifier.size(18.dp), contentAlignment = Alignment.Center) {
+            if (selecting) {
+                CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
+            } else if (selected) {
+                Icon(
+                    imageVector = Icons.Default.Check,
+                    contentDescription = "当前选择",
+                    modifier = Modifier.size(17.dp),
+                    tint = MaterialTheme.colorScheme.primary,
+                )
             }
-            val routeNames = if (proxy.isGroup) route?.names else null
-            Text(
-                text = routeNames?.joinToString(" → ") ?: if (proxy.isGroup) proxy.name else proxy.title,
-                modifier = Modifier.weight(1f),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            if (!proxy.isGroup) {
-                val subtitle = listOf(
-                    proxy.subtitle.takeIf { it.isNotBlank() && it != proxy.type },
-                    shortProtocol(proxy.type),
-                ).filterNotNull().filter(String::isNotBlank).distinct().joinToString(" · ")
-                if (subtitle.isNotBlank()) {
-                    Text(
-                        text = subtitle,
-                        modifier = Modifier.widthIn(max = 104.dp),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        softWrap = false,
-                    )
-                }
-            }
-            val delay = if (proxy.isGroup) route?.delay ?: proxy.delay else proxy.delay
-            Box(Modifier.width(64.dp), contentAlignment = Alignment.CenterEnd) {
-                if (selecting) {
-                    CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
-                } else if (showDelay && (delay == 65535 || delay in 1..65534)) {
-                    ProxyDelayText(delay)
-                }
+        }
+        Text(
+            text = displayName,
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.bodyLarge,
+            fontWeight = if (selected) FontWeight.Medium else FontWeight.Normal,
+            color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Box(Modifier.width(64.dp), contentAlignment = Alignment.CenterEnd) {
+            if (showDelay && (delay == 65535 || delay in 1..65534)) {
+                ProxyDelayText(delay)
             }
         }
     }
@@ -564,13 +566,6 @@ private fun ProxyDelayText(delay: Int) {
         maxLines = 1,
         softWrap = false,
     )
-}
-
-private fun shortProtocol(type: String): String = when (type.lowercase()) {
-    "shadowsocks" -> "SS"
-    "shadowsocksr" -> "SSR"
-    "hysteria2" -> "Hy2"
-    else -> type
 }
 
 private fun displayGroupType(type: String): String = when (type.lowercase()) {
