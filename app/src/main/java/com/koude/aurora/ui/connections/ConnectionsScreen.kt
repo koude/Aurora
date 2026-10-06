@@ -57,6 +57,7 @@ data class ConnectionsUiState(
     val serviceRunning: Boolean = false,
     val loading: Boolean = false,
     val connections: List<ConnectionInfo> = emptyList(),
+    val appLabels: Map<String, String> = emptyMap(),
     val errorMessage: String? = null,
 )
 
@@ -72,8 +73,8 @@ fun ConnectionsScreen(
     var searchVisible by remember { mutableStateOf(false) }
     var pendingCloseIds by remember { mutableStateOf<List<String>?>(null) }
     var selectedConnection by remember { mutableStateOf<ConnectionInfo?>(null) }
-    val filtered = remember(state.connections, query) {
-        filterConnections(state.connections, query)
+    val filtered = remember(state.connections, state.appLabels, query) {
+        filterConnections(state.connections, query, state.appLabels)
     }
 
     Scaffold(
@@ -165,6 +166,7 @@ fun ConnectionsScreen(
                     items(filtered, key = ConnectionInfo::id) { connection ->
                         ConnectionCard(
                             connection = connection,
+                            appLabel = state.appLabels[connection.process],
                             onClick = { selectedConnection = connection },
                             onClose = { onCloseConnection(connection.id) },
                         )
@@ -189,11 +191,19 @@ fun ConnectionsScreen(
         )
     }
     selectedConnection?.let { connection ->
-        ConnectionDetailsSheet(connection, onDismiss = { selectedConnection = null })
+        ConnectionDetailsSheet(
+            connection,
+            appLabel = state.appLabels[connection.process],
+            onDismiss = { selectedConnection = null },
+        )
     }
 }
 
-internal fun filterConnections(connections: List<ConnectionInfo>, query: String): List<ConnectionInfo> {
+internal fun filterConnections(
+    connections: List<ConnectionInfo>,
+    query: String,
+    appLabels: Map<String, String> = emptyMap(),
+): List<ConnectionInfo> {
     val normalizedQuery = query.trim().lowercase()
     if (normalizedQuery.isEmpty()) return connections
     return connections.filter { connection ->
@@ -201,6 +211,7 @@ internal fun filterConnections(connections: List<ConnectionInfo>, query: String)
             connection.host,
             connection.destination,
             connection.process,
+            appLabels[connection.process] ?: "未知应用",
             connection.network,
             connection.rule,
             connection.rulePayload,
@@ -216,7 +227,7 @@ internal fun connectionRoutePath(connection: ConnectionInfo): String =
     connection.chains.asReversed().joinToString(" → ").ifBlank { "未知去向" }
 
 @Composable
-private fun ConnectionCard(connection: ConnectionInfo, onClick: () -> Unit, onClose: () -> Unit) {
+private fun ConnectionCard(connection: ConnectionInfo, appLabel: String?, onClick: () -> Unit, onClose: () -> Unit) {
     Card(
         onClick = onClick,
         shape = AuroraCardStyle.groupShape(),
@@ -270,16 +281,14 @@ private fun ConnectionCard(connection: ConnectionInfo, onClick: () -> Unit, onCl
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                 )
-                if (connection.process.isNotBlank()) {
-                    Text(
-                        text = "· ${connection.process}",
-                        modifier = Modifier.weight(1f),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
+                Text(
+                    text = "· ${appLabel ?: "未知应用"}",
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
             }
         }
     }
@@ -287,7 +296,7 @@ private fun ConnectionCard(connection: ConnectionInfo, onClick: () -> Unit, onCl
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ConnectionDetailsSheet(connection: ConnectionInfo, onDismiss: () -> Unit) {
+private fun ConnectionDetailsSheet(connection: ConnectionInfo, appLabel: String?, onDismiss: () -> Unit) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         containerColor = MaterialTheme.colorScheme.surface,
@@ -305,7 +314,10 @@ private fun ConnectionDetailsSheet(connection: ConnectionInfo, onDismiss: () -> 
                 fontWeight = FontWeight.SemiBold,
             )
             ConnectionDetailField("目标地址", connection.destination)
-            ConnectionDetailField("应用 / 进程", connection.process)
+            ConnectionDetailField("来源应用", appLabel ?: "未知应用")
+            if (connection.process.isNotBlank()) {
+                ConnectionDetailField("包名 / 进程", connection.process)
+            }
             ConnectionDetailField(
                 "命中规则",
                 listOf(connection.rule, connection.rulePayload).filter(String::isNotBlank).joinToString(" · "),
@@ -366,6 +378,7 @@ private fun ConnectionsScreenPreview() {
         ConnectionsScreen(
             state = ConnectionsUiState(
                 serviceRunning = true,
+                appLabels = mapOf("com.android.chrome" to "Chrome"),
                 connections = listOf(
                     ConnectionInfo(
                         id = "preview",

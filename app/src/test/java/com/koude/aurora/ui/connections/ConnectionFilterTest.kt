@@ -22,6 +22,10 @@ class ConnectionFilterTest {
         assertEquals(listOf("video"), filterConnections(connections, "video proxy").map(ConnectionInfo::id))
         assertEquals(listOf("ip"), filterConnections(connections, "203.0.113.7").map(ConnectionInfo::id))
         assertEquals(emptyList<String>(), filterConnections(connections, "unmatched").map(ConnectionInfo::id))
+        assertEquals(
+            listOf("github"),
+            filterConnections(connections, "浏览器", mapOf("Browser" to "浏览器")).map(ConnectionInfo::id),
+        )
     }
 
     @Test

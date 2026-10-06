@@ -51,6 +51,7 @@ import com.github.kr328.clash.common.util.setUUID
 import com.github.kr328.clash.common.util.ticker
 import com.github.kr328.clash.core.Clash
 import com.github.kr328.clash.core.model.FetchStatus
+import com.github.kr328.clash.core.model.ConnectionInfo
 import com.github.kr328.clash.core.model.Proxy
 import com.github.kr328.clash.core.model.ProxyGroup
 import com.github.kr328.clash.core.model.RoutePreview
@@ -65,6 +66,7 @@ import com.github.kr328.clash.util.stopClashService
 import com.github.kr328.clash.util.withClash
 import com.github.kr328.clash.util.withProfile
 import com.koude.aurora.designsystem.theme.AuroraTheme
+import com.koude.aurora.data.connections.AppLabelResolver
 import com.koude.aurora.ui.components.AuroraBottomNavigation
 import com.koude.aurora.ui.components.AuroraDestination
 import com.koude.aurora.ui.connections.ConnectionsScreen
@@ -82,6 +84,7 @@ import com.koude.aurora.ui.settings.SettingsScreen
 import io.github.g00fy2.quickie.QRResult
 import io.github.g00fy2.quickie.ScanQRCode
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -89,6 +92,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.selects.select
+import kotlinx.coroutines.withContext
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 import com.github.kr328.clash.design.R as DesignR
@@ -105,6 +109,12 @@ class MainActivity : BaseActivity() {
     private val testedActiveProxies = mutableSetOf<String>()
     private val proxyUiState = mutableStateOf(ProxyUiState())
     private val connectionsUiState = mutableStateOf(ConnectionsUiState())
+    private val appLabelResolver by lazy {
+        AppLabelResolver { packageName ->
+            val info = packageManager.getApplicationInfo(packageName, 0)
+            packageManager.getApplicationLabel(info).toString()
+        }
+    }
     private val errorDialogState = mutableStateOf<AuroraErrorDialogState?>(null)
     private val profileImportProgress = mutableStateOf<ProfileImportProgress?>(null)
     private var profileImportInProgress = false
@@ -465,13 +475,23 @@ class MainActivity : BaseActivity() {
             loading = current.connections.isEmpty(),
             errorMessage = null,
         )
-        runCatching { withClash { queryConnections().toList() } }
-            .onSuccess { connections ->
-                connectionsUiState.value = ConnectionsUiState(
-                    serviceRunning = true,
-                    connections = connections,
-                )
+        runCatching {
+            val connections = withClash { queryConnections().toList() }
+            val appLabels = withContext(Dispatchers.IO) {
+                connections.map(ConnectionInfo::process)
+                    .filter(String::isNotBlank)
+                    .distinct()
+                    .mapNotNull { packageName ->
+                        appLabelResolver.resolve(packageName)?.let { packageName to it }
+                    }
+                    .toMap()
             }
+            ConnectionsUiState(
+                serviceRunning = true,
+                connections = connections,
+                appLabels = appLabels,
+            )
+        }.onSuccess { connectionsUiState.value = it }
             .onFailure { error ->
                 connectionsUiState.value = connectionsUiState.value.copy(
                     serviceRunning = true,
