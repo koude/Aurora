@@ -264,24 +264,22 @@ private fun ConnectionCard(connection: ConnectionInfo, onClick: () -> Unit, onCl
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                if (connection.process.isNotBlank()) {
-                    Text(
-                        text = connection.process,
-                        modifier = Modifier.weight(1f),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                } else {
-                    Box(Modifier.weight(1f))
-                }
                 Text(
                     text = "↑ ${formatBytes(connection.uploaded)}   ↓ ${formatBytes(connection.downloaded)}",
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                 )
+                if (connection.process.isNotBlank()) {
+                    Text(
+                        text = "· ${connection.process}",
+                        modifier = Modifier.weight(1f),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
         }
     }
