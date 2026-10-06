@@ -356,4 +356,8 @@
     <string name="aurora_per_app_discard_title">放弃更改？</string>
     <string name="aurora_per_app_discard_summary">应用名单尚未保存。</string>
     <string name="aurora_per_app_discard">放弃</string>
+    <string name="aurora_per_app_mode">代理模式</string>
+    <string name="aurora_per_app_selected_count">已选 %1$d 个应用</string>
+    <string name="aurora_per_app_selected_only">只看已选</string>
+    <string name="aurora_per_app_no_matches">没有匹配的应用</string>
 </resources>

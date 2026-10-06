@@ -452,4 +452,8 @@
     <string name="aurora_per_app_discard_title">Discard changes?</string>
     <string name="aurora_per_app_discard_summary">Your app selection has not been saved.</string>
     <string name="aurora_per_app_discard">Discard</string>
+    <string name="aurora_per_app_mode">Proxy mode</string>
+    <string name="aurora_per_app_selected_count">%1$d apps selected</string>
+    <string name="aurora_per_app_selected_only">Selected only</string>
+    <string name="aurora_per_app_no_matches">No matching apps</string>
 </resources>
