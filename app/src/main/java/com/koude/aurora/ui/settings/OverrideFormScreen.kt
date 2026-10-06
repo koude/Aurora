@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.AlertDialog
@@ -20,6 +19,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
@@ -34,12 +34,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.github.kr328.clash.design.R as DesignR
 import com.koude.aurora.ui.components.AuroraDetailTopBar
+import com.koude.aurora.ui.components.AuroraCardStyle
 import com.koude.aurora.ui.components.AuroraSectionTitle
 
 enum class ConfigFieldEditor { Text, Lines, Choices }
@@ -110,23 +112,42 @@ fun OverrideFormScreen(
                 item(key = "section:$section") {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         AuroraSectionTitle(section, Modifier.padding(start = 4.dp))
-                        Card(shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
+                        Card(
+                            shape = AuroraCardStyle.groupShape(),
+                            colors = CardDefaults.cardColors(containerColor = AuroraCardStyle.groupColor()),
+                        ) {
                             Column {
                                 sectionActions.forEach { action ->
                                     ListItem(
                                         modifier = Modifier.fillMaxWidth().clickable { onAction(action.id) },
                                         headlineContent = { Text(action.title) },
                                         supportingContent = { Text(action.summary) },
+                                        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                                     )
-                                    if (sectionFields.isNotEmpty() || action != sectionActions.last()) HorizontalDivider(Modifier.padding(start = 16.dp))
+                                    if (sectionFields.isNotEmpty() || action != sectionActions.last()) {
+                                        HorizontalDivider(
+                                            modifier = Modifier.padding(start = 16.dp),
+                                            color = MaterialTheme.colorScheme.outlineVariant,
+                                        )
+                                    }
                                 }
                                 sectionFields.forEachIndexed { index, field ->
+                                    val headlineColor = if (field.enabled) MaterialTheme.colorScheme.onSurface
+                                    else MaterialTheme.colorScheme.onSurface.copy(alpha = .38f)
+                                    val supportingColor = if (field.enabled) MaterialTheme.colorScheme.onSurfaceVariant
+                                    else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = .38f)
                                     ListItem(
                                         modifier = Modifier.fillMaxWidth().clickable(enabled = field.enabled) { selected = field },
-                                        headlineContent = { Text(field.title) },
-                                        supportingContent = { Text(field.value, maxLines = 2) },
+                                        headlineContent = { Text(field.title, color = headlineColor) },
+                                        supportingContent = { Text(field.value, maxLines = 2, color = supportingColor) },
+                                        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                                     )
-                                    if (index != sectionFields.lastIndex) HorizontalDivider(Modifier.padding(start = 16.dp))
+                                    if (index != sectionFields.lastIndex) {
+                                        HorizontalDivider(
+                                            modifier = Modifier.padding(start = 16.dp),
+                                            color = MaterialTheme.colorScheme.outlineVariant,
+                                        )
+                                    }
                                 }
                             }
                         }
