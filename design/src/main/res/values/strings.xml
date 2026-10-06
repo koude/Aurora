@@ -449,6 +449,10 @@
     <string name="aurora_per_app_whitelist_empty">Select at least one app to apply the whitelist.</string>
     <string name="aurora_per_app_batch">Bulk selection</string>
     <string name="aurora_per_app_list_options">List options</string>
+    <string name="aurora_per_app_sort_by">Sort by</string>
+    <string name="aurora_per_app_sort_order">Sort order</string>
+    <string name="aurora_per_app_ascending">Ascending</string>
+    <string name="aurora_per_app_descending">Descending</string>
     <string name="aurora_per_app_apply">Save and apply</string>
     <string name="aurora_per_app_applying">Applying…</string>
     <string name="aurora_per_app_discard_title">Discard changes?</string>

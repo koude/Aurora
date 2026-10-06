@@ -352,7 +352,11 @@
     <string name="aurora_per_app_whitelist_summary">绕过未选的应用</string>
     <string name="aurora_per_app_whitelist_empty">请至少选择一个应用，再应用白名单。</string>
     <string name="aurora_per_app_batch">批量选择</string>
-    <string name="aurora_per_app_list_options">列表显示</string>
+    <string name="aurora_per_app_list_options">列表选项</string>
+    <string name="aurora_per_app_sort_by">排序方式</string>
+    <string name="aurora_per_app_sort_order">排序方向</string>
+    <string name="aurora_per_app_ascending">升序</string>
+    <string name="aurora_per_app_descending">降序</string>
     <string name="aurora_per_app_apply">保存并应用</string>
     <string name="aurora_per_app_applying">正在应用…</string>
     <string name="aurora_per_app_discard_title">放弃更改？</string>

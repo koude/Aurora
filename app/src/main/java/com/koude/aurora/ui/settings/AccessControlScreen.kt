@@ -5,6 +5,8 @@ import android.graphics.Canvas
 import android.graphics.drawable.Drawable
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -280,7 +282,7 @@ fun AccessControlScreen(
             onDismissRequest = { sortDialog = false },
             title = { Text(stringResource(DesignR.string.aurora_per_app_list_options)) },
             text = {
-                Column {
+                Column(Modifier.verticalScroll(rememberScrollState())) {
                     Row(
                         modifier = Modifier.fillMaxWidth().clickable { onShowSystemAppsChanged(!showSystemApps) }.padding(vertical = 6.dp),
                         verticalAlignment = Alignment.CenterVertically,
@@ -289,22 +291,38 @@ fun AccessControlScreen(
                         Checkbox(checked = showSystemApps, onCheckedChange = onShowSystemAppsChanged)
                     }
                     HorizontalDivider()
+                    Text(
+                        stringResource(DesignR.string.aurora_per_app_sort_by),
+                        modifier = Modifier.padding(top = 16.dp, bottom = 6.dp),
+                        style = MaterialTheme.typography.titleSmall,
+                    )
                     AppInfoSort.values().forEach { value ->
                         Row(
-                            modifier = Modifier.fillMaxWidth().clickable { onSortChanged(value); sortDialog = false }.padding(vertical = 6.dp),
+                            modifier = Modifier.fillMaxWidth().clickable { onSortChanged(value) }.padding(vertical = 6.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Text(sortLabel(value), modifier = Modifier.weight(1f))
-                            RadioButton(selected = sort == value, onClick = { onSortChanged(value); sortDialog = false })
+                            RadioButton(selected = sort == value, onClick = { onSortChanged(value) })
                         }
                     }
                     HorizontalDivider()
-                    Row(
-                        modifier = Modifier.fillMaxWidth().clickable { onReverseChanged(!reverse) }.padding(vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(stringResource(DesignR.string.reverse), modifier = Modifier.weight(1f))
-                        Checkbox(checked = reverse, onCheckedChange = onReverseChanged)
+                    Text(
+                        stringResource(DesignR.string.aurora_per_app_sort_order),
+                        modifier = Modifier.padding(top = 16.dp, bottom = 10.dp),
+                        style = MaterialTheme.typography.titleSmall,
+                    )
+                    SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                        listOf(
+                            false to DesignR.string.aurora_per_app_ascending,
+                            true to DesignR.string.aurora_per_app_descending,
+                        ).forEachIndexed { index, (descending, label) ->
+                            SegmentedButton(
+                                selected = reverse == descending,
+                                onClick = { onReverseChanged(descending) },
+                                shape = SegmentedButtonDefaults.itemShape(index = index, count = 2),
+                                label = { Text(stringResource(label)) },
+                            )
+                        }
                     }
                 }
             },
