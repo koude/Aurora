@@ -20,6 +20,19 @@ jobs:
           submodules: recursive
           fetch-depth: 0
 
+      - name: Check release version before building
+        if: github.event_name == 'push'
+        shell: bash
+        run: |
+          VERSION_NAME="$(sed -n 's/^[[:space:]]*versionName = "\([^"]*\)"/\1/p' build.gradle.kts | head -n 1)"
+          test -n "$VERSION_NAME"
+          RELEASE_TAG="v${VERSION_NAME}"
+          TAG_COMMIT="$(git rev-list -n 1 "$RELEASE_TAG" 2>/dev/null || true)"
+          if [ -n "$TAG_COMMIT" ] && [ "$TAG_COMMIT" != "$GITHUB_SHA" ]; then
+            echo "::error::Version $VERSION_NAME is already tagged at $TAG_COMMIT. Bump versionName and versionCode before pushing a new release."
+            exit 1
+          fi
+
       - name: Fetch submodule branches and tags
         shell: bash
         run: |
