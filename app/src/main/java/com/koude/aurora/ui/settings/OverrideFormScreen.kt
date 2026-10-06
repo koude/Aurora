@@ -57,6 +57,8 @@ data class ConfigField(
     val choices: List<ConfigChoice> = emptyList(),
     val selectedValue: String? = null,
     val enabled: Boolean = true,
+    val supportingText: String? = null,
+    val inputError: ((String) -> String?)? = null,
     val onSet: (String?) -> Unit,
 )
 
@@ -164,6 +166,7 @@ fun OverrideFormScreen(
 @Composable
 private fun ConfigTextEditor(field: ConfigField, onDismiss: () -> Unit) {
     var value by remember(field) { mutableStateOf(field.initialText) }
+    val error = field.inputError?.invoke(value)
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(field.title) },
@@ -174,10 +177,22 @@ private fun ConfigTextEditor(field: ConfigField, onDismiss: () -> Unit) {
                 modifier = Modifier.fillMaxWidth(),
                 minLines = if (field.editor == ConfigFieldEditor.Lines) 4 else 1,
                 maxLines = if (field.editor == ConfigFieldEditor.Lines) 8 else 1,
-                supportingText = { Text(if (field.editor == ConfigFieldEditor.Lines) "每行一项；使用“恢复不修改”可清除此覆写" else "留空值会按该设置项的默认行为处理") },
+                isError = error != null,
+                supportingText = {
+                    val hint = if (field.editor == ConfigFieldEditor.Lines) {
+                        "每行一项；使用“恢复不修改”可清除此覆写"
+                    } else {
+                        "留空值会按该设置项的默认行为处理"
+                    }
+                    Text(error ?: field.supportingText ?: hint)
+                },
             )
         },
-        confirmButton = { TextButton(onClick = { field.onSet(value); onDismiss() }) { Text("保存") } },
+        confirmButton = {
+            TextButton(enabled = error == null, onClick = { field.onSet(value); onDismiss() }) {
+                Text("保存")
+            }
+        },
         dismissButton = {
             Row {
                 TextButton(onClick = { field.onSet(null); onDismiss() }) { Text("恢复不修改") }

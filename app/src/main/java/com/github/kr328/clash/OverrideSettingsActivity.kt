@@ -13,6 +13,7 @@ import com.koude.aurora.ui.settings.ConfigChoice
 import com.koude.aurora.ui.settings.ConfigField
 import com.koude.aurora.ui.settings.ConfigFieldEditor
 import com.koude.aurora.ui.settings.OverrideFormScreen
+import com.koude.aurora.ui.settings.parsePortOverrideInput
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.selects.select
@@ -97,7 +98,31 @@ class OverrideSettingsActivity : BaseActivity() {
         )
 
         val fields = mutableListOf<ConfigField>()
-        fun intPort(title: Int, get: Int?, set: (Int?) -> Unit) = fields.add(text(general, title, get?.let { if (it == 0) "" else it.toString() }, disabled) { value -> set(value?.let { it.toIntOrNull() ?: 0 }) })
+        fun intPort(title: Int, get: Int?, set: (Int?) -> Unit) {
+            fields += ConfigField(
+                section = general,
+                title = getString(title),
+                value = get?.let { if (it == 0) disabled else it.toString() } ?: noChange,
+                editor = ConfigFieldEditor.Text,
+                initialText = get?.takeIf { it != 0 }?.toString().orEmpty(),
+                supportingText = getString(DesignR.string.aurora_override_port_hint),
+                inputError = { input ->
+                    if (parsePortOverrideInput(input) == null)
+                        getString(DesignR.string.aurora_override_port_invalid) else null
+                },
+                onSet = { input ->
+                    if (input == null) {
+                        set(null)
+                        changed()
+                    } else {
+                        parsePortOverrideInput(input)?.let {
+                            set(it)
+                            changed()
+                        }
+                    }
+                },
+            )
+        }
         intPort(DesignR.string.http_port, config.httpPort) { config.httpPort = it }
         intPort(DesignR.string.socks_port, config.socksPort) { config.socksPort = it }
         intPort(DesignR.string.redirect_port, config.redirectPort) { config.redirectPort = it }
