@@ -114,7 +114,7 @@ fun SettingsScreen(
             item { SettingsSectionTitle(stringResource(DesignR.string.aurora_settings_network), Modifier.padding(top = 10.dp)) }
             item {
                 SettingsGroup {
-                    SettingsRow(Icons.AutoMirrored.Filled.List, stringResource(DesignR.string.aurora_settings_vpn_proxy), onOpenNetwork)
+                    SettingsRow(Icons.AutoMirrored.Filled.List, stringResource(DesignR.string.aurora_settings_network_settings), onOpenNetwork)
                 }
             }
 

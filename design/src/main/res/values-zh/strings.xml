@@ -375,7 +375,7 @@
     <string name="aurora_settings_general">常规</string>
     <string name="aurora_settings_app_preferences">应用偏好</string>
     <string name="aurora_settings_network">网络</string>
-    <string name="aurora_settings_vpn_proxy">VPN 与代理</string>
+    <string name="aurora_settings_network_settings">网络设置</string>
     <string name="aurora_settings_advanced">高级</string>
     <string name="aurora_settings_mihomo_features">Mihomo 功能</string>
     <string name="aurora_settings_config_override">配置覆写</string>
