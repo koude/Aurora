@@ -69,7 +69,7 @@ fun AppSettingsScreen(
     Scaffold(
         modifier = modifier,
         topBar = {
-            AuroraDetailTopBar(title = stringResource(DesignR.string.app), onBack = onBack)
+            AuroraDetailTopBar(title = stringResource(DesignR.string.aurora_settings_general), onBack = onBack)
         },
     ) { insets ->
         LazyColumn(

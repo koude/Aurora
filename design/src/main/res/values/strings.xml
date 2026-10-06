@@ -466,6 +466,15 @@
     <string name="aurora_network_connection">Connection</string>
     <string name="aurora_network_vpn_settings">VPN settings</string>
     <string name="aurora_network_title">Network</string>
+    <string name="aurora_settings_title">Settings</string>
+    <string name="aurora_settings_profiles">Profiles</string>
+    <string name="aurora_settings_general">General</string>
+    <string name="aurora_settings_app_preferences">App preferences</string>
+    <string name="aurora_settings_network">Network</string>
+    <string name="aurora_settings_vpn_proxy">VPN and proxy</string>
+    <string name="aurora_settings_advanced">Advanced</string>
+    <string name="aurora_settings_mihomo_features">Mihomo features</string>
+    <string name="aurora_settings_config_override">Configuration overrides</string>
     <string name="aurora_network_mode">Operating mode</string>
     <string name="aurora_network_vpn_service">VPN service</string>
     <string name="aurora_network_proxy_service">Proxy service</string>

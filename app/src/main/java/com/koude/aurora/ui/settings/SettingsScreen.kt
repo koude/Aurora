@@ -36,9 +36,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.github.kr328.clash.design.R as DesignR
 import com.koude.aurora.designsystem.theme.AuroraTheme
 import com.koude.aurora.ui.components.AuroraBottomNavigation
 import com.koude.aurora.ui.components.AuroraDestination
@@ -92,36 +94,36 @@ fun SettingsScreen(
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             item {
-                AuroraPageHeader(title = "设置")
+                AuroraPageHeader(title = stringResource(DesignR.string.aurora_settings_title))
             }
             item { Spacer(Modifier.height(12.dp)) }
 
             item {
                 SettingsGroup {
-                    SettingsRow(Icons.Default.Menu, "配置", onOpenProfiles)
+                    SettingsRow(Icons.Default.Menu, stringResource(DesignR.string.aurora_settings_profiles), onOpenProfiles)
                 }
             }
 
-            item { SettingsSectionTitle("常规") }
+            item { SettingsSectionTitle(stringResource(DesignR.string.aurora_settings_general)) }
             item {
                 SettingsGroup {
-                    SettingsRow(Icons.Default.Settings, "应用设置", onOpenApp)
+                    SettingsRow(Icons.Default.Settings, stringResource(DesignR.string.aurora_settings_app_preferences), onOpenApp)
                 }
             }
 
-            item { SettingsSectionTitle("网络", Modifier.padding(top = 10.dp)) }
+            item { SettingsSectionTitle(stringResource(DesignR.string.aurora_settings_network), Modifier.padding(top = 10.dp)) }
             item {
                 SettingsGroup {
-                    SettingsRow(Icons.AutoMirrored.Filled.List, "网络设置", onOpenNetwork)
+                    SettingsRow(Icons.AutoMirrored.Filled.List, stringResource(DesignR.string.aurora_settings_vpn_proxy), onOpenNetwork)
                 }
             }
 
-            item { SettingsSectionTitle("高级", Modifier.padding(top = 10.dp)) }
+            item { SettingsSectionTitle(stringResource(DesignR.string.aurora_settings_advanced), Modifier.padding(top = 10.dp)) }
             item {
                 SettingsGroup {
-                    SettingsRow(Icons.Default.Refresh, "Mihomo 功能", onOpenMetaFeature)
+                    SettingsRow(Icons.Default.Refresh, stringResource(DesignR.string.aurora_settings_mihomo_features), onOpenMetaFeature)
                     SettingsDivider()
-                    SettingsRow(Icons.Default.Edit, "配置覆写", onOpenOverride)
+                    SettingsRow(Icons.Default.Edit, stringResource(DesignR.string.aurora_settings_config_override), onOpenOverride)
                 }
             }
         }

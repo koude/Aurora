@@ -370,6 +370,15 @@
     <string name="aurora_network_connection">连接</string>
     <string name="aurora_network_vpn_settings">VPN 设置</string>
     <string name="aurora_network_title">网络</string>
+    <string name="aurora_settings_title">设置</string>
+    <string name="aurora_settings_profiles">配置</string>
+    <string name="aurora_settings_general">常规</string>
+    <string name="aurora_settings_app_preferences">应用偏好</string>
+    <string name="aurora_settings_network">网络</string>
+    <string name="aurora_settings_vpn_proxy">VPN 与代理</string>
+    <string name="aurora_settings_advanced">高级</string>
+    <string name="aurora_settings_mihomo_features">Mihomo 功能</string>
+    <string name="aurora_settings_config_override">配置覆写</string>
     <string name="aurora_network_mode">运行模式</string>
     <string name="aurora_network_vpn_service">VPN 服务</string>
     <string name="aurora_network_proxy_service">代理服务</string>
