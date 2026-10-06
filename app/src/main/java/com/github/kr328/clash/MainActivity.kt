@@ -51,7 +51,6 @@ import com.github.kr328.clash.common.util.setUUID
 import com.github.kr328.clash.common.util.ticker
 import com.github.kr328.clash.core.Clash
 import com.github.kr328.clash.core.model.FetchStatus
-import com.github.kr328.clash.core.model.ConnectionInfo
 import com.github.kr328.clash.core.model.Proxy
 import com.github.kr328.clash.core.model.ProxyGroup
 import com.github.kr328.clash.core.model.RoutePreview
@@ -66,11 +65,10 @@ import com.github.kr328.clash.util.stopClashService
 import com.github.kr328.clash.util.withClash
 import com.github.kr328.clash.util.withProfile
 import com.koude.aurora.designsystem.theme.AuroraTheme
-import com.koude.aurora.data.connections.AppLabelResolver
 import com.koude.aurora.ui.components.AuroraBottomNavigation
 import com.koude.aurora.ui.components.AuroraDestination
 import com.koude.aurora.ui.connections.ConnectionsScreen
-import com.koude.aurora.ui.connections.ConnectionsUiState
+import com.koude.aurora.ui.connections.ConnectionsViewModel
 import com.koude.aurora.ui.home.HomeScreen
 import com.koude.aurora.ui.home.HomeViewModel
 import com.koude.aurora.ui.profiles.ProfilesScreen
@@ -86,7 +84,6 @@ import com.koude.aurora.ui.settings.SettingsScreen
 import io.github.g00fy2.quickie.QRResult
 import io.github.g00fy2.quickie.ScanQRCode
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -94,7 +91,6 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.selects.select
-import kotlinx.coroutines.withContext
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 import com.github.kr328.clash.design.R as DesignR
@@ -110,13 +106,6 @@ class MainActivity : BaseActivity() {
     private val testedProxyGroups = mutableSetOf<String>()
     private val testedActiveProxies = mutableSetOf<String>()
     private val proxyUiState = mutableStateOf(ProxyUiState())
-    private val connectionsUiState = mutableStateOf(ConnectionsUiState())
-    private val appLabelResolver by lazy {
-        AppLabelResolver { packageName ->
-            val info = packageManager.getApplicationInfo(packageName, 0)
-            packageManager.getApplicationLabel(info).toString()
-        }
-    }
     private val errorDialogState = mutableStateOf<AuroraErrorDialogState?>(null)
     private val profileImportProgress = mutableStateOf<ProfileImportProgress?>(null)
     private var profileImportInProgress = false
@@ -125,6 +114,9 @@ class MainActivity : BaseActivity() {
     private val requestedRoute = mutableStateOf<String?>(null)
     private val profilesViewModel: ProfilesViewModel by viewModels { ProfilesViewModel.Factory }
     private val homeViewModel: HomeViewModel by viewModels { HomeViewModel.Factory }
+    private val connectionsViewModel: ConnectionsViewModel by viewModels {
+        ConnectionsViewModel.factory(applicationContext)
+    }
     private val scanLauncher = registerForActivityResult(ScanQRCode(), ::scanResultHandler)
 
     override fun onDestroy() {
@@ -146,19 +138,19 @@ class MainActivity : BaseActivity() {
                     when (event) {
                         Event.ActivityStart, Event.ServiceRecreated, Event.ProfileChanged -> {
                             fetch()
-                            if (activeRoute.value == ROUTE_CONNECTIONS) refreshConnections()
+                            if (activeRoute.value == ROUTE_CONNECTIONS) connectionsViewModel.refresh(clashRunning)
                         }
                         Event.ClashStart -> {
                             fetch()
                             refreshProxy()
-                            if (activeRoute.value == ROUTE_CONNECTIONS) refreshConnections()
+                            if (activeRoute.value == ROUTE_CONNECTIONS) connectionsViewModel.refresh(clashRunning)
                         }
                         Event.ClashStop -> {
                             fetch()
                             testedProxyGroups.clear()
                             testedActiveProxies.clear()
                             proxyUiState.value = ProxyUiState(serviceRunning = false)
-                            connectionsUiState.value = ConnectionsUiState()
+                            connectionsViewModel.refresh(false)
                             homeViewModel.clearTraffic()
                         }
                         Event.ProfileLoaded -> {
@@ -173,7 +165,7 @@ class MainActivity : BaseActivity() {
                 }
                 if (clashRunning) ticker.onReceive {
                     fetchTraffic()
-                    if (activeRoute.value == ROUTE_CONNECTIONS) refreshConnections()
+                    if (activeRoute.value == ROUTE_CONNECTIONS) connectionsViewModel.refresh(clashRunning)
                 }
             }
         }
@@ -190,6 +182,7 @@ class MainActivity : BaseActivity() {
         val currentRoute = destinationRoute ?: startDestination
         val homeState by homeViewModel.uiState.collectAsStateWithLifecycle()
         val routeTestState by homeViewModel.routeTestState.collectAsStateWithLifecycle()
+        val connectionsState by connectionsViewModel.uiState.collectAsStateWithLifecycle()
 
         LaunchedEffect(requestedRoute.value, backStackEntry) {
             val route = requestedRoute.value
@@ -216,7 +209,7 @@ class MainActivity : BaseActivity() {
             if (route in PERSISTED_MAIN_ROUTES) {
                 uiStore.lastMainRoute = route
             }
-            if (route == ROUTE_CONNECTIONS) refreshConnections()
+            if (route == ROUTE_CONNECTIONS) connectionsViewModel.refresh(clashRunning)
         }
 
         Scaffold(
@@ -311,21 +304,13 @@ class MainActivity : BaseActivity() {
                 }
                 composable(ROUTE_CONNECTIONS) {
                     ConnectionsScreen(
-                        state = connectionsUiState.value,
-                        onRefresh = { launch { refreshConnections() } },
+                        state = connectionsState,
+                        onRefresh = { connectionsViewModel.refresh(clashRunning, force = true) },
                         onCloseConnection = { id ->
-                            launch {
-                                runCatching { withClash { closeConnection(id) } }
-                                    .onFailure(::showError)
-                                refreshConnections()
-                            }
+                            connectionsViewModel.close(listOf(id), ::showError)
                         },
                         onCloseVisible = { ids ->
-                            launch {
-                                runCatching { withClash { ids.forEach { id -> closeConnection(id) } } }
-                                    .onFailure(::showError)
-                                refreshConnections()
-                            }
+                            connectionsViewModel.close(ids, ::showError)
                         },
                     )
                 }
@@ -467,43 +452,6 @@ class MainActivity : BaseActivity() {
                     )
                 }
         }
-    }
-
-    private suspend fun refreshConnections() {
-        if (!clashRunning) {
-            connectionsUiState.value = ConnectionsUiState()
-            return
-        }
-        val current = connectionsUiState.value
-        connectionsUiState.value = current.copy(
-            serviceRunning = true,
-            loading = current.connections.isEmpty(),
-            errorMessage = null,
-        )
-        runCatching {
-            val connections = withClash { queryConnections().toList() }
-            val appLabels = withContext(Dispatchers.IO) {
-                connections.map(ConnectionInfo::process)
-                    .filter(String::isNotBlank)
-                    .distinct()
-                    .mapNotNull { packageName ->
-                        appLabelResolver.resolve(packageName)?.let { packageName to it }
-                    }
-                    .toMap()
-            }
-            ConnectionsUiState(
-                serviceRunning = true,
-                connections = connections,
-                appLabels = appLabels,
-            )
-        }.onSuccess { connectionsUiState.value = it }
-            .onFailure { error ->
-                connectionsUiState.value = connectionsUiState.value.copy(
-                    serviceRunning = true,
-                    loading = false,
-                    errorMessage = error.message ?: "连接读取失败",
-                )
-            }
     }
 
     private fun selectProxyGroup(index: Int) {
