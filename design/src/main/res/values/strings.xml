@@ -363,6 +363,8 @@
     <string name="aurora_restore_app_icon">Restore app icon</string>
     <string name="aurora_override_port_hint">Leave blank or enter 0 to disable this port.</string>
     <string name="aurora_override_port_invalid">Enter a port from 0 to 65535.</string>
+    <string name="aurora_override_map_hint">One key=value entry per line.</string>
+    <string name="aurora_override_map_invalid">Line %1$d: enter a unique key=value pair with both parts filled in.</string>
     <string name="hide_app_icon_desc">You can dial *#*#252746382#*#* to open this App</string>
     <string name="aurora_hide_icon_warning">The app icon will disappear. You can open Aurora by entering this code in the dialer:</string>
     <string name="aurora_hide_icon_dialer_note">Some dialers may not support this code. Keep a copy before hiding the icon.</string>

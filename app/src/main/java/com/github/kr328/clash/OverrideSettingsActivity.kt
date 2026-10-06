@@ -13,6 +13,8 @@ import com.koude.aurora.ui.settings.ConfigChoice
 import com.koude.aurora.ui.settings.ConfigField
 import com.koude.aurora.ui.settings.ConfigFieldEditor
 import com.koude.aurora.ui.settings.OverrideFormScreen
+import com.koude.aurora.ui.settings.OverrideMapInput
+import com.koude.aurora.ui.settings.parseOverrideMapInput
 import com.koude.aurora.ui.settings.parsePortOverrideInput
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -85,9 +87,22 @@ class OverrideSettingsActivity : BaseActivity() {
             value = current?.let { if (it.isEmpty()) getString(DesignR.string.empty) else getString(DesignR.string.format_elements, it.size) } ?: noChange,
             editor = ConfigFieldEditor.Lines,
             initialText = current?.entries?.joinToString("\n") { "${it.key}=${it.value}" }.orEmpty(),
+            supportingText = getString(DesignR.string.aurora_override_map_hint),
+            inputError = { input ->
+                (parseOverrideMapInput(input) as? OverrideMapInput.Invalid)?.let {
+                    getString(DesignR.string.aurora_override_map_invalid, it.lineNumber)
+                }
+            },
             onSet = { value ->
-                set(value?.lines()?.mapNotNull { line -> line.substringBefore("=").trim().takeIf(String::isNotEmpty)?.let { it to line.substringAfter("=", "").trim() } }?.toMap())
-                changed()
+                if (value == null) {
+                    set(null)
+                    changed()
+                } else {
+                    (parseOverrideMapInput(value) as? OverrideMapInput.Valid)?.let {
+                        set(it.entries)
+                        changed()
+                    }
+                }
             },
         )
         fun boolOptions(falseLabel: String = getString(DesignR.string.disabled), trueLabel: String = getString(DesignR.string.enabled)) = listOf(

@@ -41,6 +41,8 @@
     <string name="aurora_restore_app_icon">恢复应用图标</string>
     <string name="aurora_override_port_hint">留空或输入 0 表示关闭此端口。</string>
     <string name="aurora_override_port_invalid">请输入 0 至 65535 之间的端口。</string>
+    <string name="aurora_override_map_hint">每行一项，格式为 键=值。</string>
+    <string name="aurora_override_map_invalid">第 %1$d 行格式有误：请填写不重复的 键=值。</string>
     <string name="hide_app_icon_desc">可以在拨号盘输入 *#*#252746382#*#* 打开应用</string>
     <string name="aurora_hide_icon_warning">应用图标将消失。之后可在拨号盘输入以下代码打开 Aurora：</string>
     <string name="aurora_hide_icon_dialer_note">部分拨号盘可能不支持此代码。隐藏前请妥善保存。</string>
