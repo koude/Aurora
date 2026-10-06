@@ -51,6 +51,13 @@
     <string name="aurora_override_lines_hint">每行一项；使用“恢复”可清除此覆写。</string>
     <string name="aurora_override_text_hint">留空值会按该设置项的默认行为处理。</string>
     <string name="aurora_override_restore_unmodified">恢复不修改</string>
+    <string name="aurora_override_section_ports">代理端口</string>
+    <string name="aurora_override_section_access">代理访问</string>
+    <string name="aurora_override_section_controller">外部控制</string>
+    <string name="aurora_override_section_runtime">运行与 Hosts</string>
+    <string name="aurora_override_section_dns_basic">DNS 行为</string>
+    <string name="aurora_override_section_dns_servers">DNS 服务器</string>
+    <string name="aurora_override_section_dns_filter">Fake IP 与回退</string>
     <string name="hide_app_icon_desc">可以在拨号盘输入 *#*#252746382#*#* 打开应用</string>
     <string name="aurora_hide_icon_warning">应用图标将消失。之后可在拨号盘输入以下代码打开 Aurora：</string>
     <string name="aurora_hide_icon_dialer_note">部分拨号盘可能不支持此代码。隐藏前请妥善保存。</string>
