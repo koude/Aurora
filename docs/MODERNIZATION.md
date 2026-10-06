@@ -57,3 +57,12 @@ activities, databases or the mihomo runtime directly.
 - Introduce dependency injection only after repository boundaries exist.
 - Do not add a framework merely because Now in Android uses it; each dependency must solve an
   Aurora requirement.
+
+## Deferred feature: hide app icon
+
+The hide-app-icon feature is not complete. Disabling the launcher alias removed the system's
+launch entry, but on a tested PixelOS launcher the icon remained visible on the home screen and
+in the app drawer. The option is hidden from users who have not enabled it. Users who enabled it
+in an earlier release retain a recovery action in General settings to restore the launcher alias.
+Do not advertise this as a working privacy feature until launcher behavior and recovery are
+validated on supported devices.
