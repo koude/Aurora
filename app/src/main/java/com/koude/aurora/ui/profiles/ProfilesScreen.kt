@@ -5,6 +5,8 @@ import android.text.format.Formatter
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -45,10 +47,10 @@ import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.ListItem
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScaffoldDefaults
 import androidx.compose.material3.Surface
@@ -68,7 +70,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
@@ -117,12 +118,42 @@ fun ProfilesScreen(
 ) {
     var addSheetVisible by rememberSaveable { mutableStateOf(false) }
     var selectedProfileId by remember { mutableStateOf<UUID?>(null) }
+    var menuExpanded by remember { mutableStateOf(false) }
 
     Scaffold(
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.surface,
         topBar = {
-            AuroraDetailTopBar(title = "配置与订阅", onBack = onBack)
+            AuroraDetailTopBar(
+                title = "配置",
+                onBack = onBack,
+                actions = {
+                    if (!state.loading && state.profiles.isNotEmpty()) {
+                        Box {
+                            IconButton(onClick = { menuExpanded = true }) {
+                                Icon(Icons.Default.MoreVert, contentDescription = "更多配置操作")
+                            }
+                            DropdownMenu(
+                                expanded = menuExpanded,
+                                onDismissRequest = { menuExpanded = false },
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text("添加配置") },
+                                    leadingIcon = { Icon(Icons.Default.Add, contentDescription = null) },
+                                    onClick = { menuExpanded = false; addSheetVisible = true },
+                                )
+                                if (state.profiles.any { it.kind != ProfileKind.File }) {
+                                    DropdownMenuItem(
+                                        text = { Text("更新所有订阅") },
+                                        leadingIcon = { Icon(Icons.Default.Refresh, contentDescription = null) },
+                                        onClick = { menuExpanded = false; onUpdateAll() },
+                                    )
+                                }
+                            }
+                        }
+                    }
+                },
+            )
         },
         contentWindowInsets = if (showBottomNavigation) ScaffoldDefaults.contentWindowInsets
         else WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal),
@@ -140,19 +171,6 @@ fun ProfilesScreen(
                 },
             )
         }} else {{ }},
-        floatingActionButton = {
-            if (!state.loading && state.profiles.isNotEmpty()) {
-                ExtendedFloatingActionButton(
-                    modifier = Modifier.height(54.dp),
-                    onClick = { addSheetVisible = true },
-                    icon = { Icon(Icons.Default.Add, contentDescription = null) },
-                    text = { Text("添加配置") },
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    shape = RoundedCornerShape(18.dp),
-                )
-            }
-        },
     ) { padding ->
         when {
             state.loading -> LoadingContent(Modifier.padding(padding))
@@ -164,12 +182,11 @@ fun ProfilesScreen(
                 profiles = state.profiles,
                 errorMessage = state.errorMessage,
                 onOpenProfile = { selectedProfileId = it },
-                onUpdateAll = onUpdateAll,
                 contentPadding = PaddingValues(
                     start = 20.dp,
                     top = padding.calculateTopPadding() + 18.dp,
                     end = 20.dp,
-                    bottom = padding.calculateBottomPadding() + 104.dp,
+                    bottom = padding.calculateBottomPadding() + 28.dp,
                 ),
             )
         }
@@ -230,7 +247,6 @@ private fun ProfileList(
     profiles: List<ProfileSummary>,
     errorMessage: String?,
     onOpenProfile: (UUID) -> Unit,
-    onUpdateAll: () -> Unit,
     contentPadding: PaddingValues,
 ) {
     val activeProfile = profiles.firstOrNull(ProfileSummary::active)
@@ -241,10 +257,6 @@ private fun ProfileList(
         contentPadding = contentPadding,
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        item { ProfilesHeader(onUpdateAll = onUpdateAll) }
-
-        item { Spacer(Modifier.height(4.dp)) }
-
         if (activeProfile != null) {
             item {
                 ActiveProfileCard(
@@ -293,42 +305,6 @@ private fun ProfileList(
                 ProfileCard(
                     profile = profile,
                     onOpen = { onOpenProfile(profile.id) },
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun ProfilesHeader(onUpdateAll: () -> Unit) {
-    var menuExpanded by remember { mutableStateOf(false) }
-
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Spacer(Modifier.weight(1f))
-        Box {
-            Surface(
-                modifier = Modifier.size(44.dp),
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.surfaceContainer,
-            ) {
-                IconButton(onClick = { menuExpanded = true }) {
-                    Icon(Icons.Default.MoreVert, contentDescription = "更多配置操作")
-                }
-            }
-            DropdownMenu(
-                expanded = menuExpanded,
-                onDismissRequest = { menuExpanded = false },
-            ) {
-                DropdownMenuItem(
-                    text = { Text("更新所有订阅") },
-                    onClick = {
-                        menuExpanded = false
-                        onUpdateAll()
-                    },
                 )
             }
         }
@@ -495,12 +471,14 @@ private fun ProfileActionsSheet(
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         containerColor = MaterialTheme.colorScheme.surface,
         shape = RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp),
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
                 .padding(bottom = 24.dp),
         ) {
             Column(modifier = Modifier.padding(horizontal = 24.dp)) {
@@ -508,6 +486,8 @@ private fun ProfileActionsSheet(
                     text = profile.name,
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Medium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
                 Spacer(Modifier.height(4.dp))
                 Text(
@@ -516,7 +496,7 @@ private fun ProfileActionsSheet(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            Spacer(Modifier.height(18.dp))
+            Spacer(Modifier.height(12.dp))
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             if (!profile.active && profile.imported) {
                 ProfileActionItem(
@@ -644,33 +624,30 @@ private fun ProfileActionItem(
         MaterialTheme.colorScheme.onSurface
     }
 
-    ListItem(
-        modifier = Modifier.clickable(onClick = onClick),
-        headlineContent = { Text(label, color = contentColor) },
-        leadingContent = {
+    Surface(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth().height(58.dp),
+        color = MaterialTheme.colorScheme.surface,
+        contentColor = contentColor,
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 24.dp),
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             Surface(
-                modifier = Modifier.size(40.dp),
-                shape = RoundedCornerShape(14.dp),
-                color = if (destructive) {
-                    MaterialTheme.colorScheme.errorContainer
-                } else {
-                    MaterialTheme.colorScheme.secondaryContainer
-                },
-                contentColor = if (destructive) {
-                    MaterialTheme.colorScheme.onErrorContainer
-                } else {
-                    MaterialTheme.colorScheme.onSecondaryContainer
-                },
+                modifier = Modifier.size(36.dp),
+                shape = RoundedCornerShape(12.dp),
+                color = if (destructive) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.secondaryContainer,
+                contentColor = if (destructive) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSecondaryContainer,
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(icon, contentDescription = null, modifier = Modifier.size(20.dp))
                 }
             }
-        },
-        colors = androidx.compose.material3.ListItemDefaults.colors(
-            containerColor = MaterialTheme.colorScheme.surface,
-        ),
-    )
+            Text(label, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+        }
+    }
 }
 
 @Composable
@@ -694,7 +671,7 @@ private fun ActiveProfileCard(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(min = 142.dp)
+            .heightIn(min = 104.dp)
             .clip(shape)
             .background(gradient)
             .clickable(onClick = onOpen),
@@ -702,7 +679,7 @@ private fun ActiveProfileCard(
         Canvas(
             modifier = Modifier
                 .align(Alignment.TopEnd)
-                .size(154.dp),
+                .size(124.dp),
         ) {
             drawCircle(
                 color = Color.White.copy(alpha = 0.10f),
@@ -711,48 +688,45 @@ private fun ActiveProfileCard(
             )
         }
         Column(
-            modifier = Modifier.padding(horizontal = 22.dp, vertical = 18.dp),
+            modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
+                Text(
+                    text = profile.name,
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color.White,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Spacer(Modifier.size(12.dp))
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Surface(
-                            modifier = Modifier.size(18.dp),
-                            shape = CircleShape,
-                            color = Color(0xFFBFFFC9).copy(alpha = 0.15f),
-                        ) {}
-                        Surface(
-                            modifier = Modifier.size(8.dp),
-                            shape = CircleShape,
-                            color = Color(0xFFBFFFC9),
-                        ) {}
-                    }
+                    Surface(
+                        modifier = Modifier.size(7.dp),
+                        shape = CircleShape,
+                        color = Color(0xFFBFFFC9),
+                    ) {}
                     Text(
                         text = "当前启用",
-                        style = MaterialTheme.typography.labelMedium,
+                        style = MaterialTheme.typography.labelSmall,
                         color = Color.White.copy(alpha = 0.90f),
                     )
                 }
             }
-            Spacer(Modifier.height(14.dp))
-            Text(
-                text = profile.name,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Medium,
-                color = Color.White,
-            )
-            Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(8.dp))
             Text(
                 text = profile.detailText(),
                 style = MaterialTheme.typography.bodySmall,
                 color = Color.White.copy(alpha = 0.82f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
         }
     }
@@ -850,22 +824,25 @@ private fun EmptyContent(
     modifier: Modifier = Modifier,
     onAddProfile: () -> Unit,
 ) {
-    Column(
+    Box(
         modifier = modifier
             .fillMaxSize()
             .padding(horizontal = 40.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
     ) {
-        Text("还没有配置", style = MaterialTheme.typography.titleLarge)
-        Spacer(Modifier.height(8.dp))
-        Text(
-            "添加本地文件或订阅地址后，配置会显示在这里。",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Spacer(Modifier.height(20.dp))
+        Column(
+            modifier = Modifier.align(Alignment.Center),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text("还没有配置", style = MaterialTheme.typography.titleLarge)
+            Spacer(Modifier.height(8.dp))
+            Text(
+                "添加本地文件或订阅地址后，配置会显示在这里。",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
         ExtendedFloatingActionButton(
+            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 48.dp),
             onClick = onAddProfile,
             icon = { Icon(Icons.Default.Add, contentDescription = null) },
             text = { Text("添加配置") },
