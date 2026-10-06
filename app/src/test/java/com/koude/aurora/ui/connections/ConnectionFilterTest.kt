@@ -23,4 +23,23 @@ class ConnectionFilterTest {
         assertEquals(listOf("ip"), filterConnections(connections, "203.0.113.7").map(ConnectionInfo::id))
         assertEquals(emptyList<String>(), filterConnections(connections, "unmatched").map(ConnectionInfo::id))
     }
+
+    @Test
+    fun routeSummaryUsesLeafAsOutletAndShowsFullPathInReadingOrder() {
+        val connection = ConnectionInfo(
+            id = "nested",
+            chains = listOf("Tokyo 01", "Auto", "Global"),
+        )
+
+        assertEquals("Tokyo 01", connectionActualOutlet(connection))
+        assertEquals("Global → Auto → Tokyo 01", connectionRoutePath(connection))
+    }
+
+    @Test
+    fun missingChainDoesNotClaimDirectConnection() {
+        val connection = ConnectionInfo(id = "unknown")
+
+        assertEquals("未知去向", connectionActualOutlet(connection))
+        assertEquals("未知去向", connectionRoutePath(connection))
+    }
 }

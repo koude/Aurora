@@ -1,6 +1,7 @@
 package com.koude.aurora.ui.connections
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,7 +17,6 @@ import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Refresh
@@ -25,10 +25,11 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -70,6 +71,7 @@ fun ConnectionsScreen(
     var query by remember { mutableStateOf("") }
     var searchVisible by remember { mutableStateOf(false) }
     var pendingCloseIds by remember { mutableStateOf<List<String>?>(null) }
+    var selectedConnection by remember { mutableStateOf<ConnectionInfo?>(null) }
     val filtered = remember(state.connections, query) {
         filterConnections(state.connections, query)
     }
@@ -161,7 +163,11 @@ fun ConnectionsScreen(
                     item { ConnectionsEmptyState(if (query.isBlank()) "暂无活动连接" else "没有匹配的连接") }
                 } else {
                     items(filtered, key = ConnectionInfo::id) { connection ->
-                        ConnectionCard(connection, onClose = { onCloseConnection(connection.id) })
+                        ConnectionCard(
+                            connection = connection,
+                            onClick = { selectedConnection = connection },
+                            onClose = { onCloseConnection(connection.id) },
+                        )
                     }
                 }
             }
@@ -182,6 +188,9 @@ fun ConnectionsScreen(
             dismissButton = { TextButton(onClick = { pendingCloseIds = null }) { Text("取消") } },
         )
     }
+    selectedConnection?.let { connection ->
+        ConnectionDetailsSheet(connection, onDismiss = { selectedConnection = null })
+    }
 }
 
 internal fun filterConnections(connections: List<ConnectionInfo>, query: String): List<ConnectionInfo> {
@@ -200,66 +209,131 @@ internal fun filterConnections(connections: List<ConnectionInfo>, query: String)
     }
 }
 
+internal fun connectionActualOutlet(connection: ConnectionInfo): String =
+    connection.chains.firstOrNull()?.takeIf(String::isNotBlank) ?: "未知去向"
+
+internal fun connectionRoutePath(connection: ConnectionInfo): String =
+    connection.chains.asReversed().joinToString(" → ").ifBlank { "未知去向" }
+
 @Composable
-private fun ConnectionCard(connection: ConnectionInfo, onClose: () -> Unit) {
+private fun ConnectionCard(connection: ConnectionInfo, onClick: () -> Unit, onClose: () -> Unit) {
     Card(
+        onClick = onClick,
         shape = AuroraCardStyle.groupShape(),
         colors = CardDefaults.cardColors(containerColor = AuroraCardStyle.groupColor()),
     ) {
-        Column(modifier = Modifier.padding(start = 16.dp, top = 14.dp, end = 8.dp, bottom = 12.dp)) {
+        Column(modifier = Modifier.padding(start = 16.dp, top = 10.dp, end = 8.dp, bottom = 14.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(
-                        text = connection.host.ifBlank { connection.destination.ifBlank { "未知目标" } },
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Medium,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Text(
-                        text = listOfNotNull(
-                            connection.process.takeIf(String::isNotBlank),
-                            connection.network.uppercase().takeIf(String::isNotBlank),
-                            connection.startedAt.takeIf { it > 0 }?.let(::formatStartedAt),
-                        ).joinToString(" · ").ifBlank { connection.destination },
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
+                Text(
+                    text = connection.host.ifBlank { connection.destination.ifBlank { "未知目标" } },
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
                 IconButton(onClick = onClose) {
                     Icon(Icons.Default.Close, contentDescription = "关闭连接")
                 }
             }
-            HorizontalDivider(modifier = Modifier.padding(top = 6.dp, bottom = 8.dp), color = MaterialTheme.colorScheme.outlineVariant)
-            Text(
-                text = buildString {
-                    append(connection.rule.ifBlank { "未匹配规则" })
-                    if (connection.rulePayload.isNotBlank()) append(" · ${connection.rulePayload}")
-                },
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-            )
-            val route = connection.chains.joinToString(" → ").ifBlank { "DIRECT" }
-            Text(
-                text = route,
-                modifier = Modifier.padding(top = 3.dp),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.primary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
             Row(
-                modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
-                horizontalArrangement = Arrangement.spacedBy(18.dp),
+                modifier = Modifier.fillMaxWidth().padding(end = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text("↑ ${formatBytes(connection.uploaded)}", style = MaterialTheme.typography.labelMedium)
-                Text("↓ ${formatBytes(connection.downloaded)}", style = MaterialTheme.typography.labelMedium)
+                Text(
+                    text = connection.rule.ifBlank { "未匹配规则" },
+                    modifier = Modifier.weight(1f, fill = false),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text("→", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    text = connectionActualOutlet(connection),
+                    modifier = Modifier.weight(1f, fill = false),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp, end = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                if (connection.process.isNotBlank()) {
+                    Text(
+                        text = connection.process,
+                        modifier = Modifier.weight(1f),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                } else {
+                    Box(Modifier.weight(1f))
+                }
+                Text(
+                    text = "↑ ${formatBytes(connection.uploaded)}   ↓ ${formatBytes(connection.downloaded)}",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                )
             }
         }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ConnectionDetailsSheet(connection: ConnectionInfo, onDismiss: () -> Unit) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = MaterialTheme.colorScheme.surface,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(start = 20.dp, end = 20.dp, bottom = 28.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Text(
+                text = connection.host.ifBlank { connection.destination.ifBlank { "连接详情" } },
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.SemiBold,
+            )
+            ConnectionDetailField("目标地址", connection.destination)
+            ConnectionDetailField("应用 / 进程", connection.process)
+            ConnectionDetailField(
+                "命中规则",
+                listOf(connection.rule, connection.rulePayload).filter(String::isNotBlank).joinToString(" · "),
+            )
+            ConnectionDetailField("代理路径", connectionRoutePath(connection))
+            ConnectionDetailField("网络类型", connection.network.uppercase())
+            if (connection.startedAt > 0) {
+                ConnectionDetailField(
+                    "建立时间",
+                    DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.MEDIUM).format(Date(connection.startedAt)),
+                )
+            }
+            ConnectionDetailField(
+                "流量",
+                "↑ ${formatBytes(connection.uploaded)}   ↓ ${formatBytes(connection.downloaded)}",
+            )
+        }
+    }
+}
+
+@Composable
+private fun ConnectionDetailField(label: String, value: String) {
+    if (value.isBlank()) return
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(value, style = MaterialTheme.typography.bodyLarge)
     }
 }
 
@@ -286,9 +360,6 @@ private fun formatBytes(bytes: Long): String {
     }
     return "$bytes B"
 }
-
-private fun formatStartedAt(timestamp: Long): String =
-    DateFormat.getTimeInstance(DateFormat.SHORT).format(Date(timestamp))
 
 @Preview(showBackground = true, widthDp = 390, heightDp = 844)
 @Composable
