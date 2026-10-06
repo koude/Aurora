@@ -361,6 +361,10 @@
 
     <string name="hide_app_icon_title">Hide App Icon</string>
     <string name="hide_app_icon_desc">You can dial *#*#252746382#*#* to open this App</string>
+    <string name="aurora_hide_icon_warning">The app icon will disappear. You can open Aurora by entering this code in the dialer:</string>
+    <string name="aurora_hide_icon_dialer_note">Some dialers may not support this code. Keep a copy before hiding the icon.</string>
+    <string name="aurora_hide_icon_copy_failed">Could not copy the dial code. The icon was not hidden.</string>
+    <string name="aurora_general_notification_traffic">Show traffic in notification</string>
     <string name="hide_from_recents_title">Hide from Recents</string>
     <string name="hide_from_recents_desc">Hide app from the Recent apps screen</string>
     <string name="import_from_qr_no_permission">Camera access is restricted. Please enable it in Settings.</string>

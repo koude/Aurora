@@ -31,8 +31,8 @@ class AppSettingsActivity : BaseActivity(), Behavior {
                         ApplicationObserver.createdActivities.forEach { activity -> activity.recreate() }
                     },
                     onHideAppIconChanged = {
-                        uiStore.hideAppIcon = it
                         onHideIconChange(it)
+                        uiStore.hideAppIcon = it
                         screenState.value = screenState.value.copy(hideAppIcon = it)
                     },
                     onHideFromRecentsChanged = {
