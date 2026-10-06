@@ -64,6 +64,8 @@ import com.github.kr328.clash.util.startClashService
 import com.github.kr328.clash.util.stopClashService
 import com.github.kr328.clash.util.withClash
 import com.github.kr328.clash.util.withProfile
+import com.koude.aurora.data.profiles.ProfileImportCoordinator
+import com.koude.aurora.data.profiles.ServiceProfileImportGateway
 import com.koude.aurora.designsystem.theme.AuroraTheme
 import com.koude.aurora.ui.components.AuroraBottomNavigation
 import com.koude.aurora.ui.components.AuroraDestination
@@ -74,6 +76,7 @@ import com.koude.aurora.ui.home.HomeViewModel
 import com.koude.aurora.ui.profiles.ProfilesScreen
 import com.koude.aurora.ui.profiles.ProfileImportProgress
 import com.koude.aurora.ui.profiles.ProfilesViewModel
+import com.koude.aurora.ui.profiles.toProfileImportProgress
 import com.koude.aurora.ui.proxy.ProxyGroupUiState
 import com.koude.aurora.ui.proxy.ProxyRouteUiState
 import com.koude.aurora.ui.proxy.ProxyScreen
@@ -109,6 +112,7 @@ class MainActivity : BaseActivity() {
     private val errorDialogState = mutableStateOf<AuroraErrorDialogState?>(null)
     private val profileImportProgress = mutableStateOf<ProfileImportProgress?>(null)
     private var profileImportInProgress = false
+    private val profileImportCoordinator = ProfileImportCoordinator(ServiceProfileImportGateway())
     private var profileImportGeneration = 0
     private val activeRoute = mutableStateOf(ROUTE_HOME)
     private val requestedRoute = mutableStateOf<String?>(null)
@@ -605,25 +609,21 @@ class MainActivity : BaseActivity() {
         profileImportProgress.value = ProfileImportProgress(
             stage = if (type == Profile.Type.Url) "正在连接订阅并准备下载…" else "正在导入配置…",
         )
-        var uuid: UUID? = null
         try {
-            uuid = withProfile { create(type, name, source) }
-            prepare(uuid)
-            withProfile {
-                commit(uuid) { status ->
-                    if (status.action != FetchStatus.Action.SubscriptionInfo) {
-                        val progress = status.toProfileImportProgress()
-                        runOnUiThread {
-                            if (importGeneration == profileImportGeneration) {
-                                profileImportProgress.value = progress
-                            }
+            profileImportCoordinator.import(type, name, source, prepare) { status ->
+                if (status.action != FetchStatus.Action.SubscriptionInfo) {
+                    val progress = status.toProfileImportProgress()
+                    runOnUiThread {
+                        if (importGeneration == profileImportGeneration && profileImportInProgress) {
+                            profileImportProgress.value = progress
                         }
                     }
                 }
             }
             profilesViewModel.refresh()
+        } catch (error: CancellationException) {
+            throw error
         } catch (error: Exception) {
-            uuid?.let { failedId -> runCatching { withProfile { delete(failedId) } } }
             showError(
                 error = error,
                 title = if (type == Profile.Type.Url) "订阅获取失败" else "配置导入失败",
@@ -635,25 +635,6 @@ class MainActivity : BaseActivity() {
                 profileImportProgress.value = null
             }
         }
-    }
-
-    private fun FetchStatus.toProfileImportProgress(): ProfileImportProgress {
-        val resource = args.firstOrNull()?.takeIf { it.isNotBlank() }
-        val stage = when (action) {
-            FetchStatus.Action.FetchConfiguration -> "正在下载配置文件${resource?.let { " · $it" }.orEmpty()}"
-            FetchStatus.Action.FetchProviders -> {
-                val position = if (max > 0) "（${(progress + 1).coerceAtMost(max)}/$max）" else ""
-                "正在下载资源$position${resource?.let { " · $it" }.orEmpty()}"
-            }
-            FetchStatus.Action.SubscriptionInfo -> "正在读取订阅信息…"
-            FetchStatus.Action.Verifying -> "正在校验配置文件…"
-        }
-        return ProfileImportProgress(
-            stage = stage,
-            downloadedBytes = downloadedBytes,
-            totalBytes = totalBytes,
-            speedBytesPerSecond = speedBytesPerSecond,
-        )
     }
 
     private suspend fun duplicateProfile(uuid: UUID) {
