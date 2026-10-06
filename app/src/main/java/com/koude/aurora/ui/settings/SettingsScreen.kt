@@ -55,6 +55,7 @@ fun SettingsScreen(
     onOpenConnections: () -> Unit = {},
     onOpenProfiles: () -> Unit,
     onOpenNetwork: () -> Unit,
+    onOpenPerAppProxy: () -> Unit,
     onOpenApp: () -> Unit,
     onOpenMetaFeature: () -> Unit,
     onOpenOverride: () -> Unit,
@@ -96,28 +97,25 @@ fun SettingsScreen(
             }
             item { Spacer(Modifier.height(12.dp)) }
 
-            item { SettingsSectionTitle("管理") }
             item {
                 SettingsGroup {
-                    SettingsRow(Icons.Default.Menu, "配置与订阅", onOpenProfiles)
+                    SettingsRow(Icons.Default.Menu, "配置", onOpenProfiles)
                 }
             }
 
-            item { SettingsSectionTitle("网络") }
-            item {
-                SettingsGroup {
-                    SettingsRow(Icons.AutoMirrored.Filled.List, "VPN 与路由", onOpenNetwork)
-                    SettingsDivider()
-                    SettingsRow(Icons.Default.Menu, "DNS", onOpenNetwork)
-                    SettingsDivider()
-                    SettingsRow(Icons.Default.Settings, "应用访问控制", onOpenApp)
-                }
-            }
-
-            item { SettingsSectionTitle("应用", Modifier.padding(top = 10.dp)) }
+            item { SettingsSectionTitle("常规") }
             item {
                 SettingsGroup {
                     SettingsRow(Icons.Default.Settings, "应用设置", onOpenApp)
+                }
+            }
+
+            item { SettingsSectionTitle("网络", Modifier.padding(top = 10.dp)) }
+            item {
+                SettingsGroup {
+                    SettingsRow(Icons.AutoMirrored.Filled.List, "VPN 设置", onOpenNetwork)
+                    SettingsDivider()
+                    SettingsRow(Icons.Default.Settings, "分应用代理", onOpenPerAppProxy)
                 }
             }
 
@@ -212,6 +210,7 @@ private fun SettingsScreenPreview() {
             onOpenProxy = {},
             onOpenProfiles = {},
             onOpenNetwork = {},
+            onOpenPerAppProxy = {},
             onOpenApp = {},
             onOpenMetaFeature = {},
             onOpenOverride = {},

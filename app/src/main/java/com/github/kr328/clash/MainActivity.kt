@@ -332,6 +332,7 @@ class MainActivity : BaseActivity() {
                         onOpenConnections = { navController.navigateTopLevel(ROUTE_CONNECTIONS) },
                         onOpenProfiles = { navController.navigate(ROUTE_PROFILES) },
                         onOpenNetwork = { startActivity(NetworkSettingsActivity::class.intent) },
+                        onOpenPerAppProxy = { startActivity(AccessControlActivity::class.intent) },
                         onOpenApp = { startActivity(AppSettingsActivity::class.intent) },
                         onOpenMetaFeature = { startActivity(MetaFeatureSettingsActivity::class.intent) },
                         onOpenOverride = { startActivity(OverrideSettingsActivity::class.intent) },

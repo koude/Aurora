@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
@@ -44,16 +45,19 @@ import androidx.compose.ui.unit.dp
 import com.github.kr328.clash.design.R as DesignR
 import com.github.kr328.clash.design.model.AppInfo
 import com.github.kr328.clash.design.model.AppInfoSort
+import com.github.kr328.clash.service.model.AccessControlMode
 import com.koude.aurora.ui.components.AuroraDetailTopBar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AccessControlScreen(
     apps: List<AppInfo>,
+    mode: AccessControlMode,
     selectedPackages: Set<String>,
     showSystemApps: Boolean,
     sort: AppInfoSort,
     reverse: Boolean,
+    onModeChanged: (AccessControlMode) -> Unit,
     onToggleApp: (String) -> Unit,
     onSelectAll: () -> Unit,
     onSelectNone: () -> Unit,
@@ -79,7 +83,7 @@ fun AccessControlScreen(
         modifier = modifier,
         topBar = {
             AuroraDetailTopBar(
-                title = stringResource(DesignR.string.access_control_packages),
+                title = stringResource(DesignR.string.aurora_per_app_proxy),
                 onBack = onBack,
                 actions = {
                     IconButton(onClick = { searchVisible = !searchVisible; searchText = "" }) {
@@ -114,6 +118,28 @@ fun AccessControlScreen(
         },
     ) { insets ->
         Column(Modifier.fillMaxSize().padding(insets)) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                FilterChip(
+                    selected = mode != AccessControlMode.AcceptSelected,
+                    onClick = { onModeChanged(AccessControlMode.DenySelected) },
+                    label = { Text(stringResource(DesignR.string.aurora_per_app_blacklist)) },
+                )
+                FilterChip(
+                    selected = mode == AccessControlMode.AcceptSelected,
+                    onClick = { onModeChanged(AccessControlMode.AcceptSelected) },
+                    label = { Text(stringResource(DesignR.string.aurora_per_app_whitelist)) },
+                )
+            }
+            Text(
+                text = stringResource(if (mode == AccessControlMode.AcceptSelected)
+                    DesignR.string.aurora_per_app_whitelist_summary else DesignR.string.aurora_per_app_blacklist_summary),
+                modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 8.dp),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
             if (searchVisible) {
                 OutlinedTextField(
                     value = searchText,

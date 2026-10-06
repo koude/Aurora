@@ -3,8 +3,6 @@ package com.github.kr328.clash
 import android.os.Build
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.mutableStateOf
-import com.github.kr328.clash.common.util.intent
-import com.github.kr328.clash.service.model.AccessControlMode
 import com.github.kr328.clash.service.store.ServiceStore
 import com.koude.aurora.designsystem.theme.AuroraTheme
 import com.koude.aurora.ui.settings.NetworkSettingsScreen
@@ -49,11 +47,6 @@ class NetworkSettingsActivity : BaseActivity() {
                         serviceStore.tunStackMode = it
                         screenState.value = screenState.value.copy(tunStack = it)
                     },
-                    onAccessControlModeChanged = {
-                        serviceStore.accessControlMode = it
-                        screenState.value = screenState.value.copy(accessControlMode = it)
-                    },
-                    onOpenAccessControl = { startActivity(AccessControlActivity::class.intent) },
                     onBack = ::finish,
                 )
             }
@@ -82,7 +75,6 @@ class NetworkSettingsActivity : BaseActivity() {
         allowIpv6 = serviceStore.allowIpv6,
         systemProxy = serviceStore.systemProxy,
         tunStack = serviceStore.tunStackMode,
-        accessControlMode = serviceStore.accessControlMode,
         showSystemProxy = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q,
     )
 }

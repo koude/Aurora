@@ -35,7 +35,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.github.kr328.clash.design.R as DesignR
-import com.github.kr328.clash.service.model.AccessControlMode
 import com.koude.aurora.designsystem.theme.AuroraTheme
 import com.koude.aurora.ui.components.AuroraDetailTopBar
 import com.koude.aurora.ui.components.AuroraSectionTitle
@@ -49,7 +48,6 @@ data class NetworkSettingsUiState(
     val allowIpv6: Boolean = false,
     val systemProxy: Boolean = true,
     val tunStack: String = "system",
-    val accessControlMode: AccessControlMode = AccessControlMode.AcceptAll,
     val showSystemProxy: Boolean = true,
 )
 
@@ -63,8 +61,6 @@ fun NetworkSettingsScreen(
     onAllowIpv6Changed: (Boolean) -> Unit,
     onSystemProxyChanged: (Boolean) -> Unit,
     onTunStackChanged: (String) -> Unit,
-    onAccessControlModeChanged: (AccessControlMode) -> Unit,
-    onOpenAccessControl: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -150,26 +146,6 @@ fun NetworkSettingsScreen(
                     )
                 }
             }
-
-            item {
-                NetworkSection(stringResource(DesignR.string.access_control_packages)) {
-                    NetworkChoiceRow(
-                        title = stringResource(DesignR.string.access_control_mode),
-                        value = accessControlLabel(state.accessControlMode),
-                        enabled = !state.running && state.routeSystemTraffic,
-                        icon = { Icon(painterResource(DesignR.drawable.ic_baseline_apps), contentDescription = null) },
-                        onClick = { selection = NetworkSettingSelection.AccessMode },
-                    )
-                    NetworkDivider()
-                    NetworkChoiceRow(
-                        title = stringResource(DesignR.string.access_control_packages),
-                        value = null,
-                        enabled = !state.running && state.routeSystemTraffic,
-                        icon = { Icon(painterResource(DesignR.drawable.ic_baseline_apps), contentDescription = null) },
-                        onClick = onOpenAccessControl,
-                    )
-                }
-            }
         }
     }
 
@@ -186,25 +162,11 @@ fun NetworkSettingsScreen(
             onSelected = { onTunStackChanged(it); selection = null },
             onDismiss = { selection = null },
         )
-        NetworkSettingSelection.AccessMode -> ChoiceDialog(
-            title = stringResource(DesignR.string.access_control_mode),
-            selected = state.accessControlMode.name,
-            options = listOf(
-                AccessControlMode.AcceptAll.name to stringResource(DesignR.string.allow_all_apps),
-                AccessControlMode.AcceptSelected.name to stringResource(DesignR.string.allow_selected_apps),
-                AccessControlMode.DenySelected.name to stringResource(DesignR.string.deny_selected_apps),
-            ),
-            onSelected = { value ->
-                onAccessControlModeChanged(AccessControlMode.valueOf(value))
-                selection = null
-            },
-            onDismiss = { selection = null },
-        )
         null -> Unit
     }
 }
 
-private enum class NetworkSettingSelection { TunStack, AccessMode }
+private enum class NetworkSettingSelection { TunStack }
 
 @Composable
 private fun NetworkSection(title: String, content: @Composable () -> Unit) {
@@ -331,13 +293,6 @@ private fun stackLabel(value: String): String = when (value) {
     else -> stringResource(DesignR.string.tun_stack_system)
 }
 
-@Composable
-private fun accessControlLabel(value: AccessControlMode): String = when (value) {
-    AccessControlMode.AcceptAll -> stringResource(DesignR.string.allow_all_apps)
-    AccessControlMode.AcceptSelected -> stringResource(DesignR.string.allow_selected_apps)
-    AccessControlMode.DenySelected -> stringResource(DesignR.string.deny_selected_apps)
-}
-
 @Preview(showBackground = true, widthDp = 390, heightDp = 844)
 @Composable
 private fun NetworkSettingsScreenPreview() {
@@ -351,8 +306,6 @@ private fun NetworkSettingsScreenPreview() {
             onAllowIpv6Changed = {},
             onSystemProxyChanged = {},
             onTunStackChanged = {},
-            onAccessControlModeChanged = {},
-            onOpenAccessControl = {},
             onBack = {},
         )
     }

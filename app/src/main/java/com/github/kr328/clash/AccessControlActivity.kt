@@ -12,6 +12,7 @@ import androidx.core.content.getSystemService
 import com.github.kr328.clash.design.model.AppInfo
 import com.github.kr328.clash.design.model.AppInfoSort
 import com.github.kr328.clash.design.store.UiStore
+import com.github.kr328.clash.service.model.AccessControlMode
 import com.github.kr328.clash.design.util.toAppInfo
 import com.github.kr328.clash.service.store.ServiceStore
 import com.github.kr328.clash.util.startClashService
@@ -24,20 +25,32 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class AccessControlActivity : BaseActivity() {
+    private val mode = mutableStateOf(AccessControlMode.DenySelected)
     private val selectedPackages = mutableStateOf<Set<String>>(emptySet())
     private val appList = mutableStateOf<List<AppInfo>>(emptyList())
 
     override suspend fun main() {
         val service = ServiceStore(this)
-        selectedPackages.value = withContext(Dispatchers.IO) { service.accessControlPackages.toSet() }
+        val originalMode = service.accessControlMode
+        val originalPackages = withContext(Dispatchers.IO) { service.accessControlPackages.toSet() }
+        // The legacy "all apps" mode is equivalent to an empty exclusion list.
+        mode.value = if (originalMode == AccessControlMode.AcceptAll) AccessControlMode.DenySelected else originalMode
+        selectedPackages.value = if (originalMode == AccessControlMode.AcceptAll) emptySet() else originalPackages
+        val initialMode = mode.value
+        val initialPackages = selectedPackages.value
         appList.value = loadApps(selectedPackages.value)
 
         defer {
             withContext(Dispatchers.IO) {
                 val selected = selectedPackages.value
-                val changed = selected != service.accessControlPackages
+                val selectedMode = mode.value
+                val changed = selectedMode != initialMode || selected != initialPackages
+                if (!changed) return@withContext
+                val behaviorChanged = !(originalMode == AccessControlMode.AcceptAll &&
+                    selectedMode == AccessControlMode.DenySelected && selected.isEmpty())
+                service.accessControlMode = selectedMode
                 service.accessControlPackages = selected
-                if (clashRunning && changed) {
+                if (clashRunning && behaviorChanged) {
                     stopClashService()
                     while (clashRunning) delay(200)
                     startClashService()
@@ -49,10 +62,12 @@ class AccessControlActivity : BaseActivity() {
             AuroraTheme {
                 AccessControlScreen(
                     apps = appList.value,
+                    mode = mode.value,
                     selectedPackages = selectedPackages.value,
                     showSystemApps = uiStore.accessControlSystemApp,
                     sort = uiStore.accessControlSort,
                     reverse = uiStore.accessControlReverse,
+                    onModeChanged = { mode.value = it },
                     onToggleApp = { packageName ->
                         selectedPackages.value = selectedPackages.value.toMutableSet().apply {
                             if (!add(packageName)) remove(packageName)

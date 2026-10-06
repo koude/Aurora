@@ -345,4 +345,9 @@
     <string name="aurora_profiles_empty_title">还没有配置</string>
     <string name="aurora_profiles_empty_summary">点击右上角添加按钮，导入或创建配置。</string>
     <string name="aurora_profile_source_summary">选择新配置的来源。</string>
+    <string name="aurora_per_app_proxy">分应用代理</string>
+    <string name="aurora_per_app_blacklist">黑名单</string>
+    <string name="aurora_per_app_whitelist">白名单</string>
+    <string name="aurora_per_app_blacklist_summary">选中的应用绕过 Aurora，其余应用经过 Aurora。</string>
+    <string name="aurora_per_app_whitelist_summary">只有选中的应用经过 Aurora；未选择应用时，其他应用均不经过 Aurora。</string>
 </resources>
