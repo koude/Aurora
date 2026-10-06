@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -24,6 +25,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -44,6 +46,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.koude.aurora.ui.components.AuroraCardStyle
 import com.koude.aurora.ui.components.AuroraDetailTopBar
 import com.github.kr328.clash.design.R as DesignR
 import com.github.kr328.clash.design.model.File
@@ -93,42 +96,68 @@ fun FilesScreen(
         selected = null
     }
 
-    BackHandler { if (selected != null) selected = null else onBack() }
+    val closeOrGoBack = { if (selected != null) { selected = null; menuExpanded = false } else onBack() }
+    BackHandler(onBack = closeOrGoBack)
     Scaffold(topBar = {
         AuroraDetailTopBar(
             title = stringResource(DesignR.string.files),
-            onBack = onBack,
+            onBack = closeOrGoBack,
             actions = {
-                if (!currentInBase) IconButton(onClick = { pendingImport = null; importPicker.launch("*/*") }) {
+                if (!currentInBase && files.isNotEmpty()) IconButton(onClick = { pendingImport = null; importPicker.launch("*/*") }) {
                     Icon(painterResource(DesignR.drawable.ic_baseline_add), contentDescription = stringResource(DesignR.string._new))
                 }
             },
         )
     }) { insets ->
         if (files.isEmpty()) {
-            Column(Modifier.fillMaxSize().padding(insets), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-                Text("此目录为空", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Column(
+                Modifier.fillMaxSize().padding(insets).padding(horizontal = 24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+            ) {
+                Icon(
+                    painterResource(DesignR.drawable.ic_outline_folder),
+                    contentDescription = null,
+                    modifier = Modifier.size(48.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(
+                    stringResource(DesignR.string.aurora_files_empty),
+                    modifier = Modifier.padding(top = 16.dp),
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                if (!currentInBase) {
+                    FilledTonalButton(
+                        onClick = { pendingImport = null; importPicker.launch("*/*") },
+                        modifier = Modifier.padding(top = 20.dp),
+                    ) { Text(stringResource(DesignR.string.aurora_files_import)) }
+                }
             }
         } else LazyColumn(
             Modifier.fillMaxSize().padding(insets),
             contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 20.dp, top = 12.dp, end = 20.dp, bottom = 28.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             items(files, key = { it.id }) { file ->
-                Row(Modifier.fillMaxWidth().clickable { if (file.isDirectory) onOpenDirectory(file) else onOpenFile(file) }.padding(horizontal = 8.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Icon(painterResource(if (file.isDirectory) DesignR.drawable.ic_outline_folder else DesignR.drawable.ic_outline_article), contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                    Column(Modifier.weight(1f).padding(start = 16.dp)) {
-                        Text(file.name, style = MaterialTheme.typography.bodyLarge)
-                        if (!file.isDirectory) Text("${file.size.toBytesString()} · ${Date(file.lastModified).format(context)}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                    IconButton(onClick = { selected = file; menuExpanded = true }) {
-                        Icon(Icons.Default.MoreVert, contentDescription = "更多操作")
-                        DropdownMenu(expanded = menuExpanded && selected?.id == file.id, onDismissRequest = { menuExpanded = false; selected = null }) {
-                            if (!file.isDirectory && (!currentInBase || configurationEditable)) DropdownMenuItem(text = { Text("导入/替换") }, onClick = { menuExpanded = false; pendingImport = file; importPicker.launch("*/*") })
-                            if (!file.isDirectory && file.size > 0) DropdownMenuItem(text = { Text("导出") }, onClick = { menuExpanded = false; exportPicker.launch(file.name) })
-                            if (!currentInBase) {
-                                DropdownMenuItem(text = { Text("重命名") }, onClick = { menuExpanded = false; draftName = file.name; editNameFor = file })
-                                DropdownMenuItem(text = { Text("删除", color = MaterialTheme.colorScheme.error) }, onClick = { menuExpanded = false; confirmDelete = file })
+                Card(
+                    shape = AuroraCardStyle.groupShape(),
+                    colors = CardDefaults.cardColors(containerColor = AuroraCardStyle.groupColor()),
+                ) {
+                    Row(Modifier.fillMaxWidth().clickable { if (file.isDirectory) onOpenDirectory(file) else onOpenFile(file) }.padding(horizontal = 16.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Icon(painterResource(if (file.isDirectory) DesignR.drawable.ic_outline_folder else DesignR.drawable.ic_outline_article), contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                        Column(Modifier.weight(1f).padding(start = 16.dp)) {
+                            Text(file.name, style = MaterialTheme.typography.bodyLarge)
+                            if (!file.isDirectory) Text("${file.size.toBytesString()} · ${Date(file.lastModified).format(context)}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        IconButton(onClick = { selected = file; menuExpanded = true }) {
+                            Icon(Icons.Default.MoreVert, contentDescription = "更多操作")
+                            DropdownMenu(expanded = menuExpanded && selected?.id == file.id, onDismissRequest = { menuExpanded = false; selected = null }) {
+                                if (!file.isDirectory && (!currentInBase || configurationEditable)) DropdownMenuItem(text = { Text("导入/替换") }, onClick = { menuExpanded = false; selected = null; pendingImport = file; importPicker.launch("*/*") })
+                                if (!file.isDirectory && file.size > 0) DropdownMenuItem(text = { Text("导出") }, onClick = { menuExpanded = false; exportPicker.launch(file.name) })
+                                if (!currentInBase) {
+                                    DropdownMenuItem(text = { Text("重命名") }, onClick = { menuExpanded = false; selected = null; draftName = file.name; editNameFor = file })
+                                    DropdownMenuItem(text = { Text("删除", color = MaterialTheme.colorScheme.error) }, onClick = { menuExpanded = false; selected = null; confirmDelete = file })
+                                }
                             }
                         }
                     }

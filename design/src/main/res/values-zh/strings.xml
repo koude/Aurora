@@ -365,5 +365,7 @@
     <string name="aurora_per_app_mode">代理模式</string>
     <string name="aurora_per_app_selected_count">已选 %1$d 个应用</string>
     <string name="aurora_per_app_selected_only">只看已选</string>
+    <string name="aurora_files_empty">此目录为空</string>
+    <string name="aurora_files_import">导入文件</string>
     <string name="aurora_per_app_no_matches">没有匹配的应用</string>
 </resources>

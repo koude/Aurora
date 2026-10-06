@@ -461,5 +461,7 @@
     <string name="aurora_per_app_mode">Proxy mode</string>
     <string name="aurora_per_app_selected_count">%1$d apps selected</string>
     <string name="aurora_per_app_selected_only">Selected only</string>
+    <string name="aurora_files_empty">This folder is empty</string>
+    <string name="aurora_files_import">Import file</string>
     <string name="aurora_per_app_no_matches">No matching apps</string>
 </resources>
