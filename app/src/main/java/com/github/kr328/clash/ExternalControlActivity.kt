@@ -1,25 +1,25 @@
 package com.github.kr328.clash
 
-import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
-import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.ComponentActivity
+import androidx.activity.viewModels
 import com.github.kr328.clash.common.constants.Intents
 import com.github.kr328.clash.common.util.intent
 import com.github.kr328.clash.common.util.setUUID
 import com.github.kr328.clash.remote.StatusClient
-import com.github.kr328.clash.service.model.Profile
 import com.github.kr328.clash.util.startClashService
 import com.github.kr328.clash.util.stopClashService
-import com.github.kr328.clash.util.withProfile
+import com.koude.aurora.ui.profiles.ExternalProfileImportViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
-import java.util.*
 import com.github.kr328.clash.design.R
 
-class ExternalControlActivity : Activity(), CoroutineScope by MainScope() {
+class ExternalControlActivity : ComponentActivity(), CoroutineScope by MainScope() {
+    private val importer: ExternalProfileImportViewModel by viewModels { ExternalProfileImportViewModel.Factory }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         @Suppress("DEPRECATION")
@@ -31,22 +31,12 @@ class ExternalControlActivity : Activity(), CoroutineScope by MainScope() {
                 val url = uri.getQueryParameter("url") ?: return finish()
 
                 launch {
-                    val uuid = withProfile {
-                        val type = when (uri.getQueryParameter("type")?.lowercase(Locale.getDefault())) {
-                            "url" -> Profile.Type.Url
-                            "file" -> Profile.Type.File
-                            else -> Profile.Type.Url
-                        }
-                        val name = uri.getQueryParameter("name") ?: getString(R.string.new_profile)
-
-                        val parsedInterval = uri.getQueryParameter("update-interval")?.toLongOrNull() ?: 0L
-                        val updateInterval = if (parsedInterval > 0) parsedInterval.coerceAtLeast(15L) else 0L
-                        val intervalMs = java.util.concurrent.TimeUnit.MINUTES.toMillis(updateInterval)
-
-                        create(type, name).also {
-                            patch(it, name, url, intervalMs, null)
-                        }
-                    }
+                    val uuid = importer.importProfile(
+                        uri.getQueryParameter("type"),
+                        uri.getQueryParameter("name") ?: getString(R.string.new_profile),
+                        url,
+                        uri.getQueryParameter("update-interval"),
+                    )
                     startActivity(PropertiesActivity::class.intent.setUUID(uuid))
                     finish()
                 }
