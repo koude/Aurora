@@ -1,49 +1,40 @@
 package com.github.kr328.clash
 
-import android.content.pm.PackageManager
 import androidx.activity.compose.setContent
-import androidx.compose.runtime.mutableStateOf
-import com.github.kr328.clash.common.util.componentName
-import com.github.kr328.clash.design.model.Behavior
-import com.github.kr328.clash.design.model.DarkMode
-import com.github.kr328.clash.design.store.UiStore.Companion.mainActivityAlias
-import com.github.kr328.clash.service.store.ServiceStore
+import androidx.activity.viewModels
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.github.kr328.clash.util.ApplicationObserver
 import com.koude.aurora.designsystem.theme.AuroraTheme
 import com.koude.aurora.ui.settings.AppSettingsScreen
-import com.koude.aurora.ui.settings.AppSettingsUiState
+import com.koude.aurora.ui.settings.AppSettingsViewModel
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.selects.select
 
-class AppSettingsActivity : BaseActivity(), Behavior {
+class AppSettingsActivity : BaseActivity() {
+    private val viewModel: AppSettingsViewModel by viewModels {
+        AppSettingsViewModel.factory(applicationContext)
+    }
+
     override suspend fun main() {
-        val serviceStore = ServiceStore(this)
-        val screenState = mutableStateOf(readState(serviceStore))
+        viewModel.refresh(clashRunning)
 
         setContent {
             AuroraTheme {
+                val screenState by viewModel.uiState.collectAsStateWithLifecycle()
                 AppSettingsScreen(
-                    state = screenState.value,
-                    onAutoRestartChanged = { autoRestart = it; screenState.value = screenState.value.copy(autoRestart = it) },
+                    state = screenState,
+                    onAutoRestartChanged = viewModel::setAutoRestart,
                     onDarkModeChanged = {
-                        uiStore.darkMode = it
-                        screenState.value = screenState.value.copy(darkMode = it)
+                        viewModel.setDarkMode(it)
                         ApplicationObserver.createdActivities.forEach { activity -> activity.recreate() }
                     },
-                    onHideAppIconChanged = {
-                        onHideIconChange(it)
-                        uiStore.hideAppIcon = it
-                        screenState.value = screenState.value.copy(hideAppIcon = it)
-                    },
+                    onHideAppIconChanged = viewModel::setHideAppIcon,
                     onHideFromRecentsChanged = {
-                        uiStore.hideFromRecents = it
-                        screenState.value = screenState.value.copy(hideFromRecents = it)
+                        viewModel.setHideFromRecents(it)
                         ApplicationObserver.createdActivities.forEach { activity -> activity.recreate() }
                     },
-                    onShowTrafficChanged = {
-                        serviceStore.dynamicNotification = it
-                        screenState.value = screenState.value.copy(showTraffic = it)
-                    },
+                    onShowTrafficChanged = viewModel::setShowTraffic,
                     onBack = ::finish,
                 )
             }
@@ -54,7 +45,7 @@ class AppSettingsActivity : BaseActivity(), Behavior {
                 events.onReceive {
                     when (it) {
                         Event.ClashStart, Event.ClashStop, Event.ServiceRecreated -> {
-                            screenState.value = readState(serviceStore)
+                            viewModel.refresh(clashRunning)
                         }
                         else -> Unit
                     }
@@ -63,24 +54,4 @@ class AppSettingsActivity : BaseActivity(), Behavior {
         }
     }
 
-    override var autoRestart: Boolean
-        get() = packageManager.getComponentEnabledSetting(RestartReceiver::class.componentName) == PackageManager.COMPONENT_ENABLED_STATE_ENABLED
-        set(value) {
-            val status = if (value) PackageManager.COMPONENT_ENABLED_STATE_ENABLED else PackageManager.COMPONENT_ENABLED_STATE_DISABLED
-            packageManager.setComponentEnabledSetting(RestartReceiver::class.componentName, status, PackageManager.DONT_KILL_APP)
-        }
-
-    private fun onHideIconChange(hide: Boolean) {
-        val newState = if (hide) PackageManager.COMPONENT_ENABLED_STATE_DISABLED else PackageManager.COMPONENT_ENABLED_STATE_ENABLED
-        packageManager.setComponentEnabledSetting(mainActivityAlias, newState, PackageManager.DONT_KILL_APP)
-    }
-
-    private fun readState(serviceStore: ServiceStore) = AppSettingsUiState(
-        autoRestart = autoRestart,
-        darkMode = uiStore.darkMode,
-        hideAppIcon = uiStore.hideAppIcon,
-        hideFromRecents = uiStore.hideFromRecents,
-        showTraffic = serviceStore.dynamicNotification,
-        running = clashRunning,
-    )
 }
