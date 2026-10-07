@@ -1,6 +1,7 @@
 package com.koude.aurora.ui.home
 
 import com.github.kr328.clash.core.model.TunnelState
+import com.github.kr328.clash.core.model.RoutePreview
 import com.koude.aurora.data.home.HomeConnectionSnapshot
 import com.koude.aurora.data.home.HomeRepository
 import com.koude.aurora.data.home.HomeTrafficSnapshot
@@ -187,21 +188,25 @@ class HomeViewModelTest {
     }
 
     @Test
-    fun routeTestNormalizesTargetAndStartsOnlyWhenServiceIsRunning() {
-        val viewModel = HomeViewModel(FakeWebsiteLatencyRepository { null })
+    fun routeTestNormalizesTargetAndQueriesRepository() = runTest(dispatcher) {
+        val repository = FakeHomeRepository()
+        val viewModel = HomeViewModel(FakeWebsiteLatencyRepository { null }, repository)
         viewModel.openRouteTest()
         viewModel.changeRouteTestTarget(" https://github.com/example/path ")
 
-        val target = viewModel.prepareRouteTest(
+        viewModel.submitRouteTest(
             serviceRunning = true,
             invalidTargetMessage = "invalid",
             serviceRequiredMessage = "offline",
+            testFailedMessage = "failed",
         )
+        advanceUntilIdle()
 
-        assertEquals("github.com", target?.target)
+        assertEquals(listOf("github.com"), repository.previewTargets)
         assertEquals("github.com", viewModel.routeTestState.value.target)
-        assertTrue(viewModel.routeTestState.value.isTesting)
+        assertFalse(viewModel.routeTestState.value.isTesting)
         assertEquals(null, viewModel.routeTestState.value.errorMessage)
+        assertEquals("github.com", viewModel.routeTestState.value.preview?.target)
     }
 
     @Test
@@ -210,54 +215,113 @@ class HomeViewModelTest {
         viewModel.openRouteTest()
         viewModel.changeRouteTestTarget("not a target")
 
-        assertEquals(
-            null,
-            viewModel.prepareRouteTest(true, "invalid", "offline"),
-        )
+        viewModel.submitRouteTest(true, "invalid", "offline", "failed")
         assertEquals("invalid", viewModel.routeTestState.value.errorMessage)
         assertFalse(viewModel.routeTestState.value.isTesting)
 
         viewModel.changeRouteTestTarget("example.com")
-        assertEquals(
-            null,
-            viewModel.prepareRouteTest(false, "invalid", "offline"),
-        )
+        viewModel.submitRouteTest(false, "invalid", "offline", "failed")
         assertEquals("offline", viewModel.routeTestState.value.errorMessage)
         assertFalse(viewModel.routeTestState.value.isTesting)
     }
 
     @Test
-    fun dismissedRouteTestCannotBeChangedByLateFailure() {
-        val viewModel = HomeViewModel(FakeWebsiteLatencyRepository { null })
+    fun dismissedRouteTestCannotBeChangedByLateResult() = runTest(dispatcher) {
+        val pending = CompletableDeferred<RoutePreview>()
+        val repository = FakeHomeRepository()
+        repository.previewAction = { withContext(NonCancellable) { pending.await() } }
+        val viewModel = HomeViewModel(FakeWebsiteLatencyRepository { null }, repository)
         viewModel.openRouteTest()
-        val target = viewModel.prepareRouteTest(true, "invalid", "offline")
-        assertEquals("github.com", target?.target)
+        viewModel.submitRouteTest(true, "invalid", "offline", "failed")
+        runCurrent()
 
         viewModel.dismissRouteTest()
-        viewModel.failRouteTest(target!!, "late failure")
+        pending.complete(preview("github.com"))
+        advanceUntilIdle()
 
         assertFalse(viewModel.routeTestState.value.isOpen)
+        assertFalse(viewModel.routeTestState.value.isTesting)
+        assertEquals(null, viewModel.routeTestState.value.preview)
+    }
+
+    @Test
+    fun lateResultFromPreviousRequestCannotOverwriteCurrentRequest() = runTest(dispatcher) {
+        val pending = CompletableDeferred<RoutePreview>()
+        val repository = FakeHomeRepository()
+        repository.previewAction = { target ->
+            if (target == "github.com") withContext(NonCancellable) { pending.await() }
+            else preview(target)
+        }
+        val viewModel = HomeViewModel(FakeWebsiteLatencyRepository { null }, repository)
+        viewModel.openRouteTest()
+        viewModel.submitRouteTest(true, "invalid", "offline", "failed")
+        runCurrent()
+        viewModel.changeRouteTestTarget("example.com")
+        viewModel.submitRouteTest(true, "invalid", "offline", "failed")
+        advanceUntilIdle()
+
+        pending.complete(preview("github.com"))
+        advanceUntilIdle()
+
+        assertEquals("example.com", viewModel.routeTestState.value.preview?.target)
         assertFalse(viewModel.routeTestState.value.isTesting)
         assertEquals(null, viewModel.routeTestState.value.errorMessage)
     }
 
     @Test
-    fun lateResultFromPreviousRequestCannotOverwriteCurrentRequest() {
-        val viewModel = HomeViewModel(FakeWebsiteLatencyRepository { null })
+    fun routePreviewErrorIsShownWithoutAResultCard() = runTest(dispatcher) {
+        val repository = FakeHomeRepository()
+        repository.previewAction = { preview(it).copy(error = "no matching rule") }
+        val viewModel = HomeViewModel(FakeWebsiteLatencyRepository { null }, repository)
         viewModel.openRouteTest()
-        val previous = viewModel.prepareRouteTest(true, "invalid", "offline")!!
-        val current = viewModel.prepareRouteTest(true, "invalid", "offline")!!
+        viewModel.submitRouteTest(true, "invalid", "offline", "failed")
+        advanceUntilIdle()
 
-        viewModel.failRouteTest(previous, "stale failure")
+        assertEquals("no matching rule", viewModel.routeTestState.value.errorMessage)
+        assertFalse(viewModel.routeTestState.value.isTesting)
+        assertEquals(null, viewModel.routeTestState.value.preview)
+    }
 
-        assertTrue(viewModel.routeTestState.value.isTesting)
-        assertEquals(null, viewModel.routeTestState.value.errorMessage)
+    @Test
+    fun routePreviewExceptionShowsFailureMessage() = runTest(dispatcher) {
+        val repository = FakeHomeRepository()
+        repository.previewAction = { throw IllegalStateException("service unavailable") }
+        val viewModel = HomeViewModel(FakeWebsiteLatencyRepository { null }, repository)
+        viewModel.openRouteTest()
 
-        viewModel.failRouteTest(current, "current failure")
+        viewModel.submitRouteTest(true, "invalid", "offline", "failed")
+        advanceUntilIdle()
+
+        assertEquals("failed", viewModel.routeTestState.value.errorMessage)
+        assertFalse(viewModel.routeTestState.value.isTesting)
+        assertEquals(null, viewModel.routeTestState.value.preview)
+    }
+
+    @Test
+    fun serviceStopCancelsPendingRoutePreview() = runTest(dispatcher) {
+        val pending = CompletableDeferred<RoutePreview>()
+        val repository = FakeHomeRepository()
+        repository.previewAction = { withContext(NonCancellable) { pending.await() } }
+        val viewModel = HomeViewModel(FakeWebsiteLatencyRepository { null }, repository)
+        viewModel.openRouteTest()
+        viewModel.submitRouteTest(true, "invalid", "offline", "failed")
+        runCurrent()
+
+        viewModel.onServiceStopped()
+        pending.complete(preview("github.com"))
+        advanceUntilIdle()
 
         assertFalse(viewModel.routeTestState.value.isTesting)
-        assertEquals("current failure", viewModel.routeTestState.value.errorMessage)
+        assertEquals(null, viewModel.routeTestState.value.preview)
     }
+
+    private fun preview(target: String) = RoutePreview(
+        target = target,
+        mode = "rule",
+        rule = "MATCH",
+        policy = "Proxy",
+        outbound = "JP",
+    )
 
     private class FakeWebsiteLatencyRepository(
         private val result: suspend (WebsiteLatencySite) -> Long?,
@@ -277,6 +341,8 @@ class HomeViewModelTest {
         var connectionAction: (suspend () -> HomeConnectionSnapshot)? = null
         var trafficAction: (suspend () -> HomeTrafficSnapshot)? = null
         var modeAction: (suspend () -> Unit)? = null
+        var previewAction: (suspend (String) -> RoutePreview)? = null
+        val previewTargets = mutableListOf<String>()
         val patchedModes = mutableListOf<TunnelState.Mode>()
 
         override suspend fun connection(): HomeConnectionSnapshot =
@@ -288,6 +354,11 @@ class HomeViewModelTest {
         override suspend fun setMode(mode: TunnelState.Mode) {
             modeAction?.invoke()
             patchedModes += mode
+        }
+
+        override suspend fun previewRoute(target: String): RoutePreview {
+            previewTargets += target
+            return previewAction?.invoke(target) ?: RoutePreview(target, "rule", "MATCH", "Proxy", "JP")
         }
     }
 }

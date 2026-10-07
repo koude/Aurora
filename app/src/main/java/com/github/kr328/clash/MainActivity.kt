@@ -50,13 +50,11 @@ import com.github.kr328.clash.common.util.intent
 import com.github.kr328.clash.common.util.setUUID
 import com.github.kr328.clash.common.util.ticker
 import com.github.kr328.clash.core.model.FetchStatus
-import com.github.kr328.clash.core.model.RoutePreview
 import com.github.kr328.clash.remote.FilesClient
 import com.github.kr328.clash.service.model.Profile
 import com.github.kr328.clash.util.fileName
 import com.github.kr328.clash.util.startClashService
 import com.github.kr328.clash.util.stopClashService
-import com.github.kr328.clash.util.withClash
 import com.github.kr328.clash.util.withProfile
 import com.koude.aurora.data.profiles.ProfileImportCoordinator
 import com.koude.aurora.data.profiles.ServiceProfileImportGateway
@@ -79,7 +77,6 @@ import com.koude.aurora.ui.settings.SettingsScreen
 import io.github.g00fy2.quickie.QRResult
 import io.github.g00fy2.quickie.ScanQRCode
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -94,7 +91,6 @@ private data class AuroraErrorDialogState(
 )
 
 class MainActivity : BaseActivity() {
-    private var routePreviewJob: Job? = null
     private val errorDialogState = mutableStateOf<AuroraErrorDialogState?>(null)
     private val profileImportProgress = mutableStateOf<ProfileImportProgress?>(null)
     private var profileImportInProgress = false
@@ -113,7 +109,6 @@ class MainActivity : BaseActivity() {
     private val scanLauncher = registerForActivityResult(ScanQRCode(), ::scanResultHandler)
 
     override fun onDestroy() {
-        routePreviewJob?.cancel()
         homeViewModel.cancelRouteTestRequest()
         super.onDestroy()
     }
@@ -189,7 +184,7 @@ class MainActivity : BaseActivity() {
             val route = destinationRoute ?: return@LaunchedEffect
             activeRoute.value = route
             if (route != ROUTE_HOME && routeTestState.isOpen) {
-                dismissRouteTest()
+                homeViewModel.dismissRouteTest()
             }
             proxyViewModel.onRouteChanged(route, ROUTE_PROXY)
             if (route in persistedMainRoutes) {
@@ -234,10 +229,17 @@ class MainActivity : BaseActivity() {
                             if (LogcatService.running) startActivity(LogcatActivity::class.intent)
                             else startActivity(LogsActivity::class.intent)
                         },
-                        onOpenRouteTest = ::openRouteTest,
-                        onDismissRouteTest = ::dismissRouteTest,
-                        onRouteTargetChange = ::changeRouteTestTarget,
-                        onSubmitRouteTest = ::submitRouteTest,
+                        onOpenRouteTest = homeViewModel::openRouteTest,
+                        onDismissRouteTest = homeViewModel::dismissRouteTest,
+                        onRouteTargetChange = homeViewModel::changeRouteTestTarget,
+                        onSubmitRouteTest = {
+                            homeViewModel.submitRouteTest(
+                                serviceRunning = clashRunning,
+                                invalidTargetMessage = getString(DesignR.string.aurora_route_invalid_target),
+                                serviceRequiredMessage = getString(DesignR.string.aurora_route_service_required),
+                                testFailedMessage = getString(DesignR.string.aurora_route_test_failed),
+                            )
+                        },
                         onOpenDns = { startActivity(NetworkSettingsActivity::class.intent) },
                         onOpenProfiles = { navController.navigate(ROUTE_PROFILES) },
                         onOpenProxy = { navController.navigateTopLevel(ROUTE_PROXY) },
@@ -440,44 +442,6 @@ class MainActivity : BaseActivity() {
 
     private fun showError(error: Throwable) {
         showError(error, "操作失败")
-    }
-
-    private fun openRouteTest() {
-        homeViewModel.openRouteTest()
-    }
-
-    private fun dismissRouteTest() {
-        routePreviewJob?.cancel()
-        routePreviewJob = null
-        homeViewModel.dismissRouteTest()
-    }
-
-    private fun changeRouteTestTarget(target: String) {
-        homeViewModel.changeRouteTestTarget(target)
-    }
-
-    private fun submitRouteTest() {
-        val request = homeViewModel.prepareRouteTest(
-            serviceRunning = clashRunning,
-            invalidTargetMessage = getString(DesignR.string.aurora_route_invalid_target),
-            serviceRequiredMessage = getString(DesignR.string.aurora_route_service_required),
-        ) ?: return
-        val target = request.target
-
-        routePreviewJob?.cancel()
-        routePreviewJob = launch {
-            try {
-                val preview: RoutePreview = withClash { queryRoutePreview(target) }
-                homeViewModel.completeRouteTest(request, preview)
-            } catch (cancelled: CancellationException) {
-                throw cancelled
-            } catch (_: Exception) {
-                homeViewModel.failRouteTest(
-                    request,
-                    getString(DesignR.string.aurora_route_test_failed),
-                )
-            }
-        }
     }
 
     private fun showError(error: Throwable, title: String) {

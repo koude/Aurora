@@ -3,7 +3,6 @@ package com.koude.aurora.ui.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.github.kr328.clash.core.model.RoutePreview
 import com.github.kr328.clash.core.model.TunnelState
 import com.koude.aurora.data.home.HomeRepository
 import com.koude.aurora.data.home.ServiceHomeRepository
@@ -21,11 +20,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.net.URI
 
-class RouteTestRequest internal constructor(
-    val target: String,
-    internal val id: Long,
-)
-
 class HomeViewModel(
     private val latencyRepository: WebsiteLatencyRepository,
     private val repository: HomeRepository = ServiceHomeRepository(),
@@ -41,6 +35,7 @@ class HomeViewModel(
     private var trafficGeneration = 0
     private val mutableRouteTestState = MutableStateFlow(RouteTestUiState())
     val routeTestState: StateFlow<RouteTestUiState> = mutableRouteTestState.asStateFlow()
+    private var routePreviewJob: Job? = null
     private var nextRouteTestRequestId = 0L
     private var activeRouteTestRequestId: Long? = null
 
@@ -84,6 +79,7 @@ class HomeViewModel(
     }
 
     fun onServiceStopped() {
+        cancelRouteTestRequest()
         trafficGeneration++
         trafficJob?.cancel()
         mutableUiState.update {
@@ -106,6 +102,7 @@ class HomeViewModel(
     }
 
     fun openRouteTest() {
+        routePreviewJob?.cancel()
         activeRouteTestRequestId = null
         mutableRouteTestState.update {
             it.copy(isOpen = true, isTesting = false, errorMessage = null, preview = null)
@@ -113,43 +110,50 @@ class HomeViewModel(
     }
 
     fun dismissRouteTest() {
+        routePreviewJob?.cancel()
         activeRouteTestRequestId = null
         mutableRouteTestState.update { it.copy(isOpen = false, isTesting = false) }
     }
 
     fun cancelRouteTestRequest() {
+        routePreviewJob?.cancel()
         activeRouteTestRequestId = null
         mutableRouteTestState.update { it.copy(isTesting = false) }
     }
 
     fun changeRouteTestTarget(target: String) {
+        routePreviewJob?.cancel()
+        activeRouteTestRequestId = null
         mutableRouteTestState.update {
-            it.copy(target = target, errorMessage = null, preview = null)
+            it.copy(target = target, isTesting = false, errorMessage = null, preview = null)
         }
     }
 
-    fun prepareRouteTest(
+    fun submitRouteTest(
         serviceRunning: Boolean,
         invalidTargetMessage: String,
         serviceRequiredMessage: String,
-    ): RouteTestRequest? {
+        testFailedMessage: String,
+    ) {
+        routePreviewJob?.cancel()
+        activeRouteTestRequestId = null
         val state = mutableRouteTestState.value
         val target = normalizeRouteTarget(state.target.trim())
         if (target == null) {
             mutableRouteTestState.update {
-                it.copy(errorMessage = invalidTargetMessage, preview = null)
+                it.copy(isTesting = false, errorMessage = invalidTargetMessage, preview = null)
             }
-            return null
+            return
         }
         if (!serviceRunning) {
             mutableRouteTestState.update {
-                it.copy(errorMessage = serviceRequiredMessage, preview = null)
+                it.copy(isTesting = false, errorMessage = serviceRequiredMessage, preview = null)
             }
-            return null
+            return
         }
 
-        val request = RouteTestRequest(target, ++nextRouteTestRequestId)
-        activeRouteTestRequestId = request.id
+        val requestId = ++nextRouteTestRequestId
+        activeRouteTestRequestId = requestId
         mutableRouteTestState.update {
             it.copy(
                 target = target,
@@ -158,30 +162,30 @@ class HomeViewModel(
                 preview = null,
             )
         }
-        return request
-    }
-
-    fun completeRouteTest(request: RouteTestRequest, preview: RoutePreview) {
-        mutableRouteTestState.update { state ->
-            if (!isCurrentRouteTestRequest(state, request)) state
-            else state.copy(
-                isTesting = false,
-                errorMessage = preview.error,
-                preview = preview.takeIf { it.error == null },
-            )
+        routePreviewJob = viewModelScope.launch {
+            try {
+                val preview = repository.previewRoute(target)
+                mutableRouteTestState.update { current ->
+                    if (!isCurrentRouteTestRequest(current, target, requestId)) current
+                    else current.copy(
+                        isTesting = false,
+                        errorMessage = preview.error,
+                        preview = preview.takeIf { it.error == null },
+                    )
+                }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                mutableRouteTestState.update { current ->
+                    if (!isCurrentRouteTestRequest(current, target, requestId)) current
+                    else current.copy(isTesting = false, errorMessage = testFailedMessage, preview = null)
+                }
+            }
         }
     }
 
-    fun failRouteTest(request: RouteTestRequest, errorMessage: String) {
-        mutableRouteTestState.update { state ->
-            if (!isCurrentRouteTestRequest(state, request)) state
-            else state.copy(isTesting = false, errorMessage = errorMessage, preview = null)
-        }
-    }
-
-    private fun isCurrentRouteTestRequest(state: RouteTestUiState, request: RouteTestRequest): Boolean =
-        state.isOpen && state.isTesting && state.target == request.target &&
-            activeRouteTestRequestId == request.id
+    private fun isCurrentRouteTestRequest(state: RouteTestUiState, target: String, id: Long): Boolean =
+        state.isOpen && state.isTesting && state.target == target && activeRouteTestRequestId == id
 
     fun testAllSiteLatencies() {
         mutableUiState.update { it.copy(latencyTesting = true) }

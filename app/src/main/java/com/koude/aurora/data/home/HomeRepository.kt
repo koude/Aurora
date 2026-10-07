@@ -1,6 +1,7 @@
 package com.koude.aurora.data.home
 
 import com.github.kr328.clash.core.Clash
+import com.github.kr328.clash.core.model.RoutePreview
 import com.github.kr328.clash.core.model.TunnelState
 import com.github.kr328.clash.core.util.trafficDownload
 import com.github.kr328.clash.core.util.trafficUpload
@@ -21,6 +22,7 @@ interface HomeRepository {
     suspend fun connection(): HomeConnectionSnapshot
     suspend fun traffic(): HomeTrafficSnapshot
     suspend fun setMode(mode: TunnelState.Mode)
+    suspend fun previewRoute(target: String): RoutePreview
 }
 
 class ServiceHomeRepository : HomeRepository {
@@ -45,4 +47,7 @@ class ServiceHomeRepository : HomeRepository {
             patchOverride(Clash.OverrideSlot.Session, override)
         }
     }
+
+    override suspend fun previewRoute(target: String): RoutePreview =
+        withClash { queryRoutePreview(target) }
 }
