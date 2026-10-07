@@ -5,14 +5,18 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.github.kr328.clash.core.model.RoutePreview
 import com.github.kr328.clash.core.model.TunnelState
+import com.koude.aurora.data.home.HomeRepository
+import com.koude.aurora.data.home.ServiceHomeRepository
 import com.koude.aurora.data.home.WebsiteLatencyRepository
 import com.koude.aurora.data.home.WebsiteLatencyRepositoryProvider
 import com.koude.aurora.model.WebsiteLatencySite
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.net.URI
@@ -24,29 +28,81 @@ class RouteTestRequest internal constructor(
 
 class HomeViewModel(
     private val latencyRepository: WebsiteLatencyRepository,
+    private val repository: HomeRepository = ServiceHomeRepository(),
 ) : ViewModel() {
     private val mutableUiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = mutableUiState.asStateFlow()
     private val latencyJobs = mutableMapOf<WebsiteLatencySite, Job>()
+    private val errorChannel = Channel<Throwable>(Channel.BUFFERED)
+    val errors = errorChannel.receiveAsFlow()
+    private var connectionJob: Job? = null
+    private var trafficJob: Job? = null
+    private var connectionGeneration = 0
+    private var trafficGeneration = 0
     private val mutableRouteTestState = MutableStateFlow(RouteTestUiState())
     val routeTestState: StateFlow<RouteTestUiState> = mutableRouteTestState.asStateFlow()
     private var nextRouteTestRequestId = 0L
     private var activeRouteTestRequestId: Long? = null
 
-    fun updateConnection(running: Boolean, mode: TunnelState.Mode, profileName: String?) {
-        mutableUiState.update { it.copy(running = running, mode = mode, profileName = profileName) }
+    fun refreshConnection(running: Boolean) {
+        connectionJob?.cancel()
+        val generation = ++connectionGeneration
+        if (!running) mutableUiState.update { it.copy(running = false) }
+        connectionJob = viewModelScope.launch {
+            try {
+                val connection = repository.connection()
+                if (generation == connectionGeneration) {
+                    mutableUiState.update {
+                        it.copy(running = running, mode = connection.mode, profileName = connection.profileName)
+                    }
+                }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                if (generation == connectionGeneration) errorChannel.send(error)
+            }
+        }
     }
 
-    fun updateTraffic(uploadSpeed: String, downloadSpeed: String) {
-        mutableUiState.update { it.copy(uploadSpeed = uploadSpeed, downloadSpeed = downloadSpeed) }
+    fun refreshTraffic() {
+        if (!uiState.value.running || trafficJob?.isActive == true) return
+        val generation = trafficGeneration
+        trafficJob = viewModelScope.launch {
+            try {
+                val traffic = repository.traffic()
+                if (generation == trafficGeneration && uiState.value.running) {
+                    mutableUiState.update {
+                        it.copy(uploadSpeed = traffic.uploadSpeed, downloadSpeed = traffic.downloadSpeed)
+                    }
+                }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                // A single failed sample must not stop the periodic traffic loop.
+            }
+        }
     }
 
-    fun updateMode(mode: TunnelState.Mode) {
-        mutableUiState.update { it.copy(mode = mode) }
+    fun onServiceStopped() {
+        trafficGeneration++
+        trafficJob?.cancel()
+        mutableUiState.update {
+            it.copy(running = false, uploadSpeed = "-- B/s", downloadSpeed = "-- B/s")
+        }
+        refreshConnection(false)
     }
 
-    fun clearTraffic() {
-        updateTraffic("-- B/s", "-- B/s")
+    fun setMode(mode: TunnelState.Mode) {
+        viewModelScope.launch {
+            try {
+                repository.setMode(mode)
+                mutableUiState.update { it.copy(mode = mode) }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                errorChannel.send(error)
+            }
+        }
     }
 
     fun openRouteTest() {
@@ -188,7 +244,7 @@ class HomeViewModel(
         val Factory: ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                HomeViewModel(WebsiteLatencyRepositoryProvider.instance) as T
+                HomeViewModel(WebsiteLatencyRepositoryProvider.instance, ServiceHomeRepository()) as T
         }
     }
 }

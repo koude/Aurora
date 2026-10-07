@@ -49,12 +49,8 @@ import com.github.kr328.clash.common.constants.Intents
 import com.github.kr328.clash.common.util.intent
 import com.github.kr328.clash.common.util.setUUID
 import com.github.kr328.clash.common.util.ticker
-import com.github.kr328.clash.core.Clash
 import com.github.kr328.clash.core.model.FetchStatus
 import com.github.kr328.clash.core.model.RoutePreview
-import com.github.kr328.clash.core.model.TunnelState
-import com.github.kr328.clash.core.util.trafficDownload
-import com.github.kr328.clash.core.util.trafficUpload
 import com.github.kr328.clash.remote.FilesClient
 import com.github.kr328.clash.service.model.Profile
 import com.github.kr328.clash.util.fileName
@@ -125,8 +121,9 @@ class MainActivity : BaseActivity() {
     override suspend fun main() {
         setContent { AuroraTheme { AuroraApp() } }
 
-        fetch()
+        homeViewModel.refreshConnection(clashRunning)
         proxyViewModel.refresh(clashRunning)
+        launch { homeViewModel.errors.collect(::showError) }
         launch { proxyViewModel.errors.collect(::showError) }
 
         val ticker = ticker(TimeUnit.SECONDS.toMillis(1))
@@ -135,22 +132,21 @@ class MainActivity : BaseActivity() {
                 events.onReceive { event ->
                     when (event) {
                         Event.ActivityStart, Event.ServiceRecreated, Event.ProfileChanged -> {
-                            fetch()
+                            homeViewModel.refreshConnection(clashRunning)
                             if (activeRoute.value == ROUTE_CONNECTIONS) connectionsViewModel.refresh(clashRunning)
                         }
                         Event.ClashStart -> {
-                            fetch()
+                            homeViewModel.refreshConnection(clashRunning)
                             proxyViewModel.refresh(clashRunning)
                             if (activeRoute.value == ROUTE_CONNECTIONS) connectionsViewModel.refresh(clashRunning)
                         }
                         Event.ClashStop -> {
-                            fetch()
+                            homeViewModel.onServiceStopped()
                             proxyViewModel.onServiceStopped()
                             connectionsViewModel.refresh(false)
-                            homeViewModel.clearTraffic()
                         }
                         Event.ProfileLoaded -> {
-                            fetch()
+                            homeViewModel.refreshConnection(clashRunning)
                             proxyViewModel.onProfileLoaded(clashRunning)
                         }
                         Event.ProfileUpdateCompleted, Event.ProfileUpdateFailed -> profilesViewModel.refresh()
@@ -158,7 +154,7 @@ class MainActivity : BaseActivity() {
                     }
                 }
                 if (clashRunning) ticker.onReceive {
-                    fetchTraffic()
+                    homeViewModel.refreshTraffic()
                     if (activeRoute.value == ROUTE_CONNECTIONS) connectionsViewModel.refresh(clashRunning)
                 }
             }
@@ -227,7 +223,7 @@ class MainActivity : BaseActivity() {
                         onToggleConnection = {
                             launch { if (clashRunning) stopClashService() else startClash() }
                         },
-                        onModeSelected = { launch { patchMode(it) } },
+                        onModeSelected = homeViewModel::setMode,
                         onTestLatency = {
                             homeViewModel.testAllSiteLatencies()
                         },
@@ -329,32 +325,6 @@ class MainActivity : BaseActivity() {
             restoreState = true
             popUpTo(graph.startDestinationId) { saveState = true }
         }
-    }
-
-    private suspend fun fetch() {
-        val state = withClash { queryTunnelState() }
-        val profileName = withProfile { queryActive()?.name }
-
-        homeViewModel.updateConnection(clashRunning, state.mode, profileName)
-    }
-
-    private suspend fun fetchTraffic() {
-        withClash {
-            val traffic = queryTrafficNow()
-            homeViewModel.updateTraffic(
-                uploadSpeed = "${traffic.trafficUpload()}/s",
-                downloadSpeed = "${traffic.trafficDownload()}/s",
-            )
-        }
-    }
-
-    private suspend fun patchMode(mode: TunnelState.Mode) {
-        withClash {
-            val override = queryOverride(Clash.OverrideSlot.Session)
-            override.mode = mode
-            patchOverride(Clash.OverrideSlot.Session, override)
-        }
-        homeViewModel.updateMode(mode)
     }
 
     private suspend fun startClash() {

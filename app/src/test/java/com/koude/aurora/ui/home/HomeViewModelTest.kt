@@ -1,16 +1,22 @@
 package com.koude.aurora.ui.home
 
+import com.github.kr328.clash.core.model.TunnelState
+import com.koude.aurora.data.home.HomeConnectionSnapshot
+import com.koude.aurora.data.home.HomeRepository
+import com.koude.aurora.data.home.HomeTrafficSnapshot
 import com.koude.aurora.data.home.WebsiteLatencyRepository
 import com.koude.aurora.model.WebsiteLatencySite
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import kotlinx.coroutines.withContext
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -30,6 +36,91 @@ class HomeViewModelTest {
     @After
     fun tearDown() {
         Dispatchers.resetMain()
+    }
+
+    @Test
+    fun connectionRefreshLoadsModeAndActiveProfile() = runTest(dispatcher) {
+        val repository = FakeHomeRepository()
+        repository.connectionResult = HomeConnectionSnapshot(TunnelState.Mode.Global, "Daily")
+        val viewModel = HomeViewModel(FakeWebsiteLatencyRepository { null }, repository)
+
+        viewModel.refreshConnection(true)
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value.running)
+        assertEquals(TunnelState.Mode.Global, viewModel.uiState.value.mode)
+        assertEquals("Daily", viewModel.uiState.value.profileName)
+    }
+
+    @Test
+    fun trafficRefreshShowsSpeedsAndStopDiscardsLateSample() = runTest(dispatcher) {
+        val pending = CompletableDeferred<HomeTrafficSnapshot>()
+        val repository = FakeHomeRepository()
+        val viewModel = HomeViewModel(FakeWebsiteLatencyRepository { null }, repository)
+        viewModel.refreshConnection(true)
+        advanceUntilIdle()
+        repository.trafficAction = { withContext(NonCancellable) { pending.await() } }
+
+        viewModel.refreshTraffic()
+        advanceUntilIdle()
+        viewModel.onServiceStopped()
+        pending.complete(HomeTrafficSnapshot("10 KB/s", "20 KB/s"))
+        advanceUntilIdle()
+
+        assertFalse(viewModel.uiState.value.running)
+        assertEquals("-- B/s", viewModel.uiState.value.uploadSpeed)
+        assertEquals("-- B/s", viewModel.uiState.value.downloadSpeed)
+    }
+
+    @Test
+    fun serviceStopDiscardsLateConnectionResult() = runTest(dispatcher) {
+        val pending = CompletableDeferred<HomeConnectionSnapshot>()
+        val repository = FakeHomeRepository()
+        repository.connectionAction = { withContext(NonCancellable) { pending.await() } }
+        val viewModel = HomeViewModel(FakeWebsiteLatencyRepository { null }, repository)
+
+        viewModel.refreshConnection(true)
+        advanceUntilIdle()
+        repository.connectionAction = null
+        viewModel.onServiceStopped()
+        pending.complete(HomeConnectionSnapshot(TunnelState.Mode.Global, "Stale"))
+        advanceUntilIdle()
+
+        assertFalse(viewModel.uiState.value.running)
+        assertEquals(TunnelState.Mode.Rule, viewModel.uiState.value.mode)
+        assertEquals(null, viewModel.uiState.value.profileName)
+    }
+
+    @Test
+    fun trafficRefreshUsesRepositoryFormattedSpeeds() = runTest(dispatcher) {
+        val repository = FakeHomeRepository()
+        repository.trafficAction = { HomeTrafficSnapshot("10 KB/s", "20 KB/s") }
+        val viewModel = HomeViewModel(FakeWebsiteLatencyRepository { null }, repository)
+        viewModel.refreshConnection(true)
+        advanceUntilIdle()
+
+        viewModel.refreshTraffic()
+        advanceUntilIdle()
+
+        assertEquals("10 KB/s", viewModel.uiState.value.uploadSpeed)
+        assertEquals("20 KB/s", viewModel.uiState.value.downloadSpeed)
+    }
+
+    @Test
+    fun modeChangesOnlyAfterRepositoryPatchSucceeds() = runTest(dispatcher) {
+        val pending = CompletableDeferred<Unit>()
+        val repository = FakeHomeRepository()
+        repository.modeAction = { pending.await() }
+        val viewModel = HomeViewModel(FakeWebsiteLatencyRepository { null }, repository)
+
+        viewModel.setMode(TunnelState.Mode.Direct)
+        runCurrent()
+        assertEquals(TunnelState.Mode.Rule, viewModel.uiState.value.mode)
+
+        pending.complete(Unit)
+        advanceUntilIdle()
+        assertEquals(listOf(TunnelState.Mode.Direct), repository.patchedModes)
+        assertEquals(TunnelState.Mode.Direct, viewModel.uiState.value.mode)
     }
 
     @Test
@@ -178,6 +269,25 @@ class HomeViewModelTest {
         override suspend fun measure(site: WebsiteLatencySite): Long? {
             requests += site
             return result(site)
+        }
+    }
+
+    private class FakeHomeRepository : HomeRepository {
+        var connectionResult = HomeConnectionSnapshot(TunnelState.Mode.Rule, null)
+        var connectionAction: (suspend () -> HomeConnectionSnapshot)? = null
+        var trafficAction: (suspend () -> HomeTrafficSnapshot)? = null
+        var modeAction: (suspend () -> Unit)? = null
+        val patchedModes = mutableListOf<TunnelState.Mode>()
+
+        override suspend fun connection(): HomeConnectionSnapshot =
+            connectionAction?.invoke() ?: connectionResult
+
+        override suspend fun traffic(): HomeTrafficSnapshot =
+            trafficAction?.invoke() ?: HomeTrafficSnapshot("1 KB/s", "2 KB/s")
+
+        override suspend fun setMode(mode: TunnelState.Mode) {
+            modeAction?.invoke()
+            patchedModes += mode
         }
     }
 }
