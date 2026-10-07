@@ -2,31 +2,43 @@ package com.github.kr328.clash
 
 import android.widget.Toast
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.github.kr328.clash.common.util.ticker
-import com.github.kr328.clash.core.model.Provider
 import com.github.kr328.clash.design.R as DesignR
-import com.github.kr328.clash.util.withClash
 import com.koude.aurora.designsystem.theme.AuroraTheme
-import com.koude.aurora.ui.providers.ProviderRowState
 import com.koude.aurora.ui.providers.ProvidersScreen
+import com.koude.aurora.ui.providers.ProvidersViewModel
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.selects.select
 import java.util.concurrent.TimeUnit
 
 class ProvidersActivity : BaseActivity() {
-    private val providerRows = mutableStateOf<List<ProviderRowState>>(emptyList())
+    private val viewModel: ProvidersViewModel by viewModels { ProvidersViewModel.Factory }
     private val currentTime = mutableStateOf(System.currentTimeMillis())
 
     override suspend fun main() {
-        providerRows.value = withClash { queryProviders().sorted() }.map { ProviderRowState(it, it.updatedAt) }
+        launch {
+            viewModel.errors.collect { error ->
+                Toast.makeText(
+                    this@ProvidersActivity,
+                    getString(DesignR.string.format_update_provider_failure, error.name, error.message),
+                    Toast.LENGTH_LONG,
+                ).show()
+            }
+        }
+        viewModel.refresh()
         setContent {
             AuroraTheme {
+                val providerRows by viewModel.rows.collectAsStateWithLifecycle()
                 ProvidersScreen(
-                    providers = providerRows.value,
+                    providers = providerRows,
                     now = currentTime.value,
-                    onUpdate = ::updateProvider,
+                    onUpdate = viewModel::update,
                     onBack = ::finish,
                 )
             }
@@ -37,7 +49,7 @@ class ProvidersActivity : BaseActivity() {
             select<Unit> {
                 events.onReceive {
                     if (it == Event.ProfileLoaded) {
-                        providerRows.value = withClash { queryProviders().sorted() }.map { ProviderRowState(it, it.updatedAt) }
+                        viewModel.refresh()
                     }
                 }
                 if (activityStarted) ticker.onReceive { currentTime.value = System.currentTimeMillis() }
@@ -45,30 +57,4 @@ class ProvidersActivity : BaseActivity() {
         }
     }
 
-    private fun updateProvider(index: Int) {
-        val row = providerRows.value.getOrNull(index) ?: return
-        if (row.updating || row.provider.vehicleType == Provider.VehicleType.Inline) return
-        val key = row.provider.name to row.provider.type
-        providerRows.value = providerRows.value.toMutableList().also { it[index] = row.copy(updating = true) }
-
-        launch {
-            try {
-                withClash { updateProvider(row.provider.type, row.provider.name) }
-                updateRow(key) { it.copy(updating = false, updatedAt = System.currentTimeMillis()) }
-            } catch (e: Exception) {
-                updateRow(key) { it.copy(updating = false) }
-                Toast.makeText(
-                    this@ProvidersActivity,
-                    getString(DesignR.string.format_update_provider_failure, row.provider.name, e.message ?: ""),
-                    Toast.LENGTH_LONG,
-                ).show()
-            }
-        }
-    }
-
-    private fun updateRow(key: Pair<String, Provider.Type>, transform: (ProviderRowState) -> ProviderRowState) {
-        providerRows.value = providerRows.value.map { row ->
-            if (row.provider.name == key.first && row.provider.type == key.second) transform(row) else row
-        }
-    }
 }
