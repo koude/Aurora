@@ -51,8 +51,6 @@ import com.github.kr328.clash.common.util.setUUID
 import com.github.kr328.clash.common.util.ticker
 import com.github.kr328.clash.core.Clash
 import com.github.kr328.clash.core.model.FetchStatus
-import com.github.kr328.clash.core.model.Proxy
-import com.github.kr328.clash.core.model.ProxyGroup
 import com.github.kr328.clash.core.model.RoutePreview
 import com.github.kr328.clash.core.model.TunnelState
 import com.github.kr328.clash.core.util.trafficDownload
@@ -79,20 +77,14 @@ import com.koude.aurora.ui.profiles.ProfilesScreen
 import com.koude.aurora.ui.profiles.ProfileImportProgress
 import com.koude.aurora.ui.profiles.ProfilesViewModel
 import com.koude.aurora.ui.profiles.toProfileImportProgress
-import com.koude.aurora.ui.proxy.ProxyGroupUiState
-import com.koude.aurora.ui.proxy.ProxyRouteUiState
 import com.koude.aurora.ui.proxy.ProxyScreen
-import com.koude.aurora.ui.proxy.ProxyUiState
-import com.koude.aurora.ui.proxy.expandedProxyGroup
-import com.koude.aurora.ui.proxy.expandedProxyGroupsForRoute
+import com.koude.aurora.ui.proxy.ProxyViewModel
 import com.koude.aurora.ui.settings.SettingsScreen
 import io.github.g00fy2.quickie.QRResult
 import io.github.g00fy2.quickie.ScanQRCode
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.selects.select
@@ -107,10 +99,6 @@ private data class AuroraErrorDialogState(
 
 class MainActivity : BaseActivity() {
     private var routePreviewJob: Job? = null
-    private var proxyRefreshJob: Job? = null
-    private val testedProxyGroups = mutableSetOf<String>()
-    private val testedActiveProxies = mutableSetOf<String>()
-    private val proxyUiState = mutableStateOf(ProxyUiState())
     private val errorDialogState = mutableStateOf<AuroraErrorDialogState?>(null)
     private val profileImportProgress = mutableStateOf<ProfileImportProgress?>(null)
     private var profileImportInProgress = false
@@ -120,6 +108,9 @@ class MainActivity : BaseActivity() {
     private val requestedRoute = mutableStateOf<String?>(null)
     private val profilesViewModel: ProfilesViewModel by viewModels { ProfilesViewModel.Factory }
     private val homeViewModel: HomeViewModel by viewModels { HomeViewModel.Factory }
+    private val proxyViewModel: ProxyViewModel by viewModels {
+        ProxyViewModel.factory(applicationContext)
+    }
     private val connectionsViewModel: ConnectionsViewModel by viewModels {
         ConnectionsViewModel.factory(applicationContext)
     }
@@ -135,7 +126,8 @@ class MainActivity : BaseActivity() {
         setContent { AuroraTheme { AuroraApp() } }
 
         fetch()
-        refreshProxy()
+        proxyViewModel.refresh(clashRunning)
+        launch { proxyViewModel.errors.collect(::showError) }
 
         val ticker = ticker(TimeUnit.SECONDS.toMillis(1))
         while (isActive) {
@@ -148,22 +140,18 @@ class MainActivity : BaseActivity() {
                         }
                         Event.ClashStart -> {
                             fetch()
-                            refreshProxy()
+                            proxyViewModel.refresh(clashRunning)
                             if (activeRoute.value == ROUTE_CONNECTIONS) connectionsViewModel.refresh(clashRunning)
                         }
                         Event.ClashStop -> {
                             fetch()
-                            testedProxyGroups.clear()
-                            testedActiveProxies.clear()
-                            proxyUiState.value = ProxyUiState(serviceRunning = false)
+                            proxyViewModel.onServiceStopped()
                             connectionsViewModel.refresh(false)
                             homeViewModel.clearTraffic()
                         }
                         Event.ProfileLoaded -> {
                             fetch()
-                            testedProxyGroups.clear()
-                            testedActiveProxies.clear()
-                            refreshProxy()
+                            proxyViewModel.onProfileLoaded(clashRunning)
                         }
                         Event.ProfileUpdateCompleted, Event.ProfileUpdateFailed -> profilesViewModel.refresh()
                         else -> Unit
@@ -189,6 +177,7 @@ class MainActivity : BaseActivity() {
         val homeState by homeViewModel.uiState.collectAsStateWithLifecycle()
         val routeTestState by homeViewModel.routeTestState.collectAsStateWithLifecycle()
         val connectionsState by connectionsViewModel.uiState.collectAsStateWithLifecycle()
+        val proxyState by proxyViewModel.uiState.collectAsStateWithLifecycle()
 
         LaunchedEffect(requestedRoute.value, backStackEntry) {
             val route = requestedRoute.value
@@ -206,12 +195,7 @@ class MainActivity : BaseActivity() {
             if (route != ROUTE_HOME && routeTestState.isOpen) {
                 dismissRouteTest()
             }
-            val expandedGroups = expandedProxyGroupsForRoute(
-                route, ROUTE_PROXY, proxyUiState.value.expandedGroups,
-            )
-            if (expandedGroups != proxyUiState.value.expandedGroups) {
-                proxyUiState.value = proxyUiState.value.copy(expandedGroups = expandedGroups)
-            }
+            proxyViewModel.onRouteChanged(route, ROUTE_PROXY)
             if (route in persistedMainRoutes) {
                 uiStore.lastMainRoute = route
             }
@@ -267,22 +251,16 @@ class MainActivity : BaseActivity() {
                 }
                 composable(ROUTE_PROXY) {
                     ProxyScreen(
-                        state = proxyUiState.value,
-                        onSelectGroup = ::selectProxyGroup,
-                        onGroupExpandedChange = ::setProxyGroupExpanded,
-                        onSelectProxy = { index, name -> launch { selectProxy(index, name) } },
+                        state = proxyState,
+                        onSelectGroup = proxyViewModel::selectGroup,
+                        onGroupExpandedChange = proxyViewModel::setGroupExpanded,
+                        onSelectProxy = proxyViewModel::selectProxy,
                         onRefresh = { expandedGroupIndex ->
-                            if (expandedGroupIndex == null) refreshActiveProxyEndpoints()
-                            else launch { testProxyGroup(expandedGroupIndex) }
+                            if (expandedGroupIndex == null) proxyViewModel.testActiveEndpoints()
+                            else proxyViewModel.testGroup(expandedGroupIndex)
                         },
-                        onSortChanged = { sort ->
-                            uiStore.proxySort = sort
-                            refreshProxy()
-                        },
-                        onHideUnselectableChanged = { hide ->
-                            uiStore.proxyExcludeNotSelectable = hide
-                            refreshProxy()
-                        },
+                        onSortChanged = proxyViewModel::setSort,
+                        onHideUnselectableChanged = proxyViewModel::setHideUnselectable,
                     )
                 }
                 composable(ROUTE_PROFILES) {
@@ -377,195 +355,6 @@ class MainActivity : BaseActivity() {
             patchOverride(Clash.OverrideSlot.Session, override)
         }
         homeViewModel.updateMode(mode)
-    }
-
-    private fun refreshProxy() {
-        proxyRefreshJob?.cancel()
-        proxyRefreshJob = launch {
-            if (!clashRunning) {
-                proxyUiState.value = ProxyUiState(serviceRunning = false)
-                return@launch
-            }
-            proxyUiState.value = proxyUiState.value.copy(
-                loading = true,
-                serviceRunning = true,
-                errorMessage = null,
-            )
-            runCatching {
-                val names = withClash { queryProxyGroupNames(uiStore.proxyExcludeNotSelectable) }
-                val groupsByName = linkedMapOf<String, ProxyGroup>()
-                val rootGroups = coroutineScope {
-                    names.map { name ->
-                        async {
-                            name to withClash { queryProxyGroup(name, uiStore.proxySort) }
-                        }
-                    }.awaitAll()
-                }
-                groupsByName.putAll(rootGroups)
-
-                suspend fun resolveRoute(proxy: Proxy, visited: Set<String> = emptySet()): ProxyRouteUiState? {
-                    if (!proxy.isGroup || proxy.name in visited) return null
-                    val group = groupsByName[proxy.name] ?: withClash {
-                        queryProxyGroup(proxy.name, uiStore.proxySort)
-                    }.also { groupsByName[proxy.name] = it }
-                    val selected = group.proxies.firstOrNull { it.name == group.now } ?: return null
-                    val nextVisited = visited + proxy.name
-                    val childRoute = if (selected.isGroup) resolveRoute(selected, nextVisited) else null
-                    return ProxyRouteUiState(
-                        names = listOf(proxy.name) + (childRoute?.names ?: listOf(selected.name)),
-                        delay = childRoute?.delay ?: selected.delay,
-                    )
-                }
-
-                val groups = names.map { name ->
-                    val group = groupsByName.getValue(name)
-                    val routes = group.proxies.mapNotNull { proxy ->
-                        resolveRoute(proxy)?.let { proxy.name to it }
-                    }.toMap()
-                    ProxyGroupUiState(
-                        name = name,
-                        type = group.type,
-                        selectedProxy = group.now,
-                        selectable = group.type == "Selector",
-                        delayTested = name in testedProxyGroups,
-                        proxies = group.proxies,
-                        nestedRoutes = routes,
-                        activeDelay = routes[group.now]?.delay
-                            ?: group.proxies.firstOrNull { it.name == group.now }?.delay
-                            ?: 65535,
-                        activeDelayTested = activeEndpointFor(group.now, routes, group.proxies)
-                            ?.let { it in testedActiveProxies } == true,
-                    )
-                }
-                val selected = names.indexOf(uiStore.proxyLastGroup).takeIf { it >= 0 } ?: 0
-                ProxyUiState(
-                    loading = false,
-                    serviceRunning = true,
-                    groups = groups,
-                    selectedGroupIndex = selected,
-                    sort = uiStore.proxySort,
-                    hideUnselectableGroups = uiStore.proxyExcludeNotSelectable,
-                    activeEndpointsTesting = proxyUiState.value.activeEndpointsTesting,
-                )
-            }.onSuccess {
-                proxyUiState.value = it.copy(expandedGroups = proxyUiState.value.expandedGroups)
-            }
-                .onFailure {
-                    proxyUiState.value = proxyUiState.value.copy(
-                        loading = false,
-                        serviceRunning = clashRunning,
-                        errorMessage = it.message ?: "代理列表加载失败",
-                    )
-                }
-        }
-    }
-
-    private fun selectProxyGroup(index: Int) {
-        val group = proxyUiState.value.groups.getOrNull(index) ?: return
-        uiStore.proxyLastGroup = group.name
-        proxyUiState.value = proxyUiState.value.copy(selectedGroupIndex = index)
-    }
-
-    private fun setProxyGroupExpanded(name: String, expanded: Boolean) {
-        val expandedGroups = expandedProxyGroup(name, expanded)
-        proxyUiState.value = proxyUiState.value.copy(expandedGroups = expandedGroups)
-    }
-
-    private fun activeEndpointFor(
-        selected: String,
-        routes: Map<String, ProxyRouteUiState>,
-        proxies: List<Proxy>,
-    ): String? {
-        val route = routes[selected]?.names?.lastOrNull()
-        if (!route.isNullOrBlank()) return route
-        return proxies.firstOrNull { it.name == selected && !it.isGroup }?.name
-    }
-
-    private fun refreshActiveProxyEndpoints() {
-        if (proxyUiState.value.activeEndpointsTesting) return
-        if (!clashRunning) {
-            refreshProxy()
-            return
-        }
-        launch {
-            val currentGroups = proxyUiState.value.groups
-            val endpoints = currentGroups.mapNotNull { group ->
-                activeEndpointFor(group.selectedProxy, group.nestedRoutes, group.proxies)
-            }.distinct()
-            if (endpoints.isEmpty()) {
-                refreshProxy()
-                return@launch
-            }
-
-            proxyUiState.value = proxyUiState.value.copy(activeEndpointsTesting = true)
-            try {
-                endpoints.forEach { endpoint -> withClash { testProxy(endpoint) } }
-                testedActiveProxies += endpoints
-            } catch (error: Exception) {
-                showError(error)
-            } finally {
-                proxyUiState.value = proxyUiState.value.copy(activeEndpointsTesting = false)
-                refreshProxy()
-            }
-        }
-    }
-
-    private suspend fun selectProxy(index: Int, name: String) {
-        val group = proxyUiState.value.groups.getOrNull(index) ?: return
-        if (!group.selectable || group.selectingProxy != null) return
-
-        val pendingGroups = proxyUiState.value.groups.toMutableList()
-        pendingGroups[index] = group.copy(selectingProxy = name)
-        proxyUiState.value = proxyUiState.value.copy(groups = pendingGroups)
-
-        runCatching { withClash { patchSelector(group.name, name) } }
-            .onSuccess {
-                clearProxySelectionPending(index, name)
-                refreshProxy()
-            }
-            .onFailure { error ->
-                clearProxySelectionPending(index, name)
-                refreshProxy()
-                showError(IllegalStateException("切换到 $name 失败：${error.message ?: "操作未成功"}", error))
-            }
-    }
-
-    private fun clearProxySelectionPending(index: Int, name: String) {
-        val groups = proxyUiState.value.groups.toMutableList()
-        val group = groups.getOrNull(index) ?: return
-        if (group.selectingProxy != name) return
-        groups[index] = group.copy(selectingProxy = null)
-        proxyUiState.value = proxyUiState.value.copy(groups = groups)
-    }
-
-    private suspend fun testProxyGroup(index: Int) {
-        val group = proxyUiState.value.groups.getOrNull(index) ?: return
-        setProxyGroupTesting(index, true)
-        try {
-            withClash { healthCheck(group.name) }
-            val refreshed = withClash { queryProxyGroup(group.name, uiStore.proxySort) }
-            val groups = proxyUiState.value.groups.toMutableList()
-            testedProxyGroups += group.name
-            groups[index] = group.copy(
-                selectedProxy = refreshed.now,
-                selectable = refreshed.type == "Selector",
-                delayTested = true,
-                proxies = refreshed.proxies,
-                testing = false,
-            )
-            proxyUiState.value = proxyUiState.value.copy(groups = groups)
-            refreshProxy()
-        } catch (error: Exception) {
-            setProxyGroupTesting(index, false)
-            showError(error)
-        }
-    }
-
-    private fun setProxyGroupTesting(index: Int, testing: Boolean) {
-        val groups = proxyUiState.value.groups.toMutableList()
-        val group = groups.getOrNull(index) ?: return
-        groups[index] = group.copy(testing = testing)
-        proxyUiState.value = proxyUiState.value.copy(groups = groups)
     }
 
     private suspend fun startClash() {
