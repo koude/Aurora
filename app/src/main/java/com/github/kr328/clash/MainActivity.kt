@@ -49,15 +49,10 @@ import com.github.kr328.clash.common.constants.Intents
 import com.github.kr328.clash.common.util.intent
 import com.github.kr328.clash.common.util.setUUID
 import com.github.kr328.clash.common.util.ticker
-import com.github.kr328.clash.core.model.FetchStatus
-import com.github.kr328.clash.remote.FilesClient
-import com.github.kr328.clash.service.model.Profile
 import com.github.kr328.clash.util.fileName
 import com.github.kr328.clash.util.startClashService
 import com.github.kr328.clash.util.stopClashService
 import com.github.kr328.clash.util.withProfile
-import com.koude.aurora.data.profiles.ProfileImportCoordinator
-import com.koude.aurora.data.profiles.ServiceProfileImportGateway
 import com.koude.aurora.designsystem.theme.AuroraTheme
 import com.koude.aurora.ui.components.AuroraBottomNavigation
 import com.koude.aurora.ui.components.AuroraDestination
@@ -68,9 +63,7 @@ import com.koude.aurora.ui.home.HomeViewModel
 import com.koude.aurora.ui.navigation.initialMainRoute
 import com.koude.aurora.ui.navigation.persistedMainRoutes
 import com.koude.aurora.ui.profiles.ProfilesScreen
-import com.koude.aurora.ui.profiles.ProfileImportProgress
 import com.koude.aurora.ui.profiles.ProfilesViewModel
-import com.koude.aurora.ui.profiles.toProfileImportProgress
 import com.koude.aurora.ui.proxy.ProxyScreen
 import com.koude.aurora.ui.proxy.ProxyViewModel
 import com.koude.aurora.ui.settings.SettingsScreen
@@ -81,7 +74,6 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.selects.select
-import java.util.UUID
 import java.util.concurrent.TimeUnit
 import com.github.kr328.clash.design.R as DesignR
 
@@ -92,13 +84,11 @@ private data class AuroraErrorDialogState(
 
 class MainActivity : BaseActivity() {
     private val errorDialogState = mutableStateOf<AuroraErrorDialogState?>(null)
-    private val profileImportProgress = mutableStateOf<ProfileImportProgress?>(null)
-    private var profileImportInProgress = false
-    private val profileImportCoordinator = ProfileImportCoordinator(ServiceProfileImportGateway())
-    private var profileImportGeneration = 0
     private val activeRoute = mutableStateOf(ROUTE_HOME)
     private val requestedRoute = mutableStateOf<String?>(null)
-    private val profilesViewModel: ProfilesViewModel by viewModels { ProfilesViewModel.Factory }
+    private val profilesViewModel: ProfilesViewModel by viewModels {
+        ProfilesViewModel.factory(applicationContext)
+    }
     private val homeViewModel: HomeViewModel by viewModels { HomeViewModel.Factory }
     private val proxyViewModel: ProxyViewModel by viewModels {
         ProxyViewModel.factory(applicationContext)
@@ -120,6 +110,12 @@ class MainActivity : BaseActivity() {
         proxyViewModel.refresh(clashRunning)
         launch { homeViewModel.errors.collect(::showError) }
         launch { proxyViewModel.errors.collect(::showError) }
+        launch { profilesViewModel.errors.collect { showError(it.cause, it.title) } }
+        launch {
+            profilesViewModel.duplicatedProfiles.collect {
+                startActivity(PropertiesActivity::class.intent.setUUID(it))
+            }
+        }
 
         val ticker = ticker(TimeUnit.SECONDS.toMillis(1))
         while (isActive) {
@@ -263,16 +259,17 @@ class MainActivity : BaseActivity() {
                 }
                 composable(ROUTE_PROFILES) {
                     val state by profilesViewModel.uiState.collectAsStateWithLifecycle()
+                    val importProgress by profilesViewModel.importProgress.collectAsStateWithLifecycle()
                     ProfilesScreen(
                         state = state,
-                        importProgress = profileImportProgress.value,
+                        importProgress = importProgress,
                         onImportFile = { launch { importProfileFromFile() } },
-                        onImportUrl = { name, url -> launch { importProfile(Profile.Type.Url, name, url) } },
+                        onImportUrl = profilesViewModel::importUrl,
                         onScanQrCode = { scanLauncher.launch(null) },
                         onActivateProfile = profilesViewModel::activate,
                         onUpdateProfile = profilesViewModel::update,
                         onEditProfile = { startActivity(PropertiesActivity::class.intent.setUUID(it)) },
-                        onDuplicateProfile = { launch { duplicateProfile(it) } },
+                        onDuplicateProfile = profilesViewModel::duplicate,
                         onDeleteProfile = profilesViewModel::delete,
                         onUpdateAll = profilesViewModel::updateAll,
                         proxyEnabled = homeState.running,
@@ -355,84 +352,29 @@ class MainActivity : BaseActivity() {
         val uri: Uri = startActivityForResult(ActivityResultContracts.GetContent(), "*/*") ?: return
         val name = uri.fileName?.substringBeforeLast('.')?.takeIf(String::isNotBlank)
             ?: getString(DesignR.string.new_profile)
-        importProfile(Profile.Type.File, name) { uuid ->
-            FilesClient(this).copyDocument("$uuid/config.yaml", uri)
-        }
-    }
-
-    private suspend fun importProfile(
-        type: Profile.Type,
-        name: String,
-        source: String = "",
-        prepare: suspend (UUID) -> Unit = {},
-    ) {
-        if (profileImportInProgress) return
-        profileImportInProgress = true
-        val importGeneration = ++profileImportGeneration
-        profileImportProgress.value = ProfileImportProgress(
-            stage = if (type == Profile.Type.Url) "正在连接订阅并准备下载…" else "正在导入配置…",
-        )
-        try {
-            profileImportCoordinator.import(type, name, source, prepare) { status ->
-                if (status.action != FetchStatus.Action.SubscriptionInfo) {
-                    val progress = status.toProfileImportProgress()
-                    runOnUiThread {
-                        if (importGeneration == profileImportGeneration && profileImportInProgress) {
-                            profileImportProgress.value = progress
-                        }
-                    }
-                }
-            }
-            profilesViewModel.refresh()
-        } catch (error: CancellationException) {
-            throw error
-        } catch (error: Exception) {
-            showError(
-                error = error,
-                title = if (type == Profile.Type.Url) "订阅获取失败" else "配置导入失败",
-            )
-            profilesViewModel.refresh()
-        } finally {
-            if (importGeneration == profileImportGeneration) {
-                profileImportInProgress = false
-                profileImportProgress.value = null
-            }
-        }
-    }
-
-    private suspend fun duplicateProfile(uuid: UUID) {
-        runCatching { withProfile { clone(uuid) } }
-            .onSuccess {
-                startActivity(PropertiesActivity::class.intent.setUUID(it))
-                profilesViewModel.refresh()
-            }
-            .onFailure(::showError)
+        profilesViewModel.importFile(name, uri.toString())
     }
 
     private fun scanResultHandler(result: QRResult) {
-        launch {
-            when (result) {
-                is QRResult.QRSuccess -> {
-                    val url = result.content.rawValue
-                        ?: result.content.rawBytes?.let(::String).orEmpty()
-                    if (url.isNotBlank()) importProfile(
-                        Profile.Type.Url,
-                        getString(DesignR.string.new_profile),
-                        url,
-                    )
-                }
-                QRResult.QRUserCanceled -> Unit
-                QRResult.QRMissingPermission -> Toast.makeText(
-                    this@MainActivity,
-                    DesignR.string.import_from_qr_no_permission,
-                    Toast.LENGTH_LONG,
-                ).show()
-                is QRResult.QRError -> Toast.makeText(
-                    this@MainActivity,
-                    DesignR.string.import_from_qr_exception,
-                    Toast.LENGTH_LONG,
-                ).show()
+        when (result) {
+            is QRResult.QRSuccess -> {
+                val url = result.content.rawValue
+                    ?: result.content.rawBytes?.let(::String).orEmpty()
+                if (url.isNotBlank()) profilesViewModel.importUrl(
+                    getString(DesignR.string.new_profile), url,
+                )
             }
+            QRResult.QRUserCanceled -> Unit
+            QRResult.QRMissingPermission -> Toast.makeText(
+                this@MainActivity,
+                DesignR.string.import_from_qr_no_permission,
+                Toast.LENGTH_LONG,
+            ).show()
+            is QRResult.QRError -> Toast.makeText(
+                this@MainActivity,
+                DesignR.string.import_from_qr_exception,
+                Toast.LENGTH_LONG,
+            ).show()
         }
     }
 

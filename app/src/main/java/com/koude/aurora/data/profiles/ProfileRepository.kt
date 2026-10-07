@@ -25,6 +25,7 @@ interface ProfileRepository {
     suspend fun update(id: UUID)
     suspend fun updateAll()
     suspend fun delete(id: UUID)
+    suspend fun duplicate(id: UUID): UUID
 }
 
 class ServiceProfileRepository : ProfileRepository {
@@ -86,6 +87,8 @@ class ServiceProfileRepository : ProfileRepository {
     override suspend fun delete(id: UUID) {
         withProfile { delete(id) }
     }
+
+    override suspend fun duplicate(id: UUID): UUID = withProfile { clone(id) }
 }
 
 object ProfileRepositoryProvider {
