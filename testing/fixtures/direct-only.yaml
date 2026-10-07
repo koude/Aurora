@@ -1,0 +1,16 @@
+mode: rule
+log-level: info
+allow-lan: false
+
+proxies:
+  - name: 本地直连
+    type: direct
+
+proxy-groups:
+  - name: Aurora 测试出口
+    type: select
+    proxies:
+      - 本地直连
+
+rules:
+  - MATCH,Aurora 测试出口

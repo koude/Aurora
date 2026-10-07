@@ -51,6 +51,7 @@ subprojects {
             if (isApp) {
                 val customApplicationId = queryConfigProperty("custom.application.id") as? String?
                 applicationId = customApplicationId.takeIf { it?.isNotBlank() == true } ?: "com.github.metacubex.clash"
+                testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
             }
 
             project.name.let { name ->
@@ -61,8 +62,8 @@ subprojects {
             minSdk = 21
             targetSdk = 35
 
-            versionName = "2026.10.07.28"
-            versionCode = 26100728
+            versionName = "2026.10.08.1"
+            versionCode = 26100801
 
             resValue("string", "release_name", "v$versionName")
             resValue("integer", "release_code", "$versionCode")

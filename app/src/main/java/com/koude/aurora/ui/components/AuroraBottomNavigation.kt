@@ -13,7 +13,9 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 
 enum class AuroraDestination {
@@ -50,6 +52,7 @@ private fun RowScope.DestinationItem(
     onNavigate: (AuroraDestination) -> Unit,
 ) {
     NavigationBarItem(
+        modifier = Modifier.testTag("bottom_navigation_${destination.name.lowercase()}"),
         selected = destination == selected,
         onClick = { onNavigate(destination) },
         enabled = enabled,
