@@ -131,7 +131,7 @@ jobs:
           RELEASE_NOTES="Aurora ${AURORA_VERSION}, signed arm64-v8a build from commit $GITHUB_SHA."
           RELEASE_FLAGS=(--prerelease --latest=false)
           if [ "$AURORA_VERSION" = "1.0" ]; then
-            RELEASE_NOTES="Aurora 1.0 stable release. Signed arm64-v8a APK built from commit $GITHUB_SHA."
+            RELEASE_NOTES="$(<docs/releases/1.0.md)"
             RELEASE_FLAGS=(--prerelease=false --latest)
           fi
           REMOTE_TAG_COMMIT="$(git ls-remote origin "refs/tags/${RELEASE_TAG}" "refs/tags/${RELEASE_TAG}^{}" | awk -v tag="$RELEASE_TAG" '
