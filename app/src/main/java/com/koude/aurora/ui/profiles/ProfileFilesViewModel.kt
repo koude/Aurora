@@ -2,44 +2,46 @@ package com.koude.aurora.ui.profiles
 
 import android.content.Context
 import android.net.Uri
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.github.kr328.clash.design.model.File
 import com.github.kr328.clash.service.model.Profile
 import com.koude.aurora.data.profiles.ProfileFilesRepository
 import com.koude.aurora.data.profiles.ServiceProfileFilesRepository
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import java.util.UUID
+
+data class ProfileFilesUiState(
+    val files: List<File> = emptyList(),
+    val inBase: Boolean = true,
+    val editable: Boolean = false,
+)
 
 class ProfileFilesViewModel(private val repository: ProfileFilesRepository) : ViewModel() {
     private val directoryStack = ArrayDeque<String>()
     private lateinit var rootId: String
-
-    var files by mutableStateOf<List<File>>(emptyList())
-        private set
-    var inBase by mutableStateOf(true)
-        private set
-    var editable by mutableStateOf(false)
-        private set
+    private val mutableUiState = MutableStateFlow(ProfileFilesUiState())
+    val uiState: StateFlow<ProfileFilesUiState> = mutableUiState.asStateFlow()
 
     suspend fun load(uuid: UUID): Boolean {
         val profile = repository.queryProfile(uuid) ?: return false
         rootId = uuid.toString()
         directoryStack.clear()
-        editable = profile.type != Profile.Type.Url
+        mutableUiState.update { it.copy(editable = profile.type != Profile.Type.Url) }
         refresh()
         return true
     }
 
     suspend fun refresh() {
         val listed = repository.list(directoryStack.lastOrNull() ?: rootId)
-        files = if (directoryStack.isEmpty()) {
+        val visible = if (directoryStack.isEmpty()) {
             val config = listed.firstOrNull { it.id.endsWith("config.yaml") }
             if (config == null || config.size > 0) listed else listOf(config)
         } else listed
-        inBase = directoryStack.isEmpty()
+        mutableUiState.update { it.copy(files = visible, inBase = directoryStack.isEmpty()) }
     }
 
     suspend fun enter(documentId: String) {

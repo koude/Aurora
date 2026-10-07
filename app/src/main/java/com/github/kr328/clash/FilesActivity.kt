@@ -7,6 +7,8 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.github.kr328.clash.common.util.grantPermissions
 import com.github.kr328.clash.common.util.intent
 import com.github.kr328.clash.common.util.uuid
@@ -24,12 +26,13 @@ class FilesActivity : BaseActivity() {
         val uuid = intent.uuid ?: return finish()
         if (!browser.load(uuid)) return finish()
         setContent {
+            val screenState by browser.uiState.collectAsStateWithLifecycle()
             AuroraTheme {
                 FilesScreen(
-                    files = browser.files,
-                    currentInBase = browser.inBase,
-                    configurationEditable = browser.editable,
-                    onBack = { if (browser.inBase) finish() else launch { browser.back() } },
+                    files = screenState.files,
+                    currentInBase = screenState.inBase,
+                    configurationEditable = screenState.editable,
+                    onBack = { if (screenState.inBase) finish() else launch { browser.back() } },
                     onOpenDirectory = { file -> launch { browser.enter(file.id) } },
                     onOpenFile = { file -> startActivity(Intent(Intent.ACTION_VIEW).setDataAndType(browser.documentUri(file), "text/plain").grantPermissions()) },
                     onImport = { file, uri, name -> launch {

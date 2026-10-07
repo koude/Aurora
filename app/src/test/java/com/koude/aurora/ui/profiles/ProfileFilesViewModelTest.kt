@@ -6,7 +6,6 @@ import com.github.kr328.clash.service.model.Profile
 import com.koude.aurora.data.profiles.ProfileFilesRepository
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.util.UUID
@@ -27,17 +26,13 @@ class ProfileFilesViewModelTest {
         val browser = ProfileFilesViewModel(repository)
 
         assertTrue(browser.load(uuid))
-        assertTrue(browser.editable)
-        assertTrue(browser.inBase)
-        assertEquals(listOf(emptyConfig), browser.files)
+        assertEquals(ProfileFilesUiState(listOf(emptyConfig), inBase = true, editable = true), browser.uiState.value)
 
         browser.enter(folder.id)
-        assertFalse(browser.inBase)
-        assertEquals(listOf(child), browser.files)
+        assertEquals(ProfileFilesUiState(listOf(child), inBase = false, editable = true), browser.uiState.value)
 
         browser.back()
-        assertTrue(browser.inBase)
-        assertEquals(listOf(emptyConfig), browser.files)
+        assertEquals(ProfileFilesUiState(listOf(emptyConfig), inBase = true, editable = true), browser.uiState.value)
     }
 
     private class FakeRepository(
