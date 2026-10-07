@@ -27,22 +27,28 @@ activities, databases or the mihomo runtime directly.
 - `:app` has a Compose single-activity shell. Home, Proxy, Connections and Settings are the four
   peer destinations. Profiles is a child destination reached from Settings.
 - `:designsystem` supplies Material 3 theme tokens and reusable components.
-- Home, Profiles and Connections have ViewModels. Connection queries/closing and profile import
-  have repository or coordinator boundaries with unit tests. Proxy presentation and several
-  runtime/settings actions are still coordinated by `MainActivity`.
+- Home, Proxy, Connections, Profiles and the settings/detail screens have ViewModels. Profile,
+  connection, provider, override and per-app proxy storage operations are behind repositories,
+  with unit tests for their critical state transitions.
+- `MainActivity` still owns navigation and Android-owned interactions such as VPN permission and
+  service start/stop. These platform operations are not part of the data-layer migration.
 - The existing `:service` and `:core` runtime remain in use. This is an incremental migration,
   not a replacement of the mihomo engine or VPN service.
-- Legacy resources must be removed only when their remaining references have been audited.
+- Some ViewModels still expose Compose state rather than a single immutable `StateFlow<UiState>`;
+  this is a presentation-layer follow-up, not a reason to rewrite the runtime.
+- UI/screenshot tests are not yet configured, and no emulator was attached during this audit.
+- Legacy resources are removed only after repository-wide reference checks. The three unreferenced
+  drawables `bg_b`, `ic_baseline_vpn_lock` and `ic_baseline_brightness_4` were removed; the
+  bottom-sheet background and other referenced assets remain.
 
-## Remaining migration order
+## Next quality steps
 
-1. Preserve the regression baseline for navigation, profile import/rollback, connections and
-   proxy-group expansion; add tests whenever a runtime action is moved.
-2. Extract the remaining Proxy and settings orchestration from `MainActivity` in small,
-   behavior-preserving slices. Keep Binder/service interactions behind adapters.
-3. Add UI/screenshot coverage for the four top-level destinations and critical sheets.
-4. Audit remaining legacy resources and remove only proven-unreferenced assets and configuration.
-5. Profile startup and scrolling before considering module splits or new dependencies.
+1. Add UI/screenshot coverage for the four top-level destinations and critical sheets when an
+   emulator and instrumented-test dependencies are available; retain manual signed-APK checks.
+2. Continue the reference-based audit of legacy assets and configuration in small stages.
+3. Standardize remaining presentation ViewModels on immutable UI state where it simplifies
+   lifecycle handling, without changing repository or VPN behavior.
+4. Profile startup and scrolling before considering module splits or new dependencies.
 
 ## Navigation semantics
 
