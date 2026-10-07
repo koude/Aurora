@@ -12,7 +12,7 @@ class ApkBrokenActivity : BaseActivity() {
     override suspend fun main() {
         setContent {
             AuroraTheme {
-                ApkBrokenScreen(getString(R.string.meta_github_url)) { url ->
+                ApkBrokenScreen(getString(R.string.aurora_releases_url)) { url ->
                     startActivity(Intent(Intent.ACTION_VIEW).setData(Uri.parse(url)))
                 }
             }

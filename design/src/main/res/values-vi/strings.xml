@@ -40,7 +40,7 @@
     <string name="allow_all_apps">Cho phép tất cả các ứng dụng</string>
     <string name="allow_bypass">Cho phép bỏ qua</string>
     <string name="allow_bypass_summary">Cho phép tất cả các ứng dụng bỏ qua kết nối VPN này</string>
-    <string name="allow_clash_auto_restart">Cho phép Clash tự khởi động lại</string>
+    <string name="allow_clash_auto_restart">Cho phép Aurora tự khởi động lại</string>
     <string name="allow_lan">Cho phép mạng LAN</string>
     <string name="allow_selected_apps">Cho phép các ứng dụng đã chọn</string>
     <string name="always_dark">Luôn tối</string>
@@ -64,7 +64,7 @@
     <string name="bypass_private_network">Bỏ qua mạng riêng</string>
     <string name="bypass_private_network_summary">Bỏ qua các địa chỉ mạng riêng</string>
     <string name="cancel">Huỷ bỏ</string>
-    <string name="clash_logcat">Nhật ký Clash</string>
+    <string name="clash_logcat">Nhật ký trực tiếp</string>
     <string name="close">Đóng</string>
     <string name="compatible">Tương thích</string>
     <string name="copied">Đã sao chép</string>
@@ -175,7 +175,7 @@
     <string name="not_selectable">Không thể chọn</string>
     <string name="not_selected">Trống. Nhấn vào để thêm</string>
     <string name="ok">OK</string>
-    <string name="options_unavailable">Tùy chọn không khả dụng cho đến khi Clash ngắt kết nối</string>
+    <string name="options_unavailable">Tùy chọn không khả dụng khi Aurora đang chạy</string>
     <string name="override">Cài đặt thêm</string>
     <string name="package_name">Tên gói</string>
     <string name="profile">Cấu hình</string>
@@ -229,7 +229,6 @@
     <string name="system_proxy">Proxy hệ thống</string>
     <string name="system_proxy_summary">Đính kèm proxy,http vào hệ thống Vpn</string>
     <string name="tap_to_start">Chạm để kết nối</string>
-    <string name="tips_help">Clash Meta là một phần mềm miễn phí và chúng tôi KHÔNG cung cấp bất kỳ dịch vụ trả phí nào cho nó</string>
     <string name="tips_properties">Chỉ chấp nhận cấu hình Clash bao gồm Proxy và Quy tắc</string>
     <string name="tproxy_port">Cổng TProxy</string>
     <string name="unable_to_start_vpn">Không thể khởi động thành phần VPN</string>

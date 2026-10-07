@@ -103,7 +103,7 @@
     <string name="cancel">Отмена</string>
     <string name="reset">Сброс</string>
 
-    <string name="clash_logcat">Clash Logcat</string>
+    <string name="clash_logcat">Журнал в реальном времени</string>
     <string name="history">История</string>
     <string name="logcat">Logcat</string>
 
@@ -117,7 +117,7 @@
     <string name="override">Переопределение</string>
 
     <string name="auto_restart">Автоматический перезапуск</string>
-    <string name="allow_clash_auto_restart">Разрешить Clash автоматически перезапускаться</string>
+    <string name="allow_clash_auto_restart">Разрешить автоматический перезапуск Aurora</string>
 
     <string name="route_system_traffic">Маршрутизировать системный трафик</string>
     <string name="routing_via_vpn_service">Автоматически маршрутизировать весь системный трафик через VPN</string>
@@ -137,7 +137,7 @@
     <string name="access_control_packages">Приложения с контролируемым доступом</string>
     <string name="access_control_packages_summary">Настройте доступ для приложения</string>
 
-    <string name="options_unavailable">Настройки недоступны, пока Clash не будет остановлен</string>
+    <string name="options_unavailable">Настройки недоступны во время работы Aurora</string>
 
     <string name="general">Основные</string>
     <string name="dns">DNS</string>
@@ -219,7 +219,6 @@
     <string name="clash_meta_core_url" translatable="false">https://github.com/MetaCubeX/Clash.Meta</string>
 
     <string name="tips_properties"><![CDATA[Принимается только <strong>конфиг Clash</strong> (включая <strong>Прокси</strong>/<strong>Правила</strong>)]]></string>
-    <string name="tips_help"><![CDATA[Clash Meta для Android — <strong>бесплатен</strong> и мы <strong>НЕ</strong> предоставляем по нему поддержку]]></string>
 
     <string name="google_play_url" translatable="false">https://play.google.com/store/apps/details?id=com.github.kr328.clash</string>
 
@@ -321,8 +320,8 @@
     <string name="toast_profile_updated_complete">Update profile %s completed</string>
     <string name="toast_profile_updated_failed">Update profile %1$s failed: %2$s</string>
     <string name="external_control_activity">External Control</string>
-    <string name="external_control_started">Clash.Meta service started</string>
-    <string name="external_control_stopped">Clash.Meta service stopped</string>
+    <string name="external_control_started">Служба Aurora запущена</string>
+    <string name="external_control_stopped">Служба Aurora остановлена</string>
     <string name="force_dns_mapping">Force DNS Mapping</string>
     <string name="parse_pure_ip">Parse Pure IP</string>
     <string name="override_destination">Override Destination</string>

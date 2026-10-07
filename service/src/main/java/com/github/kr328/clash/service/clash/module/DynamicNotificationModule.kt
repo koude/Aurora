@@ -24,9 +24,9 @@ import java.util.concurrent.TimeUnit
 
 class DynamicNotificationModule(service: Service) : Module<Unit>(service) {
     private val builder = NotificationCompat.Builder(service, StaticNotificationModule.CHANNEL_ID)
-        .setSmallIcon(R.drawable.ic_logo_service)
+        .setSmallIcon(R.drawable.ic_aurora_status)
         .setOngoing(true)
-        .setColor(service.getColorCompat(R.color.color_clash))
+        .setColor(service.getColorCompat(R.color.aurora_notification_accent))
         .setOnlyAlertOnce(true)
         .setShowWhen(false)
         .setContentTitle("Not Selected")

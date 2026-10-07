@@ -11,7 +11,7 @@
     <string name="bypass_private_network">绕过私有网络</string>
     <string name="bypass_private_network_summary">绕过私有网络地址</string>
     <string name="cancel">取消</string>
-    <string name="clash_logcat">Clash 日志捕捉工具</string>
+    <string name="clash_logcat">实时日志捕捉</string>
     <string name="create_profile">创建配置</string>
     <string name="dark_mode">暗黑模式</string>
     <string name="default_">默认</string>
@@ -93,7 +93,7 @@
     <string name="settings">设置</string>
     <string name="show_traffic">显示流量</string>
     <string name="show_traffic_summary">在通知中自动刷新流量</string>
-    <string name="allow_clash_auto_restart">允许 Clash 自动重启</string>
+    <string name="allow_clash_auto_restart">允许 Aurora 自动重启</string>
     <string name="auto_restart">自动重启</string>
     <string name="stopped">已停止</string>
     <string name="help">帮助</string>
@@ -101,7 +101,7 @@
     <string name="update">更新</string>
     <string name="url">URL</string>
     <string name="vpn_service_options">VpnService 选项</string>
-    <string name="options_unavailable">选项在 Clash 运行时不可用</string>
+    <string name="options_unavailable">选项在 Aurora 运行时不可用</string>
     <string name="search">查找</string>
     <string name="age_secret_key">Age 私钥</string>
     <string name="age_secret_key_hint">AGE-SECRET-KEY-…（可选）</string>
@@ -123,7 +123,6 @@
     <string name="github_issues">Github Issues</string>
     <string name="tips_properties"><![CDATA[仅接受 <strong>Clash 配置文件</strong>(包含<strong>代理</strong>/<strong>规则</strong>)]]></string>
     <string name="loading">载入中</string>
-    <string name="tips_help"><![CDATA[Clash Meta for Android 是一个<strong>免费软件</strong>并且我们<strong>不</strong>为其提供任何服务, <strong>请务必不要反馈非应用自身引起的问题</strong>]]></string>
     <string name="donate">捐赠</string>
     <string name="allow_all_apps">允许所有应用</string>
     <string name="allow_selected_apps">仅允许已选择的应用</string>
@@ -294,17 +293,17 @@
     <string name="toast_profile_updated_complete">更新配置 %s 成功</string>
     <string name="toast_profile_updated_failed">更新配置 %1$s 失败：%2$s</string>
     <string name="external_control_activity">外部控制</string>
-    <string name="external_control_started">Clash.Meta 服务已启动</string>
-    <string name="external_control_stopped">Clash.Meta 服务已停止</string>
+    <string name="external_control_started">Aurora 服务已启动</string>
+    <string name="external_control_stopped">Aurora 服务已停止</string>
     <string name="import_from_qr_no_permission">相机权限受限，请前往设置开启。</string>
     <string name="import_from_qr_exception">发生系统未知异常，操作失败。</string>
 
-    <string name="shortcut_toggle_short">切换 Clash</string>
-    <string name="shortcut_toggle_long">切换 Clash 服务启停</string>
-    <string name="shortcut_start_short">启动 Clash</string>
-    <string name="shortcut_start_long">启动 Clash 服务</string>
-    <string name="shortcut_stop_short">停止 Clash</string>
-    <string name="shortcut_stop_long">停止 Clash 服务</string>
+    <string name="shortcut_toggle_short">切换 Aurora</string>
+    <string name="shortcut_toggle_long">切换 Aurora 服务启停</string>
+    <string name="shortcut_start_short">启动 Aurora</string>
+    <string name="shortcut_start_long">启动 Aurora 服务</string>
+    <string name="shortcut_stop_short">停止 Aurora</string>
+    <string name="shortcut_stop_long">停止 Aurora 服务</string>
     <string name="aurora_home">首页</string>
     <string name="aurora_section_connection">连接</string>
     <string name="aurora_section_tools">工具与诊断</string>

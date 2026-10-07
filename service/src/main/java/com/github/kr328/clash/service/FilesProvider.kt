@@ -161,8 +161,8 @@ class FilesProvider : DocumentsProvider() {
             newRow().apply {
                 add(Root.COLUMN_ROOT_ID, DEFAULT_ROOT_ID)
                 add(Root.COLUMN_FLAGS, flags)
-                add(Root.COLUMN_ICON, R.drawable.ic_logo_service)
-                add(Root.COLUMN_TITLE, context!!.getString(R.string.clash_meta_for_android))
+                add(Root.COLUMN_ICON, R.drawable.ic_aurora_status)
+                add(Root.COLUMN_TITLE, context!!.getString(R.string.aurora_service_name))
                 add(Root.COLUMN_SUMMARY, context!!.getString(R.string.profiles_and_providers))
                 add(Root.COLUMN_DOCUMENT_ID, "/")
                 add(Root.COLUMN_MIME_TYPES, D.MIME_TYPE_DIR)

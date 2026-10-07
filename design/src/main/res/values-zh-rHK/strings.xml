@@ -11,7 +11,7 @@
     <string name="bypass_private_network">繞過私有網絡</string>
     <string name="bypass_private_network_summary">繞過私有網絡地址</string>
     <string name="cancel">取消</string>
-    <string name="clash_logcat">Clash 日誌捕捉工具</string>
+    <string name="clash_logcat">即時日誌擷取</string>
     <string name="create_profile">創建配置</string>
     <string name="dark_mode">暗黑模式</string>
     <string name="default_">默認</string>
@@ -64,7 +64,7 @@
     <string name="settings">設置</string>
     <string name="show_traffic">顯示流量</string>
     <string name="show_traffic_summary">在通知中自動刷新流量</string>
-    <string name="allow_clash_auto_restart">允許 Clash 自動重啓</string>
+    <string name="allow_clash_auto_restart">允許 Aurora 自動重啓</string>
     <string name="auto_restart">自動重啓</string>
     <string name="stopped">已停止</string>
     <string name="help">幫助</string>
@@ -72,7 +72,7 @@
     <string name="update">更新</string>
     <string name="url">URL</string>
     <string name="vpn_service_options">VpnService 選項</string>
-    <string name="options_unavailable">選項在 Clash 運行時不可用</string>
+    <string name="options_unavailable">選項在 Aurora 運行時不可用</string>
     <string name="search">查找</string>
     <string name="system_apps">系統應用</string>
     <string name="update_time">更新時間</string>
@@ -93,7 +93,6 @@
     <string name="github_issues">Github Issues</string>
     <string name="tips_properties"><![CDATA[僅接受 <strong>Clash 配置文件</strong>(包含<strong>代理</strong>/<strong>規則</strong>)]]></string>
     <string name="loading">載入中</string>
-    <string name="tips_help"><![CDATA[Clash Meta for Android 是一個<strong>免費軟件</strong>並且我們<strong>不</strong>為其提供任何服務, <strong>請務必不要反饋非應用自身引起的問題</strong>]]></string>
     <string name="donate">捐贈</string>
     <string name="allow_all_apps">允許所有應用</string>
     <string name="allow_selected_apps">僅允許已選擇的應用</string>
@@ -254,8 +253,8 @@
     <string name="toast_profile_updated_complete">Update profile %s completed</string>
     <string name="toast_profile_updated_failed">Update profile %1$s failed: %2$s</string>
     <string name="external_control_activity">External Control</string>
-    <string name="external_control_started">Clash.Meta service started</string>
-    <string name="external_control_stopped">Clash.Meta service stopped</string>
+    <string name="external_control_started">Aurora 服務已啟動</string>
+    <string name="external_control_stopped">Aurora 服務已停止</string>
     <string name="force_dns_mapping">Force DNS Mapping</string>
     <string name="parse_pure_ip">Parse Pure IP</string>
     <string name="override_destination">Override Destination</string>

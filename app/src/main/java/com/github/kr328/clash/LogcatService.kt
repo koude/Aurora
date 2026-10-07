@@ -138,7 +138,7 @@ class LogcatService : Service(), CoroutineScope by CoroutineScope(Dispatchers.De
     private fun showNotification() {
         val notification = NotificationCompat
             .Builder(this, CHANNEL_ID)
-            .setSmallIcon(com.github.kr328.clash.service.R.drawable.ic_logo_service)
+            .setSmallIcon(com.github.kr328.clash.service.R.drawable.ic_aurora_status)
             .setColor(getColorCompat(com.github.kr328.clash.design.R.color.color_clash_light))
             .setContentTitle(getString(com.github.kr328.clash.design.R.string.clash_logcat))
             .setContentText(getString(com.github.kr328.clash.design.R.string.running))

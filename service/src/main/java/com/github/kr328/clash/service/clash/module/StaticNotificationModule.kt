@@ -17,9 +17,9 @@ import kotlinx.coroutines.channels.Channel
 
 class StaticNotificationModule(service: Service) : Module<Unit>(service) {
     private val builder = NotificationCompat.Builder(service, CHANNEL_ID)
-        .setSmallIcon(R.drawable.ic_logo_service)
+        .setSmallIcon(R.drawable.ic_aurora_status)
         .setOngoing(true)
-        .setColor(service.getColorCompat(R.color.color_clash))
+        .setColor(service.getColorCompat(R.color.aurora_notification_accent))
         .setOnlyAlertOnce(true)
         .setShowWhen(false)
         .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
@@ -60,16 +60,16 @@ class StaticNotificationModule(service: Service) : Module<Unit>(service) {
                 NotificationChannelCompat.Builder(
                     CHANNEL_ID,
                     NotificationManagerCompat.IMPORTANCE_LOW
-                ).setName(service.getText(R.string.clash_service_status_channel)).build()
+                ).setName(service.getText(R.string.aurora_service_status_channel)).build()
             )
         }
 
         fun notifyLoadingNotification(service: Service) {
             val notification =
                 NotificationCompat.Builder(service, CHANNEL_ID)
-                    .setSmallIcon(R.drawable.ic_logo_service)
+                    .setSmallIcon(R.drawable.ic_aurora_status)
                     .setOngoing(true)
-                    .setColor(service.getColorCompat(R.color.color_clash))
+                    .setColor(service.getColorCompat(R.color.aurora_notification_accent))
                     .setOnlyAlertOnce(true)
                     .setShowWhen(false)
                     .setContentTitle(service.getText(R.string.loading))
