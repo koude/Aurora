@@ -6,17 +6,18 @@ import android.provider.OpenableColumns
 import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.runtime.mutableIntStateOf
-import com.github.kr328.clash.core.Clash
+import androidx.activity.viewModels
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import com.github.kr328.clash.core.model.ConfigurationOverride
 import com.github.kr328.clash.design.R as DesignR
 import com.github.kr328.clash.util.clashDir
-import com.github.kr328.clash.util.withClash
 import com.koude.aurora.designsystem.theme.AuroraTheme
 import com.koude.aurora.ui.settings.ConfigChoice
 import com.koude.aurora.ui.settings.ConfigField
 import com.koude.aurora.ui.settings.ConfigFieldEditor
 import com.koude.aurora.ui.settings.MetaFeatureSettingsScreen
+import com.koude.aurora.ui.settings.OverrideEditorViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -28,21 +29,22 @@ import java.io.FileOutputStream
 private enum class GeoImportKind { GeoIp, GeoSite, Country, Asn }
 
 class MetaFeatureSettingsActivity : BaseActivity() {
+    private val editor: OverrideEditorViewModel by viewModels { OverrideEditorViewModel.Factory }
+
     override suspend fun main() {
-        val configuration = withClash { queryOverride(Clash.OverrideSlot.Persist) }
-        val revision = mutableIntStateOf(0)
-        defer { withClash { patchOverride(Clash.OverrideSlot.Persist, configuration) } }
+        val configuration = editor.load()
+        defer { editor.save() }
 
         setContent {
-            val revisionSnapshot = revision.intValue
+            val revisionSnapshot by editor.revision.collectAsState()
             @Suppress("UNUSED_VARIABLE") val keepStateRead = revisionSnapshot
             AuroraTheme {
                 MetaFeatureSettingsScreen(
-                    fields = metaFields(configuration) { revision.intValue++ },
+                    fields = metaFields(configuration, editor::changed),
                     onBack = ::finish,
                     onReset = {
                         launch {
-                            defer { withClash { clearOverride(Clash.OverrideSlot.Persist) } }
+                            defer { editor.reset() }
                             finish()
                         }
                     },

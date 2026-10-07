@@ -1,18 +1,19 @@
 package com.github.kr328.clash
 
 import androidx.activity.compose.setContent
-import androidx.compose.runtime.mutableIntStateOf
-import com.github.kr328.clash.core.Clash
+import androidx.activity.viewModels
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import com.github.kr328.clash.core.model.ConfigurationOverride
 import com.github.kr328.clash.core.model.LogMessage
 import com.github.kr328.clash.core.model.TunnelState
 import com.github.kr328.clash.design.R as DesignR
-import com.github.kr328.clash.util.withClash
 import com.koude.aurora.designsystem.theme.AuroraTheme
 import com.koude.aurora.ui.settings.ConfigChoice
 import com.koude.aurora.ui.settings.ConfigField
 import com.koude.aurora.ui.settings.ConfigFieldEditor
 import com.koude.aurora.ui.settings.OverrideFormScreen
+import com.koude.aurora.ui.settings.OverrideEditorViewModel
 import com.koude.aurora.ui.settings.OverrideMapInput
 import com.koude.aurora.ui.settings.parseOverrideMapInput
 import com.koude.aurora.ui.settings.parsePortOverrideInput
@@ -21,23 +22,24 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.selects.select
 
 class OverrideSettingsActivity : BaseActivity() {
-    override suspend fun main() {
-        val configuration = withClash { queryOverride(Clash.OverrideSlot.Persist) }
-        val revision = mutableIntStateOf(0)
+    private val editor: OverrideEditorViewModel by viewModels { OverrideEditorViewModel.Factory }
 
-        defer { withClash { patchOverride(Clash.OverrideSlot.Persist, configuration) } }
+    override suspend fun main() {
+        val configuration = editor.load()
+
+        defer { editor.save() }
 
         setContent {
-            val currentRevision = revision.intValue
+            val currentRevision by editor.revision.collectAsState()
             @Suppress("UNUSED_VARIABLE") val keepStateRead = currentRevision
             AuroraTheme {
                 OverrideFormScreen(
                     title = getString(DesignR.string.override),
-                    fields = overrideFields(configuration) { revision.intValue++ },
+                    fields = overrideFields(configuration, editor::changed),
                     onBack = ::finish,
                     onReset = {
                         launch {
-                            defer { withClash { clearOverride(Clash.OverrideSlot.Persist) } }
+                            defer { editor.reset() }
                             finish()
                         }
                     },
