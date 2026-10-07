@@ -1,8 +1,5 @@
 package com.github.kr328.clash
 
-import android.database.Cursor
-import android.net.Uri
-import android.provider.OpenableColumns
 import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -11,25 +8,20 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import com.github.kr328.clash.core.model.ConfigurationOverride
 import com.github.kr328.clash.design.R as DesignR
-import com.github.kr328.clash.util.clashDir
 import com.koude.aurora.designsystem.theme.AuroraTheme
+import com.koude.aurora.data.settings.GeoImportResult
+import com.koude.aurora.data.settings.validGeoExtensions
 import com.koude.aurora.ui.settings.ConfigChoice
 import com.koude.aurora.ui.settings.ConfigField
 import com.koude.aurora.ui.settings.ConfigFieldEditor
 import com.koude.aurora.ui.settings.MetaFeatureSettingsScreen
 import com.koude.aurora.ui.settings.OverrideEditorViewModel
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.selects.select
-import kotlinx.coroutines.withContext
-import java.io.File
-import java.io.FileOutputStream
-
-private enum class GeoImportKind { GeoIp, GeoSite, Country, Asn }
 
 class MetaFeatureSettingsActivity : BaseActivity() {
-    private val editor: OverrideEditorViewModel by viewModels { OverrideEditorViewModel.Factory }
+    private val editor: OverrideEditorViewModel by viewModels { OverrideEditorViewModel.factoryWithGeo(this) }
 
     override suspend fun main() {
         val configuration = editor.load()
@@ -135,47 +127,15 @@ class MetaFeatureSettingsActivity : BaseActivity() {
     }
 
     private suspend fun chooseGeoFile(kind: String) {
+        if (kind !in listOf("geoip", "geosite", "country", "asn")) return
         val uri = startActivityForResult(ActivityResultContracts.GetContent(), "*/*") ?: return
-        val importType = when (kind) {
-            "geoip" -> GeoImportKind.GeoIp
-            "geosite" -> GeoImportKind.GeoSite
-            "country" -> GeoImportKind.Country
-            "asn" -> GeoImportKind.Asn
-            else -> return
+        val message = when (val result = editor.importGeo(uri, kind)) {
+            is GeoImportResult.Imported -> getString(DesignR.string.geofile_imported, result.displayName)
+            GeoImportResult.UnsupportedFormat -> getString(
+                DesignR.string.geofile_unknown_db_format_message, validGeoExtensions.joinToString("/"),
+            )
+            GeoImportResult.Failed -> getString(DesignR.string.geofile_import_failed)
         }
-        importGeoFile(uri, importType)
-    }
-
-    private val validDatabaseExtensions = listOf(".metadb", ".db", ".dat", ".mmdb")
-
-    private suspend fun importGeoFile(uri: Uri, importType: GeoImportKind) {
-        val cursor: Cursor? = contentResolver.query(uri, null, null, null, null, null)
-        cursor?.use {
-            if (it.moveToFirst()) {
-                val columnIndex = it.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-                val displayName = if (columnIndex != -1) it.getString(columnIndex) else ""
-                val ext = "." + displayName.substringAfterLast(".")
-                if (ext !in validDatabaseExtensions) {
-                    Toast.makeText(this, getString(DesignR.string.geofile_unknown_db_format_message, validDatabaseExtensions.joinToString("/")), Toast.LENGTH_LONG).show()
-                    return
-                }
-                val outputFileName = when (importType) {
-                    GeoImportKind.GeoIp -> "geoip$ext"
-                    GeoImportKind.GeoSite -> "geosite$ext"
-                    GeoImportKind.Country -> "country$ext"
-                    GeoImportKind.Asn -> "ASN$ext"
-                    else -> return
-                }
-                withContext(Dispatchers.IO) {
-                    val outputFile = File(clashDir, outputFileName)
-                    contentResolver.openInputStream(uri).use { input ->
-                        FileOutputStream(outputFile).use { output -> input?.copyTo(output) }
-                    }
-                }
-                Toast.makeText(this, getString(DesignR.string.geofile_imported, displayName), Toast.LENGTH_LONG).show()
-                return
-            }
-        }
-        Toast.makeText(this, DesignR.string.geofile_import_failed, Toast.LENGTH_LONG).show()
+        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
     }
 }
