@@ -8,6 +8,7 @@ import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.lifecycleScope
 import com.github.kr328.clash.common.constants.Intents
@@ -15,10 +16,9 @@ import com.github.kr328.clash.common.util.intent
 import com.github.kr328.clash.common.util.setUUID
 import com.github.kr328.clash.design.R
 import com.github.kr328.clash.design.model.ProfileProvider
-import com.github.kr328.clash.service.model.Profile
-import com.github.kr328.clash.util.withProfile
 import com.koude.aurora.designsystem.theme.AuroraTheme
 import com.koude.aurora.ui.profiles.NewProfileScreen
+import com.koude.aurora.ui.profiles.NewProfileViewModel
 import io.github.g00fy2.quickie.QRResult
 import io.github.g00fy2.quickie.QRResult.QRError
 import io.github.g00fy2.quickie.QRResult.QRMissingPermission
@@ -33,6 +33,7 @@ import kotlinx.coroutines.withContext
 import java.util.UUID
 
 class NewProfileActivity : BaseActivity() {
+    private val creator: NewProfileViewModel by viewModels { NewProfileViewModel.Factory }
     private val providersState = mutableStateOf<List<ProfileProvider>>(emptyList())
     private val scanLauncher = registerForActivityResult(ScanQRCode(), ::scanResultHandler)
 
@@ -55,11 +56,11 @@ class NewProfileActivity : BaseActivity() {
         try {
             val name = getString(R.string.new_profile)
             val uuid: UUID? = when (provider) {
-                is ProfileProvider.File -> withProfile { create(Profile.Type.File, name) }
-                is ProfileProvider.Url -> withProfile { create(Profile.Type.Url, name) }
+                is ProfileProvider.File -> creator.createFile(name)
+                is ProfileProvider.Url -> creator.createUrl(name)
                 is ProfileProvider.QR -> null.also { scanLauncher.launch(null) }
                 is ProfileProvider.External -> provider.get()?.let { (uri, initialName) ->
-                    withProfile { create(Profile.Type.External, initialName ?: name, uri.toString()) }
+                    creator.createExternal(initialName ?: name, uri.toString())
                 }
             }
             if (uuid != null) launchProperties(uuid)
@@ -112,8 +113,6 @@ class NewProfileActivity : BaseActivity() {
     }
 
     private suspend fun createProfileByQrCode(url: String) {
-        withProfile {
-            launchProperties(create(Profile.Type.Url, getString(R.string.new_profile), url))
-        }
+        launchProperties(creator.createUrl(getString(R.string.new_profile), url))
     }
 }
