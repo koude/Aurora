@@ -23,6 +23,7 @@ interface HomeRepository {
     suspend fun traffic(): HomeTrafficSnapshot
     suspend fun setMode(mode: TunnelState.Mode)
     suspend fun previewRoute(target: String): RoutePreview
+    suspend fun hasActiveImportedProfile(): Boolean
 }
 
 class ServiceHomeRepository : HomeRepository {
@@ -50,4 +51,7 @@ class ServiceHomeRepository : HomeRepository {
 
     override suspend fun previewRoute(target: String): RoutePreview =
         withClash { queryRoutePreview(target) }
+
+    override suspend fun hasActiveImportedProfile(): Boolean =
+        withProfile { queryActive()?.imported == true }
 }

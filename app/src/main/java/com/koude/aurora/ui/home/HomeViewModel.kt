@@ -101,6 +101,16 @@ class HomeViewModel(
         }
     }
 
+    /** Null means the prerequisite could not be checked; the error is sent to the UI. */
+    suspend fun canStartConnection(): Boolean? = try {
+        repository.hasActiveImportedProfile()
+    } catch (cancelled: CancellationException) {
+        throw cancelled
+    } catch (error: Exception) {
+        errorChannel.send(error)
+        null
+    }
+
     fun openRouteTest() {
         routePreviewJob?.cancel()
         activeRouteTestRequestId = null

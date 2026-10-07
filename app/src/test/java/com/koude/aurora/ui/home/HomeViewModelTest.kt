@@ -11,6 +11,7 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -122,6 +123,26 @@ class HomeViewModelTest {
         advanceUntilIdle()
         assertEquals(listOf(TunnelState.Mode.Direct), repository.patchedModes)
         assertEquals(TunnelState.Mode.Direct, viewModel.uiState.value.mode)
+    }
+
+    @Test
+    fun connectionStartRequiresAnImportedActiveProfile() = runTest(dispatcher) {
+        val repository = FakeHomeRepository()
+        val viewModel = HomeViewModel(FakeWebsiteLatencyRepository { null }, repository)
+
+        assertEquals(false, viewModel.canStartConnection())
+        repository.activeProfileReady = true
+        assertEquals(true, viewModel.canStartConnection())
+    }
+
+    @Test
+    fun connectionStartCheckFailureReportsErrorInsteadOfStarting() = runTest(dispatcher) {
+        val repository = FakeHomeRepository()
+        repository.activeProfileError = IllegalStateException("profile service unavailable")
+        val viewModel = HomeViewModel(FakeWebsiteLatencyRepository { null }, repository)
+
+        assertEquals(null, viewModel.canStartConnection())
+        assertEquals("profile service unavailable", viewModel.errors.first().message)
     }
 
     @Test
@@ -341,6 +362,8 @@ class HomeViewModelTest {
         var connectionAction: (suspend () -> HomeConnectionSnapshot)? = null
         var trafficAction: (suspend () -> HomeTrafficSnapshot)? = null
         var modeAction: (suspend () -> Unit)? = null
+        var activeProfileReady = false
+        var activeProfileError: Exception? = null
         var previewAction: (suspend (String) -> RoutePreview)? = null
         val previewTargets = mutableListOf<String>()
         val patchedModes = mutableListOf<TunnelState.Mode>()
@@ -359,6 +382,11 @@ class HomeViewModelTest {
         override suspend fun previewRoute(target: String): RoutePreview {
             previewTargets += target
             return previewAction?.invoke(target) ?: RoutePreview(target, "rule", "MATCH", "Proxy", "JP")
+        }
+
+        override suspend fun hasActiveImportedProfile(): Boolean {
+            activeProfileError?.let { throw it }
+            return activeProfileReady
         }
     }
 }

@@ -52,7 +52,6 @@ import com.github.kr328.clash.common.util.ticker
 import com.github.kr328.clash.util.fileName
 import com.github.kr328.clash.util.startClashService
 import com.github.kr328.clash.util.stopClashService
-import com.github.kr328.clash.util.withProfile
 import com.koude.aurora.designsystem.theme.AuroraTheme
 import com.koude.aurora.ui.components.AuroraBottomNavigation
 import com.koude.aurora.ui.components.AuroraDestination
@@ -327,11 +326,14 @@ class MainActivity : BaseActivity() {
     }
 
     private suspend fun startClash() {
-        val active = withProfile { queryActive() }
-        if (active == null || !active.imported) {
-            Toast.makeText(this@MainActivity, DesignR.string.no_profile_selected, Toast.LENGTH_LONG).show()
-            requestedRoute.value = ROUTE_PROFILES
-            return
+        when (homeViewModel.canStartConnection()) {
+            true -> Unit
+            false -> {
+                Toast.makeText(this@MainActivity, DesignR.string.no_profile_selected, Toast.LENGTH_LONG).show()
+                requestedRoute.value = ROUTE_PROFILES
+                return
+            }
+            null -> return
         }
         val vpnRequest = startClashService()
         try {
@@ -376,10 +378,6 @@ class MainActivity : BaseActivity() {
                 Toast.LENGTH_LONG,
             ).show()
         }
-    }
-
-    private fun showPlaceholder() {
-        Toast.makeText(this, DesignR.string.aurora_feature_placeholder, Toast.LENGTH_SHORT).show()
     }
 
     private fun showError(error: Throwable) {
