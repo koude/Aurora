@@ -35,9 +35,11 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,6 +47,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import com.github.kr328.clash.core.model.ConnectionInfo
 import com.koude.aurora.designsystem.theme.AuroraTheme
 import com.koude.aurora.ui.components.AuroraPageHeader
@@ -52,12 +57,16 @@ import com.koude.aurora.ui.components.AuroraPageSpacing
 import com.koude.aurora.ui.components.AuroraCardStyle
 import java.text.DateFormat
 import java.util.Date
+import kotlinx.coroutines.delay
+
+data class ConnectionSpeed(val uploadedBytesPerSecond: Long, val downloadedBytesPerSecond: Long)
 
 data class ConnectionsUiState(
     val serviceRunning: Boolean = false,
     val loading: Boolean = false,
     val connections: List<ConnectionInfo> = emptyList(),
     val appLabels: Map<String, String> = emptyMap(),
+    val speeds: Map<String, ConnectionSpeed> = emptyMap(),
     val errorMessage: String? = null,
 )
 
@@ -65,6 +74,7 @@ data class ConnectionsUiState(
 fun ConnectionsScreen(
     state: ConnectionsUiState,
     onRefresh: () -> Unit,
+    onPoll: () -> Unit = {},
     onCloseConnection: (String) -> Unit,
     onCloseVisible: (List<String>) -> Unit,
     modifier: Modifier = Modifier,
@@ -73,8 +83,20 @@ fun ConnectionsScreen(
     var searchVisible by remember { mutableStateOf(false) }
     var pendingCloseIds by remember { mutableStateOf<List<String>?>(null) }
     var selectedConnection by remember { mutableStateOf<ConnectionInfo?>(null) }
-    val filtered = remember(state.connections, state.appLabels, query) {
-        filterConnections(state.connections, query, state.appLabels)
+    val filtered = remember(state.connections, query) {
+        filterConnections(state.connections, query)
+    }
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val currentOnPoll by rememberUpdatedState(onPoll)
+    LaunchedEffect(lifecycleOwner, state.serviceRunning) {
+        if (state.serviceRunning) {
+            lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                while (true) {
+                    delay(2_000)
+                    currentOnPoll()
+                }
+            }
+        }
     }
 
     Scaffold(
@@ -128,7 +150,7 @@ fun ConnectionsScreen(
                     trailingIcon = if (query.isNotEmpty()) {
                         { IconButton(onClick = { query = "" }) { Icon(Icons.Default.Close, contentDescription = "清除搜索") } }
                     } else null,
-                    placeholder = { Text("搜索应用、域名或规则") },
+                    placeholder = { Text("搜索域名、地址或规则") },
                     shape = MaterialTheme.shapes.large,
                 )
             }
@@ -166,7 +188,7 @@ fun ConnectionsScreen(
                     items(filtered, key = ConnectionInfo::id) { connection ->
                         ConnectionCard(
                             connection = connection,
-                            appLabel = state.appLabels[connection.process],
+                            speed = state.speeds[connection.id],
                             onClick = { selectedConnection = connection },
                             onClose = { onCloseConnection(connection.id) },
                         )
@@ -193,7 +215,6 @@ fun ConnectionsScreen(
     selectedConnection?.let { connection ->
         ConnectionDetailsSheet(
             connection,
-            appLabel = state.appLabels[connection.process],
             onDismiss = { selectedConnection = null },
         )
     }
@@ -202,7 +223,6 @@ fun ConnectionsScreen(
 internal fun filterConnections(
     connections: List<ConnectionInfo>,
     query: String,
-    appLabels: Map<String, String> = emptyMap(),
 ): List<ConnectionInfo> {
     val normalizedQuery = query.trim().lowercase()
     if (normalizedQuery.isEmpty()) return connections
@@ -210,8 +230,6 @@ internal fun filterConnections(
         listOf(
             connection.host,
             connection.destination,
-            connection.process,
-            appLabels[connection.process] ?: "未知应用",
             connection.network,
             connection.rule,
             connection.rulePayload,
@@ -227,13 +245,13 @@ internal fun connectionRoutePath(connection: ConnectionInfo): String =
     connection.chains.asReversed().joinToString(" → ").ifBlank { "未知去向" }
 
 @Composable
-private fun ConnectionCard(connection: ConnectionInfo, appLabel: String?, onClick: () -> Unit, onClose: () -> Unit) {
+private fun ConnectionCard(connection: ConnectionInfo, speed: ConnectionSpeed?, onClick: () -> Unit, onClose: () -> Unit) {
     Card(
         onClick = onClick,
         shape = AuroraCardStyle.groupShape(),
         colors = CardDefaults.cardColors(containerColor = AuroraCardStyle.groupColor()),
     ) {
-        Column(modifier = Modifier.padding(start = 16.dp, top = 10.dp, end = 8.dp, bottom = 14.dp)) {
+        Column(modifier = Modifier.padding(start = 16.dp, top = 6.dp, end = 8.dp, bottom = 10.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = connection.host.ifBlank { connection.destination.ifBlank { "未知目标" } },
@@ -247,56 +265,28 @@ private fun ConnectionCard(connection: ConnectionInfo, appLabel: String?, onClic
                     Icon(Icons.Default.Close, contentDescription = "关闭连接")
                 }
             }
-            Row(
+            Text(
+                text = "${connection.rule.ifBlank { "未匹配规则" }}  ·  ${connectionActualOutlet(connection)}",
                 modifier = Modifier.fillMaxWidth().padding(end = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = connection.rule.ifBlank { "未匹配规则" },
-                    modifier = Modifier.weight(1f, fill = false),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text("→", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(
-                    text = connectionActualOutlet(connection),
-                    modifier = Modifier.weight(1f, fill = false),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp, end = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                Text(
-                    text = "↑ ${formatBytes(connection.uploaded)}   ↓ ${formatBytes(connection.downloaded)}",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                )
-                Text(
-                    text = "· ${appLabel ?: "未知应用"}",
-                    modifier = Modifier.weight(1f),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = "↑ ${speed?.let { formatBytes(it.uploadedBytesPerSecond) } ?: "-- B"}/s   ↓ ${speed?.let { formatBytes(it.downloadedBytesPerSecond) } ?: "-- B"}/s",
+                modifier = Modifier.padding(top = 4.dp),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+            )
         }
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ConnectionDetailsSheet(connection: ConnectionInfo, appLabel: String?, onDismiss: () -> Unit) {
+private fun ConnectionDetailsSheet(connection: ConnectionInfo, onDismiss: () -> Unit) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         containerColor = MaterialTheme.colorScheme.surface,
@@ -314,10 +304,6 @@ private fun ConnectionDetailsSheet(connection: ConnectionInfo, appLabel: String?
                 fontWeight = FontWeight.SemiBold,
             )
             ConnectionDetailField("目标地址", connection.destination)
-            ConnectionDetailField("来源应用", appLabel ?: "未知应用")
-            if (connection.process.isNotBlank()) {
-                ConnectionDetailField("包名 / 进程", connection.process)
-            }
             ConnectionDetailField(
                 "命中规则",
                 listOf(connection.rule, connection.rulePayload).filter(String::isNotBlank).joinToString(" · "),
@@ -378,7 +364,6 @@ private fun ConnectionsScreenPreview() {
         ConnectionsScreen(
             state = ConnectionsUiState(
                 serviceRunning = true,
-                appLabels = mapOf("com.android.chrome" to "Chrome"),
                 connections = listOf(
                     ConnectionInfo(
                         id = "preview",

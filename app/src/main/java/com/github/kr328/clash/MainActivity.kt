@@ -94,7 +94,7 @@ class MainActivity : BaseActivity() {
         ProxyViewModel.factory(applicationContext)
     }
     private val connectionsViewModel: ConnectionsViewModel by viewModels {
-        ConnectionsViewModel.factory(applicationContext)
+        ConnectionsViewModel.factory()
     }
     private val scanLauncher = registerForActivityResult(ScanQRCode(), ::scanResultHandler)
 
@@ -285,6 +285,7 @@ class MainActivity : BaseActivity() {
                     ConnectionsScreen(
                         state = connectionsState,
                         onRefresh = { connectionsViewModel.refresh(clashRunning, force = true) },
+                        onPoll = { connectionsViewModel.refresh(clashRunning) },
                         onCloseConnection = { id ->
                             connectionsViewModel.close(listOf(id), ::showError)
                         },
