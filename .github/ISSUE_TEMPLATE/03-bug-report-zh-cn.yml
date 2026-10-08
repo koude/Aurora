@@ -56,16 +56,10 @@ body:
       description: |
         输入您正在使用的应用信息。
 
-        例子:
-        ```
-        - 版本: 2.5.4-premium
-        - 安装包文件名: cfa-2.5.4-premium-arm64-v8a-release.apk
-        - 应用来源: Google Play
-        ```
+        请填写 Aurora 版本与 APK 架构（例如 arm64-v8a）。
       value: |
         - 版本:
-        - 安装包文件名:
-        - 应用来源:
+        - APK 架构:
     validations:
       required: true
   - type: textarea
@@ -74,26 +68,18 @@ body:
       render: yml
       label: "配置文件"
       description: |
-        请在此粘贴和上传配置文件。
-
-        提示：如果您仅有一个订阅链接，请使用浏览器打开此链接以下载配置文件。
-
-        **注意: 请在上传配置文件前，移除其中的代理服务器信息。**
-        **注意: 请在上传配置文件前，移除其中的代理服务器信息。**
-        **注意: 请在上传配置文件前，移除其中的代理服务器信息。**
+        可选。仅分享去除订阅链接、凭据、服务器地址等隐私信息后的最小示例。
     validations:
-      required: true
+      required: false
   - type: textarea
     id: logs
     attributes:
       render: raw
       label: "日志"
       description: |
-        请在此粘贴或上传日志。
-
-        提示: 请使用应用内的 `Logcat` 或 `adb logcat` 捕获日志. `adb logcat` 能更好地帮助侦测问题.
+        可选。分享前请移除令牌、地址等隐私信息。
     validations:
-      required: true
+      required: false
   - type: textarea
     id: screenshot
     attributes:

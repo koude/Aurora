@@ -56,16 +56,10 @@ body:
       description: |
         Input application you are using information.
 
-        Example:
-        ```
-        - Version: 2.5.4-premium
-        - APK filename: cfa-2.5.4-premium-arm64-v8a-release.apk
-        - Distribution Channel: Google Play
-        ```
+        Please include the Aurora version and APK architecture (for example, arm64-v8a).
       value: |
         - Version:
-        - APK filename:
-        - Distribution Channel:
+        - APK architecture:
     validations:
       required: true
   - type: textarea
@@ -74,26 +68,18 @@ body:
       render: yml
       label: "Configure File"
       description: |
-        Please paste or upload the configuration file here.
-
-        TIPS: If you only have a subscription link, please use your browser to download it.
-
-        **NOTE: Please remove proxies from the configuration file before uploading it.**
-        **NOTE: Please remove proxies from the configuration file before uploading it.**
-        **NOTE: Please remove proxies from the configuration file before uploading it.**
+        Optional. Only share a minimal example after removing subscription URLs, credentials, server addresses and other secrets.
     validations:
-      required: true
+      required: false
   - type: textarea
     id: logs
     attributes:
       render: raw
       label: "Logs"
       description: |
-        Please paste or upload the log file here.
-
-        TIPS: Please use the `Logcat` in application or `adb logcat`. `adb logcat` would be better.
+        Optional. Remove tokens, addresses and other private data before sharing logs.
     validations:
-      required: true
+      required: false
   - type: textarea
     id: screenshot
     attributes:

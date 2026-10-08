@@ -7,8 +7,10 @@
   release commit.
 - Check the tracked diff for accidental changes to `:core`, VPN service, signing files and
   unrelated assets.
-- The GitHub workflow must produce one signed arm64-v8a APK and attach it to the matching tag's
-  release. A successful Git push or local Kotlin compilation alone does **not** prove this step.
+- For a pre-release, confirm the workflow attaches one signed arm64-v8a APK. A formal release
+  requires `docs/releases/<version>.md` and must attach five signed APKs: arm64-v8a,
+  armeabi-v7a, x86, x86_64 and universal. Check the matching tag's release after GitHub Actions
+  completes; a successful Git push alone does **not** prove publication.
 
 ## Manual smoke test on the GitHub-signed APK
 
@@ -23,10 +25,3 @@
 
 Do not install a locally signed APK over the user's real-phone GitHub build. Local emulator
 testing is separate and must not be represented as real-device acceptance.
-
-## Current host limitation
-
-On the present Windows machine, full local APK assembly is blocked by Windows Application
-Control rejecting the repo-local Go `cgo.exe`; offline Gradle also lacks cached
-`com.android.tools.lint:lint-gradle:31.8.0`. Kotlin compilation and unit tests can run. The
-GitHub Actions run/release must be checked separately before calling a tagged version released.
