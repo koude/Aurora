@@ -14,6 +14,8 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.github.kr328.clash.core.model.ConnectionInfo
 import com.github.kr328.clash.core.model.Proxy
 import com.koude.aurora.designsystem.theme.AuroraTheme
+import com.koude.aurora.ui.about.AboutLinks
+import com.koude.aurora.ui.about.AboutScreen
 import com.koude.aurora.ui.connections.ConnectionsScreen
 import com.koude.aurora.ui.connections.ConnectionsUiState
 import com.koude.aurora.ui.home.HomeScreen
@@ -169,11 +171,50 @@ class TopLevelScreenSmokeTest {
                     onOpenApp = {},
                     onOpenMetaFeature = {},
                     onOpenOverride = {},
+                    onOpenAbout = {},
                 )
             }
         }
         compose.onNodeWithText("配置").performClick()
         compose.runOnIdle { assertTrue(openedProfiles) }
+    }
+
+    @Test fun settingsOpensAbout() {
+        var openedAbout = false
+        compose.setContent {
+            AuroraTheme {
+                SettingsScreen(
+                    proxyEnabled = false,
+                    onOpenHome = {},
+                    onOpenProxy = {},
+                    onOpenProfiles = {},
+                    onOpenNetwork = {},
+                    onOpenApp = {},
+                    onOpenMetaFeature = {},
+                    onOpenOverride = {},
+                    onOpenAbout = { openedAbout = true },
+                )
+            }
+        }
+        compose.onNodeWithText("关于").performClick()
+        compose.runOnIdle { assertTrue(openedAbout) }
+    }
+
+    @Test fun aboutShowsVersionAndProjectLinks() {
+        var openedUrl: String? = null
+        compose.setContent {
+            AuroraTheme {
+                AboutScreen(
+                    versionName = "2026.10.08.2",
+                    versionCode = 26100803,
+                    onOpenLink = { openedUrl = it },
+                    onBack = {},
+                )
+            }
+        }
+        compose.onNodeWithText("版本 2026.10.08.2（26100803）").assertIsDisplayed()
+        compose.onNodeWithText("项目源码").performClick()
+        compose.runOnIdle { org.junit.Assert.assertEquals(AboutLinks.PROJECT, openedUrl) }
     }
 
     @Test fun emptyProfilesShowOneAddEntryAndSources() {

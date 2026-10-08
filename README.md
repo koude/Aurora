@@ -1,87 +1,42 @@
-## Clash Meta for Android
+# Aurora
 
-A Graphical user interface of [Clash.Meta](https://github.com/MetaCubeX/Clash.Meta) for Android
+Aurora 是基于 [Clash Meta for Android](https://github.com/MetaCubeX/ClashMetaForAndroid) 与 [mihomo](https://github.com/MetaCubeX/mihomo) 的原生 Android 代理客户端。项目保留成熟的代理核心和 Android 服务能力，使用 Jetpack Compose 重做界面与导航。
 
-### Feature
+## 下载与安装
 
-Feature of [Clash.Meta](https://github.com/MetaCubeX/Clash.Meta)
+从 [GitHub Releases](https://github.com/koude/Aurora/releases) 下载官方签名的 `arm64-v8a` APK。正式版为 [v1.0](https://github.com/koude/Aurora/releases/tag/v1.0)；后续日历版本默认标记为预发布。安装更新时须使用相同签名的 APK；不同签名的本地构建不能直接覆盖官方版本。
 
-[<img src="https://fdroid.gitlab.io/artwork/badge/get-it-on.png"
-     alt="Get it on F-Droid"
-     height="80">](https://f-droid.org/packages/com.github.metacubex.clash.meta/)
+官方 APK 仅提供 `arm64-v8a`，适用于 Android 5.0 及以上的对应设备。应用包名为 `com.koude.aurora`。使用前需自行导入本地配置或远程订阅；项目不提供代理节点或订阅服务。
 
-### Requirement
+## 主要功能
 
-- Android 5.0+ (minimum)
-- Android 7.0+ (recommend)
-- `armeabi-v7a` , `arm64-v8a`, `x86` or `x86_64` Architecture
+- Android VPN 与本地代理服务两种接入方式
+- 配置导入、订阅更新与配置切换
+- 策略组和节点选择、延迟测试、连接查看与关闭
+- 分应用代理、网络选项及 mihomo 内核功能设置
+- 网站连通性检测与路由预判
 
-### Build
+部分功能的可用性取决于配置文件、Android 版本与设备环境。
 
-1. Update submodules
+## 从源码构建
 
-   ```bash
-   git submodule update --init --recursive
-   ```
+需要 JDK 21、Go 1.24、Android SDK Platform 35、Build-Tools 35.0.0、NDK 29.0.14206865 和 CMake 3.22.1。先初始化子模块，并在项目根目录创建 `local.properties`：
 
-2. Install **OpenJDK 11**, **Android SDK**, **CMake** and **Golang**
+```properties
+sdk.dir=/path/to/android-sdk
+custom.application.id=com.koude.aurora
+remove.suffix=true
+```
 
-3. Create `local.properties` in project root with
+然后运行：
 
-   ```properties
-   sdk.dir=/path/to/android-sdk
-   ```
+```bash
+git submodule update --init --recursive
+./gradlew app:assembleAlphaDebug
+```
 
-4. (Optional) Custom app package name. Add the following configuration to `local.properties`.
+本地 Debug 构建使用开发签名，仅建议安装在测试设备或模拟器上。官方 Release APK 由 [GitHub Actions](https://github.com/koude/Aurora/actions) 使用固定签名构建；如需自行构建可更新的 Release 包，必须持有自己的签名密钥，不能与官方 APK 混装。
 
-   ```properties
-   # config your ownn applicationId, or it will be 'com.github.metacubex.clash'
-   custom.application.id=com.my.compile.clash
-   # remove application id suffix, or the applicaion id will be 'com.github.metacubex.clash.alpha'
-   remove.suffix=true
+## 开源与致谢
 
-5. Create `signing.properties` in project root with
-
-   ```properties
-   keystore.path=/path/to/keystore/file
-   keystore.password=<key store password>
-   key.alias=<key alias>
-   key.password=<key password>
-   ```
-
-6. Build
-
-   ```bash
-   ./gradlew app:assembleAlphaRelease
-   ```
-
-### Automation
-
-APP package name is `com.github.metacubex.clash.meta`
-
-- Toggle Clash.Meta service status
-  - Send intent to activity `com.github.kr328.clash.ExternalControlActivity` with action `com.github.metacubex.clash.meta.action.TOGGLE_CLASH`
-- Start Clash.Meta service
-  - Send intent to activity `com.github.kr328.clash.ExternalControlActivity` with action `com.github.metacubex.clash.meta.action.START_CLASH`
-- Stop Clash.Meta service
-  - Send intent to activity `com.github.kr328.clash.ExternalControlActivity` with action `com.github.metacubex.clash.meta.action.STOP_CLASH`
-- Import a profile
-  - URL Scheme `clash://install-config?url=<encoded URI>` or `clashmeta://install-config?url=<encoded URI>`
-
-### Contribution and Project Maintenance
-
-#### Meta Kernel
-
-- CMFA uses the kernel from `android-real` branch under `MetaCubeX/Clash.Meta`, which is a merge of the main `Alpha` branch and `android-open`.
-  - If you want to contribute to the kernel, make PRs to `Alpha` branch of the Meta kernel repository.
-  - If you want to contribute Android-specific patches to the kernel, make PRs to  `android-open` branch of the Meta kernel repository.
-
-#### Maintenance
-
-- When `MetaCubeX/Clash.Meta` kernel is updated to a new version, the `Update Dependencies` actions in this repo will be triggered automatically.
-  - It will pull the new version of the meta kernel, update all the golang dependencies, and create a PR without manual intervention.
-  - If there is any compile error in PR, you need to fix it before merging. Alternatively, you may merge the PR directly.
-- Manually triggering `Build Pre-Release` actions will compile and publish a `PreRelease` version.
-- Manually triggering `Build Release` actions will compile, tag and publish a `Release` version.
-  - You must fill the blank `Release Tag` with the tag you want to release in the format of `v1.2.3`.
-  - `versionName` and `versionCode` in `build.gradle.kts` will be automatically bumped to the tag you filled above.
+Aurora 延续 Clash Meta for Android 的 Android 工程并集成 mihomo 核心。感谢上述项目及其贡献者。项目许可证见 [LICENSE](LICENSE)，第三方软件声明见 [NOTICE](NOTICE)。

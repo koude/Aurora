@@ -53,6 +53,7 @@ import com.github.kr328.clash.util.fileName
 import com.github.kr328.clash.util.startClashService
 import com.github.kr328.clash.util.stopClashService
 import com.koude.aurora.designsystem.theme.AuroraTheme
+import com.koude.aurora.ui.about.AboutScreen
 import com.koude.aurora.ui.components.AuroraBottomNavigation
 import com.koude.aurora.ui.components.AuroraDestination
 import com.koude.aurora.ui.connections.ConnectionsScreen
@@ -303,7 +304,16 @@ class MainActivity : BaseActivity() {
                         onOpenApp = { startActivity(AppSettingsActivity::class.intent) },
                         onOpenMetaFeature = { startActivity(MetaFeatureSettingsActivity::class.intent) },
                         onOpenOverride = { startActivity(OverrideSettingsActivity::class.intent) },
+                        onOpenAbout = { navController.navigate(ROUTE_ABOUT) },
                         showBottomNavigation = false,
+                    )
+                }
+                composable(ROUTE_ABOUT) {
+                    AboutScreen(
+                        versionName = BuildConfig.VERSION_NAME,
+                        versionCode = BuildConfig.VERSION_CODE,
+                        onOpenLink = { url -> startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) },
+                        onBack = { navController.popBackStack() },
                     )
                 }
             }
@@ -462,6 +472,7 @@ class MainActivity : BaseActivity() {
         const val ROUTE_CONNECTIONS = "connections"
         const val ROUTE_PROFILES = "profiles"
         const val ROUTE_SETTINGS = "settings"
+        const val ROUTE_ABOUT = "about"
         private val TOP_LEVEL_ROUTES = setOf(ROUTE_HOME, ROUTE_PROXY, ROUTE_CONNECTIONS, ROUTE_PROFILES, ROUTE_SETTINGS)
     }
 }
@@ -479,6 +490,7 @@ private fun String.toAuroraDestination(): AuroraDestination = when (this) {
     MainActivity.ROUTE_CONNECTIONS -> AuroraDestination.Connections
     MainActivity.ROUTE_PROFILES -> AuroraDestination.Settings
     MainActivity.ROUTE_SETTINGS -> AuroraDestination.Settings
+    MainActivity.ROUTE_ABOUT -> AuroraDestination.Settings
     else -> AuroraDestination.Home
 }
 

@@ -404,6 +404,13 @@
     <string name="aurora_settings_summary">Network, app behavior and advanced options</string>
     <string name="aurora_help_summary">Usage guides and troubleshooting</string>
     <string name="aurora_about_summary">Version, licenses and project information</string>
+    <string name="aurora_about_version">Version %1$s (%2$d)</string>
+    <string name="aurora_about_description">A native Android proxy client built on Clash Meta for Android and powered by mihomo.</string>
+    <string name="aurora_about_project">Project source</string>
+    <string name="aurora_about_releases">Releases</string>
+    <string name="aurora_about_open_source">Open source</string>
+    <string name="aurora_about_license">License</string>
+    <string name="aurora_about_notice">Third-party notices</string>
     <string name="aurora_settings_intro">Tune the app by area. Core networking behavior remains unchanged.</string>
     <string name="aurora_settings_network_engine">Network engine</string>
     <string name="aurora_settings_behavior">App behavior</string>

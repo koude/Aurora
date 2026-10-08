@@ -20,6 +20,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
@@ -59,6 +60,7 @@ fun SettingsScreen(
     onOpenApp: () -> Unit,
     onOpenMetaFeature: () -> Unit,
     onOpenOverride: () -> Unit,
+    onOpenAbout: () -> Unit,
     showBottomNavigation: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
@@ -108,6 +110,8 @@ fun SettingsScreen(
                     SettingsRow(Icons.Default.Refresh, stringResource(DesignR.string.aurora_settings_core_features), onOpenMetaFeature)
                     SettingsDivider()
                     SettingsRow(Icons.Default.Edit, stringResource(DesignR.string.aurora_settings_config_override), onOpenOverride)
+                    SettingsDivider()
+                    SettingsRow(Icons.Default.Info, stringResource(DesignR.string.about), onOpenAbout)
                 }
             }
         }
@@ -191,6 +195,7 @@ private fun SettingsScreenPreview() {
             onOpenApp = {},
             onOpenMetaFeature = {},
             onOpenOverride = {},
+            onOpenAbout = {},
         )
     }
 }
