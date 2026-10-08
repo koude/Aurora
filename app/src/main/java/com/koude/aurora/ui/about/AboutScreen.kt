@@ -37,7 +37,6 @@ object AboutLinks {
 @Composable
 fun AboutScreen(
     versionName: String,
-    versionCode: Int,
     onOpenLink: (String) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
@@ -60,7 +59,7 @@ fun AboutScreen(
                         fontWeight = FontWeight.SemiBold,
                     )
                     Text(
-                        text = stringResource(DesignR.string.aurora_about_version, versionName, versionCode),
+                        text = stringResource(DesignR.string.aurora_about_version, versionName),
                         style = MaterialTheme.typography.titleMedium,
                     )
                     Text(

@@ -311,7 +311,6 @@ class MainActivity : BaseActivity() {
                 composable(ROUTE_ABOUT) {
                     AboutScreen(
                         versionName = BuildConfig.VERSION_NAME,
-                        versionCode = BuildConfig.VERSION_CODE,
                         onOpenLink = { url -> startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) },
                         onBack = { navController.popBackStack() },
                     )

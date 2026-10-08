@@ -205,14 +205,13 @@ class TopLevelScreenSmokeTest {
         compose.setContent {
             AuroraTheme {
                 AboutScreen(
-                    versionName = "2026.10.08.2",
-                    versionCode = 26100803,
+                    versionName = "2026.10.08.3",
                     onOpenLink = { openedUrl = it },
                     onBack = {},
                 )
             }
         }
-        compose.onNodeWithText("版本 2026.10.08.2（26100803）").assertIsDisplayed()
+        compose.onNodeWithText("版本 2026.10.08.3").assertIsDisplayed()
         compose.onNodeWithText("项目源码").performClick()
         compose.runOnIdle { org.junit.Assert.assertEquals(AboutLinks.PROJECT, openedUrl) }
     }

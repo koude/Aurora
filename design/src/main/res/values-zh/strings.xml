@@ -312,8 +312,8 @@
     <string name="aurora_settings_summary">网络、应用行为与高级选项</string>
     <string name="aurora_help_summary">使用说明与故障排查</string>
     <string name="aurora_about_summary">版本、许可证与项目信息</string>
-    <string name="aurora_about_version">版本 %1$s（%2$d）</string>
-    <string name="aurora_about_description">基于 Clash Meta for Android、由 mihomo 内核驱动的原生 Android 代理客户端。</string>
+    <string name="aurora_about_version">版本 %1$s</string>
+    <string name="aurora_about_description">简洁的 Android 网络代理应用。</string>
     <string name="aurora_about_project">项目源码</string>
     <string name="aurora_about_releases">版本发布</string>
     <string name="aurora_about_open_source">开源项目</string>
