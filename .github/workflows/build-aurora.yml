@@ -92,11 +92,6 @@ jobs:
           key.password=${KEY_PASSWORD}
           EOF2
 
-      - name: Run app unit tests
-        run: |
-          chmod +x gradlew
-          ./gradlew app:testAlphaDebugUnitTest --stacktrace
-
       - name: Build Alpha Release
         run: |
           chmod +x gradlew

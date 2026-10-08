@@ -77,19 +77,21 @@ fun AboutScreen(
                 }
             }
             item {
-                Text(
-                    text = stringResource(DesignR.string.aurora_about_open_source),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Medium,
-                )
-                AboutGroup {
-                    AboutLinkRow("Clash Meta for Android", AboutLinks.CMFA, onOpenLink)
-                    AboutDivider()
-                    AboutLinkRow("mihomo", AboutLinks.MIHOMO, onOpenLink)
-                    AboutDivider()
-                    AboutLinkRow(stringResource(DesignR.string.aurora_about_license), AboutLinks.LICENSE, onOpenLink)
-                    AboutDivider()
-                    AboutLinkRow(stringResource(DesignR.string.aurora_about_notice), AboutLinks.NOTICE, onOpenLink)
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(
+                        text = stringResource(DesignR.string.aurora_about_open_source),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Medium,
+                    )
+                    AboutGroup {
+                        AboutLinkRow("Clash Meta for Android", AboutLinks.CMFA, onOpenLink)
+                        AboutDivider()
+                        AboutLinkRow("mihomo", AboutLinks.MIHOMO, onOpenLink)
+                        AboutDivider()
+                        AboutLinkRow(stringResource(DesignR.string.aurora_about_license), AboutLinks.LICENSE, onOpenLink)
+                        AboutDivider()
+                        AboutLinkRow(stringResource(DesignR.string.aurora_about_notice), AboutLinks.NOTICE, onOpenLink)
+                    }
                 }
             }
         }
