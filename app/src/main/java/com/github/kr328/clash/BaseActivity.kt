@@ -43,6 +43,8 @@ abstract class BaseActivity : AppCompatActivity(),
     private var deferRunning = false
     private val nextRequestKey = AtomicInteger(0)
     private var dayNight: DayNight = DayNight.Day
+    protected val isDarkTheme: Boolean
+        get() = dayNight == DayNight.Night
 
     protected abstract suspend fun main()
 

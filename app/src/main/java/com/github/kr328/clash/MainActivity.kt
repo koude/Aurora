@@ -104,7 +104,7 @@ class MainActivity : BaseActivity() {
     }
 
     override suspend fun main() {
-        setContent { AuroraTheme { AuroraApp() } }
+        setContent { AuroraTheme(darkTheme = isDarkTheme) { AuroraApp() } }
 
         homeViewModel.refreshConnection(clashRunning)
         proxyViewModel.refresh(clashRunning)

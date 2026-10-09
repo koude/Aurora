@@ -22,7 +22,7 @@ class AccessControlActivity : BaseActivity() {
         editor.load()
 
         setContent {
-            AuroraTheme {
+            AuroraTheme(darkTheme = isDarkTheme) {
                 AccessControlScreen(
                     apps = editor.apps,
                     mode = editor.mode,

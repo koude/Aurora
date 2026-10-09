@@ -20,7 +20,7 @@ class AppSettingsActivity : BaseActivity() {
         viewModel.refresh(clashRunning)
 
         setContent {
-            AuroraTheme {
+            AuroraTheme(darkTheme = isDarkTheme) {
                 val screenState by viewModel.uiState.collectAsStateWithLifecycle()
                 AppSettingsScreen(
                     state = screenState,

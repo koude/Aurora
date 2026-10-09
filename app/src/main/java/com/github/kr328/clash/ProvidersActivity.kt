@@ -33,7 +33,7 @@ class ProvidersActivity : BaseActivity() {
         }
         viewModel.refresh()
         setContent {
-            AuroraTheme {
+            AuroraTheme(darkTheme = isDarkTheme) {
                 val providerRows by viewModel.rows.collectAsStateWithLifecycle()
                 ProvidersScreen(
                     providers = providerRows,

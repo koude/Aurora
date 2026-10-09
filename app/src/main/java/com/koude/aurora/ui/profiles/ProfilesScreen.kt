@@ -68,8 +68,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
@@ -656,24 +654,15 @@ private fun ActiveProfileCard(
     onOpen: () -> Unit,
 ) {
     val shape = MaterialTheme.shapes.extraLarge
-    val primary = MaterialTheme.colorScheme.primary
-    val gradient = Brush.linearGradient(
-        colors = listOf(
-            primary.copy(red = (primary.red + 0.10f).coerceAtMost(1f)),
-            primary.copy(
-                red = primary.red * 0.72f,
-                green = primary.green * 0.72f,
-                blue = primary.blue * 0.88f,
-            ),
-        ),
-    )
+    val container = MaterialTheme.colorScheme.primaryContainer
+    val onContainer = MaterialTheme.colorScheme.onPrimaryContainer
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = 104.dp)
             .clip(shape)
-            .background(gradient)
+            .background(container)
             .clickable(onClick = onOpen),
     ) {
         Canvas(
@@ -682,7 +671,7 @@ private fun ActiveProfileCard(
                 .size(124.dp),
         ) {
             drawCircle(
-                color = Color.White.copy(alpha = 0.10f),
+                color = onContainer.copy(alpha = 0.08f),
                 radius = size.minDimension * 0.56f,
                 center = Offset(size.width * 0.76f, size.height * 0.05f),
             )
@@ -699,7 +688,7 @@ private fun ActiveProfileCard(
                     modifier = Modifier.weight(1f),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
-                    color = Color.White,
+                    color = onContainer,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -711,12 +700,12 @@ private fun ActiveProfileCard(
                     Surface(
                         modifier = Modifier.size(7.dp),
                         shape = CircleShape,
-                        color = Color(0xFFBFFFC9),
+                        color = MaterialTheme.colorScheme.tertiary,
                     ) {}
                     Text(
                         text = "当前启用",
                         style = MaterialTheme.typography.labelSmall,
-                        color = Color.White.copy(alpha = 0.90f),
+                        color = onContainer,
                     )
                 }
             }
@@ -724,7 +713,7 @@ private fun ActiveProfileCard(
             Text(
                 text = profile.detailText(),
                 style = MaterialTheme.typography.bodySmall,
-                color = Color.White.copy(alpha = 0.82f),
+                color = onContainer.copy(alpha = 0.82f),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )

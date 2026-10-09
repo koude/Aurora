@@ -396,8 +396,8 @@ private fun ConnectionControls(
                     contentDescription = if (state.running) "停止" else "启动"
                 },
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = if (state.running) Color(0xFFC62828) else Color(0xFF2E7D32),
-                    contentColor = Color.White,
+                    containerColor = if (state.running) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                    contentColor = if (state.running) MaterialTheme.colorScheme.onError else MaterialTheme.colorScheme.onPrimary,
                 ),
                 contentPadding = PaddingValues(0.dp),
             ) {
@@ -508,7 +508,8 @@ private fun ModeMenu(
             modifier = Modifier.fillMaxWidth().alpha(if (enabled) 1f else .55f)
                 .clickable(enabled = enabled) { expanded = true },
             shape = MaterialTheme.shapes.medium,
-            color = MaterialTheme.colorScheme.surface,
+            color = modeContainerColor(mode),
+            contentColor = modeContainerContentColor(mode),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth().height(52.dp).padding(horizontal = 6.dp),
@@ -519,7 +520,7 @@ private fun ModeMenu(
                     painter = painterResource(modeIcon(mode)),
                     contentDescription = "切换当前出口",
                     modifier = Modifier.size(28.dp),
-                    tint = modeIconTint(mode),
+                    tint = modeContainerContentColor(mode),
                 )
                 AnimatedVisibility(
                     visible = !compact,
@@ -577,9 +578,23 @@ private fun modeIcon(mode: TunnelState.Mode): Int = when (mode) {
 
 @Composable
 private fun modeIconTint(mode: TunnelState.Mode): Color = when (mode) {
-    TunnelState.Mode.Rule, TunnelState.Mode.Script -> MaterialTheme.colorScheme.onSurface
-    TunnelState.Mode.Global -> Color(0xFF1976D2)
-    TunnelState.Mode.Direct -> Color(0xFFD99B00)
+    TunnelState.Mode.Rule, TunnelState.Mode.Script -> MaterialTheme.colorScheme.primary
+    TunnelState.Mode.Global -> MaterialTheme.colorScheme.secondary
+    TunnelState.Mode.Direct -> MaterialTheme.colorScheme.tertiary
+}
+
+@Composable
+private fun modeContainerColor(mode: TunnelState.Mode): Color = when (mode) {
+    TunnelState.Mode.Rule, TunnelState.Mode.Script -> MaterialTheme.colorScheme.primaryContainer
+    TunnelState.Mode.Global -> MaterialTheme.colorScheme.secondaryContainer
+    TunnelState.Mode.Direct -> MaterialTheme.colorScheme.tertiaryContainer
+}
+
+@Composable
+private fun modeContainerContentColor(mode: TunnelState.Mode): Color = when (mode) {
+    TunnelState.Mode.Rule, TunnelState.Mode.Script -> MaterialTheme.colorScheme.onPrimaryContainer
+    TunnelState.Mode.Global -> MaterialTheme.colorScheme.onSecondaryContainer
+    TunnelState.Mode.Direct -> MaterialTheme.colorScheme.onTertiaryContainer
 }
 
 @Composable

@@ -32,7 +32,7 @@ class OverrideSettingsActivity : BaseActivity() {
         setContent {
             val currentRevision by editor.revision.collectAsState()
             @Suppress("UNUSED_VARIABLE") val keepStateRead = currentRevision
-            AuroraTheme {
+            AuroraTheme(darkTheme = isDarkTheme) {
                 OverrideFormScreen(
                     title = getString(DesignR.string.override),
                     fields = overrideFields(configuration, editor::changed),

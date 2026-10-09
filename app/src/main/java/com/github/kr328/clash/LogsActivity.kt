@@ -19,7 +19,7 @@ class LogsActivity : BaseActivity() {
     override suspend fun main() {
         filesState.value = withContext(Dispatchers.IO) { loadFiles() }
         setContent {
-            AuroraTheme {
+            AuroraTheme(darkTheme = isDarkTheme) {
                 LogsScreen(
                     files = filesState.value,
                     onBack = ::finish,

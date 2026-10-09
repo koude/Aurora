@@ -22,7 +22,7 @@ class PropertiesActivity : BaseActivity() {
         if (!editor.load(uuid)) return finish()
 
         setContent {
-            AuroraTheme {
+            AuroraTheme(darkTheme = isDarkTheme) {
                 editor.profile?.let { current -> ProfilePropertiesScreen(
                     profile = current,
                     hasUnsavedChanges = editor.hasUnsavedChanges,
