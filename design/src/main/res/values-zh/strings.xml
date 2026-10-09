@@ -63,6 +63,7 @@
     <string name="aurora_hide_icon_dialer_note">部分拨号盘可能不支持此代码。隐藏前请妥善保存。</string>
     <string name="aurora_hide_icon_copy_failed">拨号代码复制失败，应用图标未隐藏。</string>
     <string name="aurora_general_notification_traffic">通知中显示流量</string>
+    <string name="aurora_dynamic_color">跟随壁纸配色</string>
     <string name="hide_from_recents_title">从最近任务隐藏</string>
     <string name="hide_from_recents_desc">在最近任务中隐藏应用</string>
     <string name="history">历史</string>

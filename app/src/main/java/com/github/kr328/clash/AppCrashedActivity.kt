@@ -26,7 +26,7 @@ class AppCrashedActivity : BaseActivity() {
         }
 
         logsState.value = logs
-        setContent { AuroraTheme(darkTheme = isDarkTheme) { AppCrashedScreen(logsState.value) } }
+        setContent { AuroraTheme(darkTheme = isDarkTheme, dynamicColor = useDynamicColor) { AppCrashedScreen(logsState.value) } }
 
         while (isActive) {
             events.receive()

@@ -62,7 +62,7 @@ class LogcatActivity : BaseActivity() {
         }
         streamingState.value = false
         setContent {
-            AuroraTheme(darkTheme = isDarkTheme) {
+            AuroraTheme(darkTheme = isDarkTheme, dynamicColor = useDynamicColor) {
                 LogcatScreen(
                     messages = messagesState.value,
                     streaming = false,
@@ -86,7 +86,7 @@ class LogcatActivity : BaseActivity() {
     private suspend fun mainStreaming() {
         streamingState.value = true
         setContent {
-            AuroraTheme(darkTheme = isDarkTheme) {
+            AuroraTheme(darkTheme = isDarkTheme, dynamicColor = useDynamicColor) {
                 LogcatScreen(
                     messages = messagesState.value,
                     streaming = true,

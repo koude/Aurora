@@ -27,7 +27,7 @@ class FilesActivity : BaseActivity() {
         if (!browser.load(uuid)) return finish()
         setContent {
             val screenState by browser.uiState.collectAsStateWithLifecycle()
-            AuroraTheme(darkTheme = isDarkTheme) {
+            AuroraTheme(darkTheme = isDarkTheme, dynamicColor = useDynamicColor) {
                 FilesScreen(
                     files = screenState.files,
                     currentInBase = screenState.inBase,

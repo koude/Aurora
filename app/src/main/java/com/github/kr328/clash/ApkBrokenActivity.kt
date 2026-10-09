@@ -11,7 +11,7 @@ import kotlinx.coroutines.isActive
 class ApkBrokenActivity : BaseActivity() {
     override suspend fun main() {
         setContent {
-            AuroraTheme(darkTheme = isDarkTheme) {
+            AuroraTheme(darkTheme = isDarkTheme, dynamicColor = useDynamicColor) {
                 ApkBrokenScreen(getString(R.string.aurora_releases_url)) { url ->
                     startActivity(Intent(Intent.ACTION_VIEW).setData(Uri.parse(url)))
                 }

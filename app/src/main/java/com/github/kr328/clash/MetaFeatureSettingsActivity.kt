@@ -30,7 +30,7 @@ class MetaFeatureSettingsActivity : BaseActivity() {
         setContent {
             val revisionSnapshot by editor.revision.collectAsState()
             @Suppress("UNUSED_VARIABLE") val keepStateRead = revisionSnapshot
-            AuroraTheme(darkTheme = isDarkTheme) {
+            AuroraTheme(darkTheme = isDarkTheme, dynamicColor = useDynamicColor) {
                 MetaFeatureSettingsScreen(
                     fields = metaFields(configuration, editor::changed),
                     onBack = ::finish,

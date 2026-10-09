@@ -2,7 +2,7 @@ package com.koude.aurora.designsystem.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Static fallback for Android 11 and below. Android 12+ uses wallpaper-derived ColorScheme.
+// Default Aurora scheme. Wallpaper-derived colors are an explicit opt-in on Android 12+.
 // Primary: Aurora teal; secondary: restrained blue; tertiary: warm amber.
 internal val AuroraPrimary = Color(0xFF006F73)
 internal val AuroraOnPrimary = Color(0xFFFFFFFF)
@@ -67,3 +67,25 @@ internal val AuroraDarkOutline = Color(0xFF899390)
 internal val AuroraDarkOutlineVariant = Color(0xFF404A48)
 internal val AuroraDarkInverseSurface = Color(0xFFDFE5E2)
 internal val AuroraDarkInverseOnSurface = Color(0xFF2E3533)
+
+// These are semantic outlet colors, not Material color roles. They must stay
+// recognizable even when the user opts into wallpaper-derived Material colors.
+data class AuroraModeColors(val container: Color, val onContainer: Color, val accent: Color)
+
+object AuroraModePalette {
+    val ruleLight = AuroraModeColors(Color(0xFFD8F4E8), Color(0xFF123E35), Color(0xFF006B55))
+    val globalLight = AuroraModeColors(Color(0xFFD6E7FF), Color(0xFF123D69), Color(0xFF225CA6))
+    val directLight = AuroraModeColors(Color(0xFFFFF0B8), Color(0xFF554000), Color(0xFF886400))
+
+    val ruleDark = AuroraModeColors(Color(0xFF164B3F), Color(0xFFC1F0DF), Color(0xFF82DDB9))
+    val globalDark = AuroraModeColors(Color(0xFF173E71), Color(0xFFD8E7FF), Color(0xFFA9C8FA))
+    val directDark = AuroraModeColors(Color(0xFF5B4700), Color(0xFFFFE89E), Color(0xFFE9C55C))
+}
+
+// Preserve the earlier green-start/red-stop control colors. The switch text
+// continues to describe connection state rather than an action.
+object AuroraConnectionActionColors {
+    val start = Color(0xFF2E7D32)
+    val stop = Color(0xFFC62828)
+    val onAction = Color.White
+}

@@ -20,13 +20,17 @@ class AppSettingsActivity : BaseActivity() {
         viewModel.refresh(clashRunning)
 
         setContent {
-            AuroraTheme(darkTheme = isDarkTheme) {
+            AuroraTheme(darkTheme = isDarkTheme, dynamicColor = useDynamicColor) {
                 val screenState by viewModel.uiState.collectAsStateWithLifecycle()
                 AppSettingsScreen(
                     state = screenState,
                     onAutoRestartChanged = viewModel::setAutoRestart,
                     onDarkModeChanged = {
                         viewModel.setDarkMode(it)
+                        ApplicationObserver.createdActivities.forEach { activity -> activity.recreate() }
+                    },
+                    onDynamicColorChanged = {
+                        viewModel.setDynamicColor(it)
                         ApplicationObserver.createdActivities.forEach { activity -> activity.recreate() }
                     },
                     onHideAppIconChanged = viewModel::setHideAppIcon,

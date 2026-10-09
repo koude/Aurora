@@ -40,7 +40,7 @@ class NewProfileActivity : BaseActivity() {
     override suspend fun main() {
         providersState.value = queryProfileProviders()
         setContent {
-            AuroraTheme(darkTheme = isDarkTheme) {
+            AuroraTheme(darkTheme = isDarkTheme, dynamicColor = useDynamicColor) {
                 NewProfileScreen(
                     providers = providersState.value,
                     onBack = ::finish,

@@ -20,7 +20,7 @@ class NetworkSettingsActivity : BaseActivity() {
         viewModel.refresh(clashRunning)
 
         setContent {
-            AuroraTheme(darkTheme = isDarkTheme) {
+            AuroraTheme(darkTheme = isDarkTheme, dynamicColor = useDynamicColor) {
                 val screenState by viewModel.uiState.collectAsStateWithLifecycle()
                 NetworkSettingsScreen(
                     state = screenState,

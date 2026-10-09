@@ -75,6 +75,10 @@ import com.github.kr328.clash.core.model.TunnelState
 import com.github.kr328.clash.core.model.RoutePreview
 import com.koude.aurora.model.WebsiteLatencySite
 import com.koude.aurora.designsystem.theme.AuroraTheme
+import com.koude.aurora.designsystem.theme.AuroraConnectionActionColors
+import com.koude.aurora.designsystem.theme.AuroraModeColors
+import com.koude.aurora.designsystem.theme.AuroraModePalette
+import com.koude.aurora.designsystem.theme.LocalAuroraDarkTheme
 import com.koude.aurora.ui.components.AuroraBottomNavigation
 import com.koude.aurora.ui.components.AuroraDestination
 import com.koude.aurora.ui.components.AuroraPageHeader
@@ -337,6 +341,8 @@ private fun ConnectionControls(
     onModeSelected: (TunnelState.Mode) -> Unit,
     onToggleConnection: () -> Unit,
 ) {
+    val actionColor = if (state.running) AuroraConnectionActionColors.stop
+        else AuroraConnectionActionColors.start
     Card(
         shape = AuroraCardStyle.groupShape(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
@@ -359,7 +365,8 @@ private fun ConnectionControls(
                     onValueChange = { onToggleConnection() },
                 ),
                 shape = MaterialTheme.shapes.medium,
-                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                color = actionColor,
+                contentColor = AuroraConnectionActionColors.onAction,
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
@@ -370,8 +377,11 @@ private fun ConnectionControls(
                         checked = state.running,
                         onCheckedChange = null,
                         colors = SwitchDefaults.colors(
-                            checkedTrackColor = MaterialTheme.colorScheme.primary,
-                            uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant,
+                            checkedTrackColor = AuroraConnectionActionColors.onAction,
+                            checkedThumbColor = AuroraConnectionActionColors.stop,
+                            uncheckedTrackColor = AuroraConnectionActionColors.onAction.copy(alpha = .3f),
+                            uncheckedThumbColor = AuroraConnectionActionColors.onAction,
+                            uncheckedBorderColor = AuroraConnectionActionColors.onAction,
                         ),
                     )
                     Spacer(Modifier.width(6.dp))
@@ -413,13 +423,14 @@ private fun ModeMenu(
     modifier: Modifier = Modifier,
 ) {
     var expanded by remember { mutableStateOf(false) }
+    val currentModeColors = modeColors(mode)
     Box(modifier) {
         Surface(
-            modifier = Modifier.fillMaxWidth().alpha(if (enabled) 1f else .55f)
+            modifier = Modifier.fillMaxWidth().alpha(if (enabled) 1f else .85f)
                 .clickable(enabled = enabled) { expanded = true },
             shape = MaterialTheme.shapes.medium,
-            color = modeContainerColor(mode),
-            contentColor = modeContainerContentColor(mode),
+            color = currentModeColors.container,
+            contentColor = currentModeColors.onContainer,
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth().height(52.dp).padding(horizontal = 6.dp),
@@ -430,7 +441,7 @@ private fun ModeMenu(
                     painter = painterResource(modeIcon(mode)),
                     contentDescription = "切换当前出口",
                     modifier = Modifier.size(28.dp),
-                    tint = modeContainerContentColor(mode),
+                    tint = currentModeColors.onContainer,
                 )
                 Text(
                     modeLabel(mode),
@@ -454,7 +465,7 @@ private fun ModeMenu(
                             painter = painterResource(modeIcon(itemMode)),
                             contentDescription = null,
                             modifier = Modifier.size(26.dp),
-                            tint = modeIconTint(itemMode),
+                            tint = modeColors(itemMode).accent,
                         )
                     },
                     onClick = {
@@ -481,24 +492,16 @@ private fun modeIcon(mode: TunnelState.Mode): Int = when (mode) {
 }
 
 @Composable
-private fun modeIconTint(mode: TunnelState.Mode): Color = when (mode) {
-    TunnelState.Mode.Rule, TunnelState.Mode.Script -> MaterialTheme.colorScheme.primary
-    TunnelState.Mode.Global -> MaterialTheme.colorScheme.secondary
-    TunnelState.Mode.Direct -> MaterialTheme.colorScheme.tertiary
-}
-
-@Composable
-private fun modeContainerColor(mode: TunnelState.Mode): Color = when (mode) {
-    TunnelState.Mode.Rule, TunnelState.Mode.Script -> MaterialTheme.colorScheme.primaryContainer
-    TunnelState.Mode.Global -> MaterialTheme.colorScheme.secondaryContainer
-    TunnelState.Mode.Direct -> MaterialTheme.colorScheme.tertiaryContainer
-}
-
-@Composable
-private fun modeContainerContentColor(mode: TunnelState.Mode): Color = when (mode) {
-    TunnelState.Mode.Rule, TunnelState.Mode.Script -> MaterialTheme.colorScheme.onPrimaryContainer
-    TunnelState.Mode.Global -> MaterialTheme.colorScheme.onSecondaryContainer
-    TunnelState.Mode.Direct -> MaterialTheme.colorScheme.onTertiaryContainer
+private fun modeColors(mode: TunnelState.Mode): AuroraModeColors {
+    val dark = LocalAuroraDarkTheme.current
+    return when (mode) {
+        TunnelState.Mode.Rule, TunnelState.Mode.Script ->
+            if (dark) AuroraModePalette.ruleDark else AuroraModePalette.ruleLight
+        TunnelState.Mode.Global ->
+            if (dark) AuroraModePalette.globalDark else AuroraModePalette.globalLight
+        TunnelState.Mode.Direct ->
+            if (dark) AuroraModePalette.directDark else AuroraModePalette.directLight
+    }
 }
 
 @Composable

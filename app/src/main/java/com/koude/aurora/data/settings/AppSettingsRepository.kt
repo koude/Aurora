@@ -12,6 +12,7 @@ import com.github.kr328.clash.service.store.ServiceStore
 data class AppSettingsSnapshot(
     val autoRestart: Boolean,
     val darkMode: DarkMode,
+    val dynamicColor: Boolean,
     val hideAppIcon: Boolean,
     val hideFromRecents: Boolean,
     val showTraffic: Boolean,
@@ -21,6 +22,7 @@ interface AppSettingsRepository {
     fun read(): AppSettingsSnapshot
     fun setAutoRestart(value: Boolean)
     fun setDarkMode(value: DarkMode)
+    fun setDynamicColor(value: Boolean)
     fun setHideAppIcon(value: Boolean)
     fun setHideFromRecents(value: Boolean)
     fun setShowTraffic(value: Boolean)
@@ -35,6 +37,7 @@ class StoredAppSettingsRepository(context: Context) : AppSettingsRepository {
         autoRestart = appContext.packageManager.getComponentEnabledSetting(RestartReceiver::class.componentName) ==
             PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
         darkMode = uiStore.darkMode,
+        dynamicColor = uiStore.dynamicColor,
         hideAppIcon = uiStore.hideAppIcon,
         hideFromRecents = uiStore.hideFromRecents,
         showTraffic = serviceStore.dynamicNotification,
@@ -49,6 +52,8 @@ class StoredAppSettingsRepository(context: Context) : AppSettingsRepository {
     }
 
     override fun setDarkMode(value: DarkMode) { uiStore.darkMode = value }
+
+    override fun setDynamicColor(value: Boolean) { uiStore.dynamicColor = value }
 
     override fun setHideAppIcon(value: Boolean) {
         val state = if (value) PackageManager.COMPONENT_ENABLED_STATE_DISABLED

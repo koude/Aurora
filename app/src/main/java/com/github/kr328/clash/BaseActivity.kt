@@ -45,6 +45,8 @@ abstract class BaseActivity : AppCompatActivity(),
     private var dayNight: DayNight = DayNight.Day
     protected val isDarkTheme: Boolean
         get() = dayNight == DayNight.Night
+    protected val useDynamicColor: Boolean
+        get() = uiStore.dynamicColor
 
     protected abstract suspend fun main()
 

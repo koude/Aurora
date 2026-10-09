@@ -20,6 +20,7 @@ class AppSettingsViewModel(private val repository: AppSettingsRepository) : View
         mutableUiState.value = AppSettingsUiState(
             autoRestart = settings.autoRestart,
             darkMode = settings.darkMode,
+            dynamicColor = settings.dynamicColor,
             hideAppIcon = settings.hideAppIcon,
             hideFromRecents = settings.hideFromRecents,
             showTraffic = settings.showTraffic,
@@ -35,6 +36,11 @@ class AppSettingsViewModel(private val repository: AppSettingsRepository) : View
     fun setDarkMode(value: DarkMode) {
         repository.setDarkMode(value)
         mutableUiState.update { it.copy(darkMode = value) }
+    }
+
+    fun setDynamicColor(value: Boolean) {
+        repository.setDynamicColor(value)
+        mutableUiState.update { it.copy(dynamicColor = value) }
     }
 
     fun setHideAppIcon(value: Boolean) {

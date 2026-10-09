@@ -20,7 +20,7 @@ class HelpActivity : BaseActivity() {
             HelpLink(DesignR.string.clash_meta_for_android, DesignR.string.meta_github_url, getString(DesignR.string.meta_github_url)),
         )
         setContent {
-            AuroraTheme(darkTheme = isDarkTheme) {
+            AuroraTheme(darkTheme = isDarkTheme, dynamicColor = useDynamicColor) {
                 HelpScreen(
                     documents = documents,
                     sources = sources,

@@ -1,5 +1,6 @@
 package com.koude.aurora.ui.settings
 
+import android.os.Build
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -40,6 +41,7 @@ import com.koude.aurora.ui.components.AuroraDetailTopBar
 data class AppSettingsUiState(
     val autoRestart: Boolean = false,
     val darkMode: DarkMode = DarkMode.Auto,
+    val dynamicColor: Boolean = false,
     val hideAppIcon: Boolean = false,
     val hideFromRecents: Boolean = false,
     val showTraffic: Boolean = true,
@@ -51,6 +53,7 @@ fun AppSettingsScreen(
     state: AppSettingsUiState,
     onAutoRestartChanged: (Boolean) -> Unit,
     onDarkModeChanged: (DarkMode) -> Unit,
+    onDynamicColorChanged: (Boolean) -> Unit,
     onHideAppIconChanged: (Boolean) -> Unit,
     onHideFromRecentsChanged: (Boolean) -> Unit,
     onShowTrafficChanged: (Boolean) -> Unit,
@@ -90,6 +93,14 @@ fun AppSettingsScreen(
                             onClick = { darkModeDialog = true },
                         )
                         GeneralDivider()
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                            GeneralSwitchRow(
+                                title = stringResource(DesignR.string.aurora_dynamic_color),
+                                checked = state.dynamicColor,
+                                onChanged = onDynamicColorChanged,
+                            )
+                            GeneralDivider()
+                        }
                         // Keep recovery available for users who enabled the unfinished feature
                         // in an earlier release, but do not offer it to new users.
                         if (state.hideAppIcon) {

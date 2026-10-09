@@ -14,7 +14,9 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
@@ -109,10 +111,12 @@ private val AuroraShapes = Shapes(
     extraLarge = RoundedCornerShape(28.dp),
 )
 
+val LocalAuroraDarkTheme = staticCompositionLocalOf { false }
+
 @Composable
 fun AuroraTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = true,
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     val context = LocalContext.current
@@ -128,19 +132,20 @@ fun AuroraTheme(
 
     if (!view.isInEditMode) {
         SideEffect {
-            // The activity's XML fallback theme is static; match its status bar to the
-            // wallpaper-derived Compose surface once dynamic color has been resolved.
+            // Match the status bar to the selected Aurora or wallpaper-derived surface.
             context.findActivity()?.window?.statusBarColor = colors.surface.toArgb()
         }
     }
 
-    MaterialTheme(
-        colorScheme = colors,
-        typography = AuroraTypography,
-        shapes = AuroraShapes,
-    ) {
-        Surface(modifier = Modifier.fillMaxSize(), color = colors.surface) {
-            content()
+    CompositionLocalProvider(LocalAuroraDarkTheme provides darkTheme) {
+        MaterialTheme(
+            colorScheme = colors,
+            typography = AuroraTypography,
+            shapes = AuroraShapes,
+        ) {
+            Surface(modifier = Modifier.fillMaxSize(), color = colors.surface) {
+                content()
+            }
         }
     }
 }

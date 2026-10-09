@@ -33,7 +33,7 @@ class ProvidersActivity : BaseActivity() {
         }
         viewModel.refresh()
         setContent {
-            AuroraTheme(darkTheme = isDarkTheme) {
+            AuroraTheme(darkTheme = isDarkTheme, dynamicColor = useDynamicColor) {
                 val providerRows by viewModel.rows.collectAsStateWithLifecycle()
                 ProvidersScreen(
                     providers = providerRows,
