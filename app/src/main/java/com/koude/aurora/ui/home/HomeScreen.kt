@@ -75,7 +75,7 @@ import com.github.kr328.clash.core.model.TunnelState
 import com.github.kr328.clash.core.model.RoutePreview
 import com.koude.aurora.model.WebsiteLatencySite
 import com.koude.aurora.designsystem.theme.AuroraTheme
-import com.koude.aurora.designsystem.theme.AuroraConnectionActionColors
+import com.koude.aurora.designsystem.theme.AuroraConnectionStatusColors
 import com.koude.aurora.designsystem.theme.AuroraModeColors
 import com.koude.aurora.designsystem.theme.AuroraModePalette
 import com.koude.aurora.designsystem.theme.LocalAuroraDarkTheme
@@ -341,8 +341,10 @@ private fun ConnectionControls(
     onModeSelected: (TunnelState.Mode) -> Unit,
     onToggleConnection: () -> Unit,
 ) {
-    val actionColor = if (state.running) AuroraConnectionActionColors.stop
-        else AuroraConnectionActionColors.start
+    val statusColor = if (state.running) AuroraConnectionStatusColors.connected
+        else MaterialTheme.colorScheme.surfaceContainerHigh
+    val onStatusColor = if (state.running) AuroraConnectionStatusColors.onConnected
+        else MaterialTheme.colorScheme.onSurface
     Card(
         shape = AuroraCardStyle.groupShape(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
@@ -364,9 +366,9 @@ private fun ConnectionControls(
                     role = Role.Switch,
                     onValueChange = { onToggleConnection() },
                 ),
-                shape = MaterialTheme.shapes.medium,
-                color = actionColor,
-                contentColor = AuroraConnectionActionColors.onAction,
+                shape = CircleShape,
+                color = statusColor,
+                contentColor = onStatusColor,
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
@@ -377,11 +379,11 @@ private fun ConnectionControls(
                         checked = state.running,
                         onCheckedChange = null,
                         colors = SwitchDefaults.colors(
-                            checkedTrackColor = AuroraConnectionActionColors.onAction,
-                            checkedThumbColor = AuroraConnectionActionColors.stop,
-                            uncheckedTrackColor = AuroraConnectionActionColors.onAction.copy(alpha = .3f),
-                            uncheckedThumbColor = AuroraConnectionActionColors.onAction,
-                            uncheckedBorderColor = AuroraConnectionActionColors.onAction,
+                            checkedTrackColor = AuroraConnectionStatusColors.onConnected,
+                            checkedThumbColor = AuroraConnectionStatusColors.connected,
+                            uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant,
+                            uncheckedThumbColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            uncheckedBorderColor = MaterialTheme.colorScheme.outline,
                         ),
                     )
                     Spacer(Modifier.width(6.dp))
@@ -428,7 +430,7 @@ private fun ModeMenu(
         Surface(
             modifier = Modifier.fillMaxWidth().alpha(if (enabled) 1f else .85f)
                 .clickable(enabled = enabled) { expanded = true },
-            shape = MaterialTheme.shapes.medium,
+            shape = CircleShape,
             color = currentModeColors.container,
             contentColor = currentModeColors.onContainer,
         ) {

@@ -82,10 +82,8 @@ object AuroraModePalette {
     val directDark = AuroraModeColors(Color(0xFF5B4700), Color(0xFFFFE89E), Color(0xFFE9C55C))
 }
 
-// Preserve the earlier green-start/red-stop control colors. The switch text
-// continues to describe connection state rather than an action.
-object AuroraConnectionActionColors {
-    val start = Color(0xFF2E7D32)
-    val stop = Color(0xFFC62828)
-    val onAction = Color.White
+// Connection colors describe the current state, not the action on tap.
+object AuroraConnectionStatusColors {
+    val connected = Color(0xFF2E7D32)
+    val onConnected = Color.White
 }
