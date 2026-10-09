@@ -1,6 +1,12 @@
 package com.koude.aurora.ui.home
 
 import com.github.kr328.clash.R
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -69,6 +75,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.github.kr328.clash.core.model.TunnelState
@@ -348,46 +356,61 @@ private fun ConnectionControls(
     onModeSelected: (TunnelState.Mode) -> Unit,
     onToggleConnection: () -> Unit,
 ) {
+    var profileExpanded by remember { mutableStateOf(false) }
+    val modeWidth by animateDpAsState(
+        targetValue = if (profileExpanded) 52.dp else 102.dp,
+        label = "Mode control width",
+    )
+    val powerWidth by animateDpAsState(
+        targetValue = if (profileExpanded) 58.dp else 78.dp,
+        label = "Power control width",
+    )
     Card(
         shape = AuroraCardStyle.groupShape(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
     ) {
-        Column(
-            modifier = Modifier.fillMaxWidth().padding(AuroraCardStyle.ContentPadding),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text("配置", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             ProfileMenu(
                 profileName = state.profileName,
                 profiles = profiles,
                 onSelectProfile = onSelectProfile,
                 onOpenProfiles = onOpenProfiles,
+                expanded = profileExpanded,
+                onExpandedChange = { profileExpanded = it },
+                modifier = Modifier.weight(1f),
             )
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-            Text("当前出口", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                verticalAlignment = Alignment.CenterVertically,
+            ModeMenu(
+                mode = state.mode,
+                enabled = state.running,
+                onModeSelected = onModeSelected,
+                compact = profileExpanded,
+                modifier = Modifier.width(modeWidth),
+            )
+            Button(
+                onClick = onToggleConnection,
+                modifier = Modifier.width(powerWidth).height(52.dp).semantics {
+                    contentDescription = if (state.running) "停止" else "启动"
+                },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (state.running) Color(0xFFC62828) else Color(0xFF2E7D32),
+                    contentColor = Color.White,
+                ),
+                contentPadding = PaddingValues(0.dp),
             ) {
-                ModeMenu(
-                    mode = state.mode,
-                    enabled = state.running,
-                    onModeSelected = onModeSelected,
-                    modifier = Modifier.weight(1f),
-                )
-                Button(
-                    onClick = onToggleConnection,
-                    modifier = Modifier.height(50.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (state.running) Color(0xFFC62828) else Color(0xFF2E7D32),
-                        contentColor = Color.White,
-                    ),
-                    contentPadding = PaddingValues(horizontal = 14.dp),
+                PowerGlyph(Modifier.size(24.dp))
+                AnimatedVisibility(
+                    visible = !profileExpanded,
+                    enter = expandHorizontally() + fadeIn(),
+                    exit = shrinkHorizontally() + fadeOut(),
                 ) {
-                    PowerGlyph(Modifier.size(20.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text(if (state.running) "停止" else "启动")
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Spacer(Modifier.width(4.dp))
+                        Text(if (state.running) "停止" else "启动")
+                    }
                 }
             }
         }
@@ -400,31 +423,37 @@ private fun ProfileMenu(
     profiles: List<ProfileSummary>,
     onSelectProfile: (UUID) -> Unit,
     onOpenProfiles: () -> Unit,
+    expanded: Boolean,
+    onExpandedChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    var expanded by remember { mutableStateOf(false) }
     val selectableProfiles = profiles.filter(ProfileSummary::imported)
-    Box {
+    Box(modifier) {
         Surface(
-            modifier = Modifier.fillMaxWidth().clickable { expanded = true },
+            modifier = Modifier.fillMaxWidth().clickable { onExpandedChange(true) },
             shape = MaterialTheme.shapes.medium,
             color = MaterialTheme.colorScheme.surface,
         ) {
             Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 Text(
                     text = profileName ?: profiles.firstOrNull(ProfileSummary::active)?.name ?: "未选择配置",
                     modifier = Modifier.weight(1f),
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleSmall,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                Icon(Icons.Default.KeyboardArrowDown, contentDescription = "切换配置")
+                Icon(
+                    Icons.Default.KeyboardArrowDown,
+                    contentDescription = "切换配置",
+                    modifier = Modifier.size(20.dp),
+                )
             }
         }
-        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+        DropdownMenu(expanded = expanded, onDismissRequest = { onExpandedChange(false) }) {
             selectableProfiles.forEach { profile ->
                 DropdownMenuItem(
                     text = { Text(profile.name, maxLines = 1, overflow = TextOverflow.Ellipsis) },
@@ -432,7 +461,7 @@ private fun ProfileMenu(
                         { Icon(Icons.Default.Check, contentDescription = "当前配置") }
                     } else null,
                     onClick = {
-                        expanded = false
+                        onExpandedChange(false)
                         if (!profile.active) onSelectProfile(profile.id)
                     },
                 )
@@ -440,7 +469,7 @@ private fun ProfileMenu(
             if (selectableProfiles.isNotEmpty()) HorizontalDivider()
             DropdownMenuItem(
                 text = { Text("管理配置") },
-                onClick = { expanded = false; onOpenProfiles() },
+                onClick = { onExpandedChange(false); onOpenProfiles() },
             )
         }
     }
@@ -470,6 +499,7 @@ private fun ModeMenu(
     mode: TunnelState.Mode,
     enabled: Boolean,
     onModeSelected: (TunnelState.Mode) -> Unit,
+    compact: Boolean,
     modifier: Modifier = Modifier,
 ) {
     var expanded by remember { mutableStateOf(false) }
@@ -481,18 +511,28 @@ private fun ModeMenu(
             color = MaterialTheme.colorScheme.surface,
         ) {
             Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 13.dp),
+                modifier = Modifier.fillMaxWidth().height(52.dp).padding(horizontal = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.Center,
             ) {
                 Icon(
                     painter = painterResource(modeIcon(mode)),
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp),
+                    contentDescription = "切换当前出口",
+                    modifier = Modifier.size(28.dp),
                     tint = Color.Unspecified,
                 )
-                Text(modeLabel(mode), modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleSmall)
-                Icon(Icons.Default.KeyboardArrowDown, contentDescription = "切换当前出口")
+                AnimatedVisibility(
+                    visible = !compact,
+                    enter = expandHorizontally() + fadeIn(),
+                    exit = shrinkHorizontally() + fadeOut(),
+                ) {
+                    Text(
+                        modeLabel(mode),
+                        modifier = Modifier.padding(start = 4.dp),
+                        style = MaterialTheme.typography.labelLarge,
+                        maxLines = 1,
+                    )
+                }
             }
         }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
