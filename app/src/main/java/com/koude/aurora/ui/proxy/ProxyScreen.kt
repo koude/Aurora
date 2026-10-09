@@ -52,6 +52,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.github.kr328.clash.core.model.Proxy
 import com.github.kr328.clash.core.model.ProxySort
 import com.koude.aurora.designsystem.theme.AuroraTheme
@@ -306,58 +307,59 @@ private fun ProxyGroupCard(
             .clip(AuroraCardStyle.groupShape())
             .background(MaterialTheme.colorScheme.surfaceContainerLow),
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                 .clickable(onClick = onExpand)
                 .heightIn(min = 56.dp)
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                .padding(horizontal = 16.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
             val current = group.nestedRoutes[group.selectedProxy]?.names?.lastOrNull()
                 ?: group.selectedProxy
-            BoxWithConstraints(Modifier.weight(1f)) {
-                val availableWidth = maxWidth
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = group.name,
-                        modifier = Modifier.weight(1f, fill = false),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    if (current.isNotBlank()) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                BoxWithConstraints(Modifier.weight(1f)) {
+                    val availableWidth = maxWidth
+                    Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            text = " → ",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Text(
-                            text = current,
-                            modifier = Modifier.weight(1f, fill = false),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            text = group.name,
+                            modifier = Modifier.weight(1f),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.SemiBold,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
-                    }
-                    if (availableWidth >= 270.dp) {
-                        Text(
-                            displayGroupType(group.type),
-                            modifier = Modifier.padding(start = 8.dp),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
-                            softWrap = false,
-                        )
+                        if (availableWidth >= 270.dp) {
+                            Text(
+                                displayGroupType(group.type),
+                                modifier = Modifier.padding(start = 8.dp),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                softWrap = false,
+                            )
+                        }
                     }
                 }
+                Box(Modifier.width(64.dp), contentAlignment = Alignment.CenterEnd) {
+                    if (group.activeDelayTested) ProxyDelayText(group.activeDelay)
+                }
             }
-            Box(Modifier.width(64.dp), contentAlignment = Alignment.CenterEnd) {
-                if (group.activeDelayTested) ProxyDelayText(group.activeDelay)
+            if (current.isNotBlank()) {
+                Text(
+                    text = current,
+                    modifier = Modifier.fillMaxWidth(),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
             }
         }
         if (expanded) {

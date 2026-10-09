@@ -26,12 +26,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -61,16 +62,19 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.github.kr328.clash.core.model.TunnelState
 import com.github.kr328.clash.core.model.RoutePreview
 import com.koude.aurora.model.WebsiteLatencySite
+import com.koude.aurora.model.ProfileSummary
 import com.koude.aurora.designsystem.theme.AuroraTheme
 import com.koude.aurora.ui.components.AuroraBottomNavigation
 import com.koude.aurora.ui.components.AuroraDestination
@@ -78,6 +82,7 @@ import com.koude.aurora.ui.components.AuroraPageHeader
 import com.koude.aurora.ui.components.AuroraPageSpacing
 import com.koude.aurora.ui.components.AuroraSectionTitle
 import com.koude.aurora.ui.components.AuroraCardStyle
+import java.util.UUID
 
 data class HomeUiState(
     val running: Boolean = false,
@@ -119,6 +124,8 @@ fun HomeScreen(
     onOpenProfiles: () -> Unit,
     onOpenProxy: () -> Unit,
     onOpenSettings: () -> Unit,
+    profiles: List<ProfileSummary> = emptyList(),
+    onSelectProfile: (UUID) -> Unit = {},
     showBottomNavigation: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
@@ -158,11 +165,14 @@ fun HomeScreen(
 
             ConnectionControls(
                 state = state,
+                profiles = profiles,
+                onOpenProfiles = onOpenProfiles,
+                onSelectProfile = onSelectProfile,
                 onModeSelected = onModeSelected,
                 onToggleConnection = onToggleConnection,
             )
 
-            LatencyCard(
+            TrafficLatencyCard(
                 state = state,
                 onTestLatency = onTestLatency,
                 onTestSiteLatency = onTestSiteLatency,
@@ -175,10 +185,6 @@ fun HomeScreen(
                 onOpenDns = onOpenDns,
             )
 
-            ProfileCard(
-                profileName = state.profileName,
-                onOpenProfiles = onOpenProfiles,
-            )
         }
     }
 
@@ -336,51 +342,115 @@ private fun RoutePreviewRow(label: String, value: String) {
 @Composable
 private fun ConnectionControls(
     state: HomeUiState,
+    profiles: List<ProfileSummary>,
+    onOpenProfiles: () -> Unit,
+    onSelectProfile: (UUID) -> Unit,
     onModeSelected: (TunnelState.Mode) -> Unit,
     onToggleConnection: () -> Unit,
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.CenterVertically,
+    Card(
+        shape = AuroraCardStyle.groupShape(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
     ) {
         Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(6.dp),
+            modifier = Modifier.fillMaxWidth().padding(AuroraCardStyle.ContentPadding),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            TrafficValue("下载", state.downloadSpeed)
-            TrafficValue("上传", state.uploadSpeed)
-        }
-
-        ModeMenu(
-            mode = state.mode,
-            enabled = state.running,
-            onModeSelected = onModeSelected,
-        )
-
-        Surface(
-            modifier = Modifier
-                .size(64.dp)
-                .clickable(onClick = onToggleConnection),
-            shape = CircleShape,
-            color = if (state.running) MaterialTheme.colorScheme.primary
-            else MaterialTheme.colorScheme.surfaceContainerHighest,
-            contentColor = if (state.running) MaterialTheme.colorScheme.onPrimary
-            else MaterialTheme.colorScheme.onSurfaceVariant,
-            tonalElevation = 3.dp,
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                PowerGlyph(Modifier.size(30.dp))
+            Text("配置", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            ProfileMenu(
+                profileName = state.profileName,
+                profiles = profiles,
+                onSelectProfile = onSelectProfile,
+                onOpenProfiles = onOpenProfiles,
+            )
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            Text("当前出口", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                ModeMenu(
+                    mode = state.mode,
+                    enabled = state.running,
+                    onModeSelected = onModeSelected,
+                    modifier = Modifier.weight(1f),
+                )
+                Button(
+                    onClick = onToggleConnection,
+                    modifier = Modifier.height(50.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (state.running) Color(0xFFC62828) else Color(0xFF2E7D32),
+                        contentColor = Color.White,
+                    ),
+                    contentPadding = PaddingValues(horizontal = 14.dp),
+                ) {
+                    PowerGlyph(Modifier.size(20.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text(if (state.running) "停止" else "启动")
+                }
             }
         }
     }
 }
 
 @Composable
-private fun TrafficValue(label: String, value: String) {
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically,
+private fun ProfileMenu(
+    profileName: String?,
+    profiles: List<ProfileSummary>,
+    onSelectProfile: (UUID) -> Unit,
+    onOpenProfiles: () -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val selectableProfiles = profiles.filter(ProfileSummary::imported)
+    Box {
+        Surface(
+            modifier = Modifier.fillMaxWidth().clickable { expanded = true },
+            shape = MaterialTheme.shapes.medium,
+            color = MaterialTheme.colorScheme.surface,
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Text(
+                    text = profileName ?: profiles.firstOrNull(ProfileSummary::active)?.name ?: "未选择配置",
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Icon(Icons.Default.KeyboardArrowDown, contentDescription = "切换配置")
+            }
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            selectableProfiles.forEach { profile ->
+                DropdownMenuItem(
+                    text = { Text(profile.name, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                    trailingIcon = if (profile.active) {
+                        { Icon(Icons.Default.Check, contentDescription = "当前配置") }
+                    } else null,
+                    onClick = {
+                        expanded = false
+                        if (!profile.active) onSelectProfile(profile.id)
+                    },
+                )
+            }
+            if (selectableProfiles.isNotEmpty()) HorizontalDivider()
+            DropdownMenuItem(
+                text = { Text("管理配置") },
+                onClick = { expanded = false; onOpenProfiles() },
+            )
+        }
+    }
+}
+
+@Composable
+private fun TrafficValue(label: String, value: String, modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         Text(
             text = label,
@@ -389,7 +459,7 @@ private fun TrafficValue(label: String, value: String) {
         )
         Text(
             text = value,
-            style = MaterialTheme.typography.titleSmall,
+            style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Medium,
         )
     }
@@ -400,36 +470,42 @@ private fun ModeMenu(
     mode: TunnelState.Mode,
     enabled: Boolean,
     onModeSelected: (TunnelState.Mode) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val label = when (mode) {
-        TunnelState.Mode.Global -> "全局"
-        TunnelState.Mode.Direct -> "直连"
-        else -> "规则"
-    }
-
-    Box {
-        FilledTonalButton(
-            onClick = { expanded = true },
-            enabled = enabled,
-            contentPadding = PaddingValues(start = 18.dp, end = 12.dp),
-            shape = RoundedCornerShape(20.dp),
+    Box(modifier) {
+        Surface(
+            modifier = Modifier.fillMaxWidth().alpha(if (enabled) 1f else .55f)
+                .clickable(enabled = enabled) { expanded = true },
+            shape = MaterialTheme.shapes.medium,
+            color = MaterialTheme.colorScheme.surface,
         ) {
-            Text(label)
-            Icon(Icons.Default.KeyboardArrowDown, contentDescription = null)
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 13.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Icon(
+                    painter = painterResource(modeIcon(mode)),
+                    contentDescription = null,
+                    modifier = Modifier.size(24.dp),
+                    tint = Color.Unspecified,
+                )
+                Text(modeLabel(mode), modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleSmall)
+                Icon(Icons.Default.KeyboardArrowDown, contentDescription = "切换当前出口")
+            }
         }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            listOf(
-                TunnelState.Mode.Rule to "规则",
-                TunnelState.Mode.Global to "全局",
-                TunnelState.Mode.Direct to "直连",
-            ).forEach { (itemMode, itemLabel) ->
+            listOf(TunnelState.Mode.Rule, TunnelState.Mode.Global, TunnelState.Mode.Direct).forEach { itemMode ->
                 DropdownMenuItem(
                     text = {
                         Text(
-                            text = itemLabel,
+                            text = modeLabel(itemMode),
                             fontWeight = if (mode == itemMode) FontWeight.SemiBold else FontWeight.Normal,
                         )
+                    },
+                    leadingIcon = {
+                        Icon(painterResource(modeIcon(itemMode)), contentDescription = null, tint = Color.Unspecified)
                     },
                     onClick = {
                         expanded = false
@@ -441,20 +517,41 @@ private fun ModeMenu(
     }
 }
 
+private fun modeLabel(mode: TunnelState.Mode): String = when (mode) {
+    TunnelState.Mode.Rule -> "规则"
+    TunnelState.Mode.Global -> "全局"
+    TunnelState.Mode.Direct -> "直连"
+    TunnelState.Mode.Script -> "脚本"
+}
+
+private fun modeIcon(mode: TunnelState.Mode): Int = when (mode) {
+    TunnelState.Mode.Rule, TunnelState.Mode.Script -> R.drawable.ic_mode_rule
+    TunnelState.Mode.Global -> R.drawable.ic_mode_global
+    TunnelState.Mode.Direct -> R.drawable.ic_mode_direct
+}
+
 @Composable
-private fun LatencyCard(
+private fun TrafficLatencyCard(
     state: HomeUiState,
     onTestLatency: () -> Unit,
     onTestSiteLatency: (WebsiteLatencySite) -> Unit,
 ) {
     Card(
         shape = AuroraCardStyle.groupShape(),
-        colors = CardDefaults.cardColors(containerColor = AuroraCardStyle.groupColor()),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
     ) {
         Column(
             modifier = Modifier.padding(AuroraCardStyle.ContentPadding),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                TrafficValue("下载速度", state.downloadSpeed, Modifier.weight(1f))
+                TrafficValue("上传速度", state.uploadSpeed, Modifier.weight(1f))
+            }
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -512,7 +609,7 @@ private fun LatencyCell(
     Surface(
         modifier = modifier.clickable(role = Role.Button, onClick = onClick),
         shape = AuroraCardStyle.itemShape(),
-        color = AuroraCardStyle.itemColor(),
+        color = MaterialTheme.colorScheme.surface,
         border = ButtonDefaults.outlinedButtonBorder(enabled = true),
     ) {
         Column(
@@ -556,7 +653,7 @@ private fun LatencyCell(
                     Text(
                         text = value,
                         style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.primary,
+                        color = MaterialTheme.colorScheme.onSurface,
                     )
                 }
             }
@@ -571,16 +668,24 @@ private fun QuickTools(
     onOpenRouteTest: () -> Unit,
     onOpenDns: () -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        AuroraSectionTitle("快捷工具", color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
+    Card(
+        shape = AuroraCardStyle.groupShape(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(AuroraCardStyle.ContentPadding),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            QuickTool(Icons.AutoMirrored.Filled.List, "连接", onOpenConnections)
-            QuickTool(Icons.Default.MoreVert, "日志", onOpenLogs)
-            QuickTool(Icons.Default.Refresh, "路由测试", onOpenRouteTest)
-            QuickTool(Icons.Default.Settings, "DNS", onOpenDns)
+            AuroraSectionTitle("快捷工具", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                QuickTool(Icons.AutoMirrored.Filled.List, "连接", onOpenConnections)
+                QuickTool(Icons.Default.MoreVert, "日志", onOpenLogs)
+                QuickTool(Icons.Default.Refresh, "路由测试", onOpenRouteTest)
+                QuickTool(Icons.Default.Settings, "DNS", onOpenDns)
+            }
         }
     }
 }
@@ -598,44 +703,9 @@ private fun QuickTool(icon: ImageVector, label: String, onClick: () -> Unit) {
             imageVector = icon,
             contentDescription = null,
             modifier = Modifier.size(27.dp),
-            tint = MaterialTheme.colorScheme.primary,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Text(label, style = MaterialTheme.typography.labelMedium)
-    }
-}
-
-@Composable
-private fun ProfileCard(profileName: String?, onOpenProfiles: () -> Unit) {
-    Card(
-        onClick = onOpenProfiles,
-        shape = AuroraCardStyle.groupShape(),
-        colors = CardDefaults.cardColors(containerColor = AuroraCardStyle.groupColor()),
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(AuroraCardStyle.ContentPadding),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = profileName ?: "未选择配置",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Medium,
-                )
-                Text(
-                    text = "当前配置",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            FilledTonalButton(onClick = onOpenProfiles) {
-                Icon(Icons.Default.Menu, contentDescription = null)
-                Spacer(Modifier.size(6.dp))
-                Text("配置")
-            }
-        }
     }
 }
 

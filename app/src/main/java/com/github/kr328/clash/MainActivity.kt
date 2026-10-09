@@ -209,8 +209,11 @@ class MainActivity : BaseActivity() {
                 popExitTransition = { fadeOut(tween(90)) },
             ) {
                 composable(ROUTE_HOME) {
+                    val profilesState by profilesViewModel.uiState.collectAsStateWithLifecycle()
                     HomeScreen(
                         state = homeState,
+                        profiles = profilesState.profiles,
+                        onSelectProfile = profilesViewModel::activate,
                         onToggleConnection = {
                             launch { if (clashRunning) stopClashService() else startClash() }
                         },
