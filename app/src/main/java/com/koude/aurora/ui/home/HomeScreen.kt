@@ -479,16 +479,16 @@ private fun ProfileMenu(
 private fun TrafficValue(label: String, value: String, modifier: Modifier = Modifier) {
     Column(
         modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+        verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
         Text(
             text = label,
-            style = MaterialTheme.typography.labelMedium,
+            style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Text(
             text = value,
-            style = MaterialTheme.typography.titleMedium,
+            style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Medium,
         )
     }
@@ -519,7 +519,7 @@ private fun ModeMenu(
                     painter = painterResource(modeIcon(mode)),
                     contentDescription = "切换当前出口",
                     modifier = Modifier.size(28.dp),
-                    tint = Color.Unspecified,
+                    tint = modeIconTint(mode),
                 )
                 AnimatedVisibility(
                     visible = !compact,
@@ -545,7 +545,12 @@ private fun ModeMenu(
                         )
                     },
                     leadingIcon = {
-                        Icon(painterResource(modeIcon(itemMode)), contentDescription = null, tint = Color.Unspecified)
+                        Icon(
+                            painter = painterResource(modeIcon(itemMode)),
+                            contentDescription = null,
+                            modifier = Modifier.size(26.dp),
+                            tint = modeIconTint(itemMode),
+                        )
                     },
                     onClick = {
                         expanded = false
@@ -571,6 +576,13 @@ private fun modeIcon(mode: TunnelState.Mode): Int = when (mode) {
 }
 
 @Composable
+private fun modeIconTint(mode: TunnelState.Mode): Color = when (mode) {
+    TunnelState.Mode.Rule, TunnelState.Mode.Script -> MaterialTheme.colorScheme.onSurface
+    TunnelState.Mode.Global -> Color(0xFF1976D2)
+    TunnelState.Mode.Direct -> Color(0xFFD99B00)
+}
+
+@Composable
 private fun TrafficLatencyCard(
     state: HomeUiState,
     onTestLatency: () -> Unit,
@@ -581,8 +593,8 @@ private fun TrafficLatencyCard(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
     ) {
         Column(
-            modifier = Modifier.padding(AuroraCardStyle.ContentPadding),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -591,7 +603,10 @@ private fun TrafficLatencyCard(
                 TrafficValue("下载速度", state.downloadSpeed, Modifier.weight(1f))
                 TrafficValue("上传速度", state.uploadSpeed, Modifier.weight(1f))
             }
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            HorizontalDivider(
+                modifier = Modifier.padding(vertical = 3.dp),
+                color = MaterialTheme.colorScheme.outlineVariant,
+            )
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -599,21 +614,25 @@ private fun TrafficLatencyCard(
             ) {
                 Text(
                     text = "网站延迟",
-                    style = MaterialTheme.typography.titleLarge,
+                    style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Medium,
                 )
-                TextButton(onClick = onTestLatency, enabled = !state.latencyTesting) {
+                IconButton(
+                    onClick = onTestLatency,
+                    enabled = !state.latencyTesting,
+                    modifier = Modifier.size(40.dp).semantics {
+                        contentDescription = if (state.latencyTesting) "检测中" else "检测全部网站"
+                    },
+                ) {
                     if (state.latencyTesting) {
-                        CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
-                        Spacer(Modifier.size(8.dp))
+                        CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
                     } else {
                         Icon(Icons.Default.Refresh, contentDescription = null)
                     }
-                    Text(if (state.latencyTesting) "检测中" else "全部检测")
                 }
             }
 
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 LatencyCell(
                     "Apple", R.drawable.ic_site_apple, state.appleLatency, state.testingLatencySites.contains(WebsiteLatencySite.Apple),
                     Modifier.weight(1f), onClick = { onTestSiteLatency(WebsiteLatencySite.Apple) },
@@ -623,7 +642,7 @@ private fun TrafficLatencyCard(
                     Modifier.weight(1f), onClick = { onTestSiteLatency(WebsiteLatencySite.GitHub) },
                 )
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 LatencyCell(
                     "YouTube", R.drawable.ic_site_youtube, state.youtubeLatency, state.testingLatencySites.contains(WebsiteLatencySite.YouTube),
                     Modifier.weight(1f), onClick = { onTestSiteLatency(WebsiteLatencySite.YouTube) },
@@ -649,37 +668,37 @@ private fun LatencyCell(
     Surface(
         modifier = modifier.clickable(role = Role.Button, onClick = onClick),
         shape = AuroraCardStyle.itemShape(),
-        color = MaterialTheme.colorScheme.surface,
-        border = ButtonDefaults.outlinedButtonBorder(enabled = true),
+        color = MaterialTheme.colorScheme.surfaceContainer,
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 10.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+                .padding(horizontal = 10.dp, vertical = 6.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Surface(
-                    modifier = Modifier.size(24.dp),
+                    modifier = Modifier.size(20.dp),
                     shape = CircleShape,
                     color = Color.White,
                 ) {
                     Icon(
                         painter = painterResource(iconRes),
                         contentDescription = null,
-                        modifier = Modifier.padding(4.dp),
+                        modifier = Modifier.padding(3.dp),
                         tint = Color.Unspecified,
                     )
                 }
                 Text(
                     label,
                     modifier = Modifier.weight(1f),
-                    style = MaterialTheme.typography.titleSmall,
-                    maxLines = 2,
+                    style = MaterialTheme.typography.labelLarge,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
             Row(
@@ -688,11 +707,11 @@ private fun LatencyCell(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 if (testing) {
-                    CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+                    CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
                 } else {
                     Text(
                         text = value,
-                        style = MaterialTheme.typography.labelLarge,
+                        style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
                 }
