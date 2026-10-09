@@ -1,18 +1,11 @@
 package com.koude.aurora.ui.home
 
 import com.github.kr328.clash.R
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.expandHorizontally
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkHorizontally
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -32,13 +25,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -55,6 +44,8 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScaffoldDefaults
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -77,12 +68,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.github.kr328.clash.core.model.TunnelState
 import com.github.kr328.clash.core.model.RoutePreview
 import com.koude.aurora.model.WebsiteLatencySite
-import com.koude.aurora.model.ProfileSummary
 import com.koude.aurora.designsystem.theme.AuroraTheme
 import com.koude.aurora.ui.components.AuroraBottomNavigation
 import com.koude.aurora.ui.components.AuroraDestination
@@ -90,7 +81,6 @@ import com.koude.aurora.ui.components.AuroraPageHeader
 import com.koude.aurora.ui.components.AuroraPageSpacing
 import com.koude.aurora.ui.components.AuroraSectionTitle
 import com.koude.aurora.ui.components.AuroraCardStyle
-import java.util.UUID
 
 data class HomeUiState(
     val running: Boolean = false,
@@ -129,11 +119,8 @@ fun HomeScreen(
     onRouteTargetChange: (String) -> Unit,
     onSubmitRouteTest: () -> Unit,
     onOpenDns: () -> Unit,
-    onOpenProfiles: () -> Unit,
     onOpenProxy: () -> Unit,
     onOpenSettings: () -> Unit,
-    profiles: List<ProfileSummary> = emptyList(),
-    onSelectProfile: (UUID) -> Unit = {},
     showBottomNavigation: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
@@ -173,9 +160,6 @@ fun HomeScreen(
 
             ConnectionControls(
                 state = state,
-                profiles = profiles,
-                onOpenProfiles = onOpenProfiles,
-                onSelectProfile = onSelectProfile,
                 onModeSelected = onModeSelected,
                 onToggleConnection = onToggleConnection,
             )
@@ -350,21 +334,9 @@ private fun RoutePreviewRow(label: String, value: String) {
 @Composable
 private fun ConnectionControls(
     state: HomeUiState,
-    profiles: List<ProfileSummary>,
-    onOpenProfiles: () -> Unit,
-    onSelectProfile: (UUID) -> Unit,
     onModeSelected: (TunnelState.Mode) -> Unit,
     onToggleConnection: () -> Unit,
 ) {
-    var profileExpanded by remember { mutableStateOf(false) }
-    val modeWidth by animateDpAsState(
-        targetValue = if (profileExpanded) 52.dp else 102.dp,
-        label = "Mode control width",
-    )
-    val powerWidth by animateDpAsState(
-        targetValue = if (profileExpanded) 58.dp else 78.dp,
-        label = "Power control width",
-    )
     Card(
         shape = AuroraCardStyle.groupShape(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
@@ -374,103 +346,42 @@ private fun ConnectionControls(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            ProfileMenu(
-                profileName = state.profileName,
-                profiles = profiles,
-                onSelectProfile = onSelectProfile,
-                onOpenProfiles = onOpenProfiles,
-                expanded = profileExpanded,
-                onExpandedChange = { profileExpanded = it },
-                modifier = Modifier.weight(1f),
-            )
             ModeMenu(
                 mode = state.mode,
                 enabled = state.running,
                 onModeSelected = onModeSelected,
-                compact = profileExpanded,
-                modifier = Modifier.width(modeWidth),
+                modifier = Modifier.weight(1f),
             )
-            Button(
-                onClick = onToggleConnection,
-                modifier = Modifier.width(powerWidth).height(52.dp).semantics {
-                    contentDescription = if (state.running) "停止" else "启动"
-                },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = if (state.running) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
-                    contentColor = if (state.running) MaterialTheme.colorScheme.onError else MaterialTheme.colorScheme.onPrimary,
+            Surface(
+                modifier = Modifier.weight(1f).height(52.dp).testTag("home_connection_switch").toggleable(
+                    value = state.running,
+                    role = Role.Switch,
+                    onValueChange = { onToggleConnection() },
                 ),
-                contentPadding = PaddingValues(0.dp),
+                shape = MaterialTheme.shapes.medium,
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
             ) {
-                PowerGlyph(Modifier.size(24.dp))
-                AnimatedVisibility(
-                    visible = !profileExpanded,
-                    enter = expandHorizontally() + fadeIn(),
-                    exit = shrinkHorizontally() + fadeOut(),
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Spacer(Modifier.width(4.dp))
-                        Text(if (state.running) "停止" else "启动")
-                    }
+                    Switch(
+                        checked = state.running,
+                        onCheckedChange = null,
+                        colors = SwitchDefaults.colors(
+                            checkedTrackColor = MaterialTheme.colorScheme.primary,
+                            uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant,
+                        ),
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        if (state.running) "已连接" else "未连接",
+                        style = MaterialTheme.typography.labelLarge,
+                        maxLines = 1,
+                    )
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun ProfileMenu(
-    profileName: String?,
-    profiles: List<ProfileSummary>,
-    onSelectProfile: (UUID) -> Unit,
-    onOpenProfiles: () -> Unit,
-    expanded: Boolean,
-    onExpandedChange: (Boolean) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val selectableProfiles = profiles.filter(ProfileSummary::imported)
-    Box(modifier) {
-        Surface(
-            modifier = Modifier.fillMaxWidth().clickable { onExpandedChange(true) },
-            shape = MaterialTheme.shapes.medium,
-            color = MaterialTheme.colorScheme.surface,
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                Text(
-                    text = profileName ?: profiles.firstOrNull(ProfileSummary::active)?.name ?: "未选择配置",
-                    modifier = Modifier.weight(1f),
-                    style = MaterialTheme.typography.titleSmall,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Icon(
-                    Icons.Default.KeyboardArrowDown,
-                    contentDescription = "切换配置",
-                    modifier = Modifier.size(20.dp),
-                )
-            }
-        }
-        DropdownMenu(expanded = expanded, onDismissRequest = { onExpandedChange(false) }) {
-            selectableProfiles.forEach { profile ->
-                DropdownMenuItem(
-                    text = { Text(profile.name, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                    trailingIcon = if (profile.active) {
-                        { Icon(Icons.Default.Check, contentDescription = "当前配置") }
-                    } else null,
-                    onClick = {
-                        onExpandedChange(false)
-                        if (!profile.active) onSelectProfile(profile.id)
-                    },
-                )
-            }
-            if (selectableProfiles.isNotEmpty()) HorizontalDivider()
-            DropdownMenuItem(
-                text = { Text("管理配置") },
-                onClick = { onExpandedChange(false); onOpenProfiles() },
-            )
         }
     }
 }
@@ -499,7 +410,6 @@ private fun ModeMenu(
     mode: TunnelState.Mode,
     enabled: Boolean,
     onModeSelected: (TunnelState.Mode) -> Unit,
-    compact: Boolean,
     modifier: Modifier = Modifier,
 ) {
     var expanded by remember { mutableStateOf(false) }
@@ -522,18 +432,12 @@ private fun ModeMenu(
                     modifier = Modifier.size(28.dp),
                     tint = modeContainerContentColor(mode),
                 )
-                AnimatedVisibility(
-                    visible = !compact,
-                    enter = expandHorizontally() + fadeIn(),
-                    exit = shrinkHorizontally() + fadeOut(),
-                ) {
-                    Text(
-                        modeLabel(mode),
-                        modifier = Modifier.padding(start = 4.dp),
-                        style = MaterialTheme.typography.labelLarge,
-                        maxLines = 1,
-                    )
-                }
+                Text(
+                    modeLabel(mode),
+                    modifier = Modifier.padding(start = 8.dp),
+                    style = MaterialTheme.typography.labelLarge,
+                    maxLines = 1,
+                )
             }
         }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
@@ -783,30 +687,6 @@ private fun QuickTool(icon: ImageVector, label: String, onClick: () -> Unit) {
     }
 }
 
-@Composable
-private fun PowerGlyph(modifier: Modifier = Modifier) {
-    val color = androidx.compose.material3.LocalContentColor.current
-    androidx.compose.foundation.Canvas(modifier) {
-        val stroke = 2.6.dp.toPx()
-        drawLine(
-            color = color,
-            start = androidx.compose.ui.geometry.Offset(size.width / 2, size.height * .08f),
-            end = androidx.compose.ui.geometry.Offset(size.width / 2, size.height * .48f),
-            strokeWidth = stroke,
-            cap = androidx.compose.ui.graphics.StrokeCap.Round,
-        )
-        drawArc(
-            color = color,
-            startAngle = -48f,
-            sweepAngle = 276f,
-            useCenter = false,
-            topLeft = androidx.compose.ui.geometry.Offset(size.width * .14f, size.height * .20f),
-            size = androidx.compose.ui.geometry.Size(size.width * .72f, size.height * .72f),
-            style = androidx.compose.ui.graphics.drawscope.Stroke(stroke, cap = androidx.compose.ui.graphics.StrokeCap.Round),
-        )
-    }
-}
-
 @Preview(showBackground = true, widthDp = 390, heightDp = 844)
 @Composable
 private fun HomeScreenPreview() {
@@ -831,7 +711,6 @@ private fun HomeScreenPreview() {
             onRouteTargetChange = {},
             onSubmitRouteTest = {},
             onOpenDns = {},
-            onOpenProfiles = {},
             onOpenProxy = {},
             onOpenSettings = {},
         )
