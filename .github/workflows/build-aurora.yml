@@ -83,7 +83,7 @@ jobs:
         run: |
           cat > local.properties <<EOF2
           sdk.dir=${ANDROID_HOME}
-          custom.application.id=com.koude.aurora
+          custom.application.id=com.android.koude.aurora
           remove.suffix=true
           EOF2
           cat > signing.properties <<EOF2
