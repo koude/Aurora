@@ -49,6 +49,15 @@ func load(completable unsafe.Pointer, path C.c_string) {
 	}(C.GoString(path))
 }
 
+//export exportRootConfig
+func exportRootConfig(path, rootPath, secret C.c_string) *C.char {
+	content, err := config.ExportRootConfiguration(C.GoString(path), C.GoString(rootPath), C.GoString(secret))
+	if err != nil {
+		return nil
+	}
+	return C.CString(content)
+}
+
 //export readOverride
 func readOverride(slot C.int) *C.char {
 	return C.CString(config.ReadOverride(config.OverrideSlot(slot)))

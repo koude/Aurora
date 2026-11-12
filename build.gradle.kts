@@ -45,6 +45,9 @@ subprojects {
         return localProperties.getProperty(key)
     }
 
+    val isLocalPackage = isApp &&
+        ((queryConfigProperty("custom.application.id") as? String)?.endsWith(".local") == true)
+
     extensions.configure<BaseExtension> {
         buildFeatures.buildConfig = true
         defaultConfig {
@@ -62,8 +65,8 @@ subprojects {
             minSdk = 21
             targetSdk = 35
 
-            versionName = "1.7.2"
-            versionCode = 26110501
+            versionName = "2.0.0"
+            versionCode = 26111200
 
             resValue("string", "release_name", "v$versionName")
             resValue("integer", "release_code", "$versionCode")
@@ -112,8 +115,8 @@ subprojects {
 
                 buildConfigField("boolean", "PREMIUM", "Boolean.parseBoolean(\"false\")")
 
-                resValue("string", "launch_name", "@string/launch_name_alpha")
-                resValue("string", "application_name", "@string/application_name_alpha")
+                resValue("string", "launch_name", if (isLocalPackage) "@string/launch_name_local" else "@string/launch_name_alpha")
+                resValue("string", "application_name", if (isLocalPackage) "@string/application_name_local" else "@string/application_name_alpha")
 
                 if (isApp && !removeSuffix) {
                     applicationIdSuffix = ".alpha"
@@ -129,8 +132,8 @@ subprojects {
 
                 buildConfigField("boolean", "PREMIUM", "Boolean.parseBoolean(\"false\")")
 
-                resValue("string", "launch_name", "@string/launch_name_meta")
-                resValue("string", "application_name", "@string/application_name_meta")
+                resValue("string", "launch_name", if (isLocalPackage) "@string/launch_name_local" else "@string/launch_name_meta")
+                resValue("string", "application_name", if (isLocalPackage) "@string/application_name_local" else "@string/application_name_meta")
 
                 if (isApp && !removeSuffix) {
                     applicationIdSuffix = ".meta"

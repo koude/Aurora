@@ -6,14 +6,19 @@ import com.github.kr328.clash.service.remote.IClashManager
 import com.github.kr328.clash.service.remote.IRemoteService
 import com.github.kr328.clash.service.remote.IProfileManager
 import com.github.kr328.clash.service.remote.wrap
+import com.github.kr328.clash.common.ProxyMethod
+import com.github.kr328.clash.service.root.RootClashManager
+import com.github.kr328.clash.service.store.ServiceStore
 import com.github.kr328.clash.service.util.cancelAndJoinBlocking
 
 class RemoteService : BaseService(), IRemoteService {
     private val binder = this.wrap()
 
     private var clash: ClashManager? = null
+    private var rootClash: RootClashManager? = null
     private var profile: ProfileManager? = null
     private var clashBinder: IClashManager? = null
+    private var rootClashBinder: IClashManager? = null
     private var profileBinder: IProfileManager? = null
 
     override fun onCreate() {
@@ -22,12 +27,15 @@ class RemoteService : BaseService(), IRemoteService {
         clash = ClashManager(this)
         profile = ProfileManager(this)
         clashBinder = clash?.wrap() as IClashManager?
+        rootClash = clash?.let { RootClashManager(this, it) }
+        rootClashBinder = rootClash?.wrap() as IClashManager?
         profileBinder = profile?.wrap() as IProfileManager?
     }
 
     override fun onDestroy() {
         super.onDestroy()
 
+        rootClash?.setLogObserver(null)
         clash?.cancelAndJoinBlocking()
         profile?.cancelAndJoinBlocking()
     }
@@ -37,7 +45,7 @@ class RemoteService : BaseService(), IRemoteService {
     }
 
     override fun clash(): IClashManager {
-        return clashBinder!!
+        return if (ServiceStore(this).proxyMethod == ProxyMethod.Root) rootClashBinder!! else clashBinder!!
     }
 
     override fun profile(): IProfileManager {

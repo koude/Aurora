@@ -82,6 +82,8 @@ import com.koude.aurora.model.ProfileSummary
 import com.koude.aurora.ui.components.AuroraBottomNavigation
 import com.koude.aurora.ui.components.AuroraDetailTopBar
 import com.koude.aurora.ui.components.AuroraDestination
+import com.github.kr328.clash.design.R as DesignR
+import androidx.compose.ui.res.stringResource
 import java.util.UUID
 
 data class ProfileImportProgress(
@@ -105,6 +107,8 @@ fun ProfilesScreen(
     onDuplicateProfile: (UUID) -> Unit,
     onDeleteProfile: (UUID) -> Unit,
     onUpdateAll: () -> Unit,
+    geoUpdateState: GeoUpdateUiState = GeoUpdateUiState(),
+    onUpdateGeo: () -> Unit = {},
     proxyEnabled: Boolean,
     onOpenHome: () -> Unit,
     onOpenProxy: () -> Unit,
@@ -123,7 +127,7 @@ fun ProfilesScreen(
         containerColor = MaterialTheme.colorScheme.surface,
         topBar = {
             AuroraDetailTopBar(
-                title = "配置",
+                title = stringResource(DesignR.string.aurora_settings_profiles),
                 onBack = onBack,
                 actions = {
                     if (!state.loading && state.profiles.isNotEmpty()) {
@@ -175,11 +179,15 @@ fun ProfilesScreen(
             state.profiles.isEmpty() -> EmptyContent(
                 modifier = Modifier.padding(padding),
                 onAddProfile = { addSheetVisible = true },
+                geoUpdateState = geoUpdateState,
+                onUpdateGeo = onUpdateGeo,
             )
             else -> ProfileList(
                 profiles = state.profiles,
                 errorMessage = state.errorMessage,
                 onOpenProfile = { selectedProfileId = it },
+                geoUpdateState = geoUpdateState,
+                onUpdateGeo = onUpdateGeo,
                 contentPadding = PaddingValues(
                     start = 20.dp,
                     top = padding.calculateTopPadding() + 18.dp,
@@ -245,6 +253,8 @@ private fun ProfileList(
     profiles: List<ProfileSummary>,
     errorMessage: String?,
     onOpenProfile: (UUID) -> Unit,
+    geoUpdateState: GeoUpdateUiState,
+    onUpdateGeo: () -> Unit,
     contentPadding: PaddingValues,
 ) {
     val activeProfile = profiles.firstOrNull(ProfileSummary::active)
@@ -304,6 +314,35 @@ private fun ProfileList(
                     profile = profile,
                     onOpen = { onOpenProfile(profile.id) },
                 )
+            }
+        }
+        item(key = "geo-resources") {
+            GeoResourcesCard(geoUpdateState, onUpdateGeo)
+        }
+    }
+}
+
+@Composable
+private fun GeoResourcesCard(state: GeoUpdateUiState, onUpdate: () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(22.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(18.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Text(stringResource(DesignR.string.aurora_geo_update_title), style = MaterialTheme.typography.titleMedium)
+            Text(
+                stringResource(DesignR.string.aurora_geo_update_summary),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            state.message?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
+            Button(onClick = onUpdate, enabled = !state.running) {
+                Text(stringResource(if (state.running) DesignR.string.aurora_geo_update_running
+                    else DesignR.string.aurora_geo_update_button))
             }
         }
     }
@@ -812,6 +851,8 @@ private fun LoadingContent(modifier: Modifier = Modifier) {
 private fun EmptyContent(
     modifier: Modifier = Modifier,
     onAddProfile: () -> Unit,
+    geoUpdateState: GeoUpdateUiState,
+    onUpdateGeo: () -> Unit,
 ) {
     Box(
         modifier = modifier
@@ -829,6 +870,8 @@ private fun EmptyContent(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            Spacer(Modifier.height(24.dp))
+            GeoResourcesCard(geoUpdateState, onUpdateGeo)
         }
         ExtendedFloatingActionButton(
             modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 48.dp),

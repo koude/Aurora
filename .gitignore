@@ -53,6 +53,7 @@ tracker.properties
 
 # cxx
 .cxx
+.kotlin/
 
 *.hprof
 

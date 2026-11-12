@@ -49,6 +49,42 @@ func UnmarshalAndPatch(profilePath string) (*config.RawConfig, error) {
 	return rawConfig, nil
 }
 
+// ExportRootConfiguration prepares the same imported profile for Aurora's
+// standalone, privileged mihomo process. The Android VPN path keeps its own
+// configuration processing unchanged.
+func ExportRootConfiguration(profilePath, rootProfilePath, secret string) (string, error) {
+	data, err := os.ReadFile(P.Join(profilePath, "config.yaml"))
+	if err != nil {
+		return "", err
+	}
+	raw, err := config.UnmarshalRawConfig(data)
+	if err != nil {
+		return "", err
+	}
+	if err := process(raw, rootProfilePath); err != nil {
+		return "", err
+	}
+
+	raw.Tun.Enable = true
+	raw.Tun.Device = "Aurora"
+	raw.Tun.AutoRoute = true
+	raw.Tun.AutoRedirect = true
+	raw.Tun.AutoDetectInterface = true
+	raw.Tun.IPRoute2TableIndex = 20222
+	raw.Tun.IPRoute2RuleIndex = 19000
+	raw.Tun.DNSHijack = []string{"any:53"}
+	raw.ExternalController = "127.0.0.1:19090"
+	raw.ExternalControllerTLS = ""
+	raw.ExternalControllerUnix = ""
+	raw.Secret = secret
+
+	data, err = yaml.Marshal(raw)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
 func Parse(rawConfig *config.RawConfig) (*config.Config, error) {
 	cfg, err := config.ParseRawConfig(rawConfig)
 	if err != nil {

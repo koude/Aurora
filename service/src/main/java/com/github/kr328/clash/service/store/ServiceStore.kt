@@ -2,6 +2,7 @@ package com.github.kr328.clash.service.store
 
 import android.content.Context
 import com.github.kr328.clash.common.store.Store
+import com.github.kr328.clash.common.ProxyMethod
 import com.github.kr328.clash.common.store.asStoreProvider
 import com.github.kr328.clash.service.PreferenceProvider
 import com.github.kr328.clash.service.model.AccessControlMode
@@ -18,6 +19,12 @@ class ServiceStore(context: Context) {
         key = "active_profile",
         from = { if (it.isBlank()) null else UUID.fromString(it) },
         to = { it?.toString() ?: "" }
+    )
+
+    var proxyMethod: ProxyMethod by store.enum(
+        key = "proxy_method",
+        defaultValue = ProxyMethod.Vpn,
+        values = ProxyMethod.values(),
     )
 
     var bypassPrivateNetwork: Boolean by store.boolean(

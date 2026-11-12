@@ -19,7 +19,7 @@ data class HomeTrafficSnapshot(
 )
 
 interface HomeRepository {
-    suspend fun connection(): HomeConnectionSnapshot
+    suspend fun connection(running: Boolean): HomeConnectionSnapshot
     suspend fun traffic(): HomeTrafficSnapshot
     suspend fun setMode(mode: TunnelState.Mode)
     suspend fun previewRoute(target: String): RoutePreview
@@ -27,10 +27,13 @@ interface HomeRepository {
 }
 
 class ServiceHomeRepository : HomeRepository {
-    override suspend fun connection(): HomeConnectionSnapshot {
-        val state = withClash { queryTunnelState() }
+    override suspend fun connection(running: Boolean): HomeConnectionSnapshot {
+        val mode = withClash {
+            if (running) queryTunnelState().mode
+            else queryOverride(Clash.OverrideSlot.Persist).mode ?: TunnelState.Mode.Rule
+        }
         val profileName = withProfile { queryActive()?.name }
-        return HomeConnectionSnapshot(state.mode, profileName)
+        return HomeConnectionSnapshot(mode, profileName)
     }
 
     override suspend fun traffic(): HomeTrafficSnapshot = withClash {

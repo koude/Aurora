@@ -10,6 +10,16 @@
 
 #include "version.h" // 添加当前编译core版本号变量
 
+JNIEXPORT jboolean JNICALL
+Java_com_github_kr328_clash_core_bridge_Bridge_nativeRestoreRootCore(JNIEnv *env, jobject thiz,
+                                                                    jstring base, jstring patch,
+                                                                    jstring output) {
+    scoped_string _base = get_string(base);
+    scoped_string _patch = get_string(patch);
+    scoped_string _output = get_string(output);
+    return restoreRootCore(_base, _patch, _output) == 0;
+}
+
 
 JNIEXPORT void JNICALL
 Java_com_github_kr328_clash_core_bridge_Bridge_nativeInit(JNIEnv *env, jobject thiz,
@@ -428,6 +438,16 @@ Java_com_github_kr328_clash_core_bridge_Bridge_nativeQueryConfiguration(JNIEnv *
     scoped_string response = queryConfiguration();
 
     return new_string(response);
+}
+
+JNIEXPORT jstring JNICALL
+Java_com_github_kr328_clash_core_bridge_Bridge_nativeExportRootConfig(JNIEnv *env, jobject thiz,
+                                                                       jstring path, jstring root_path, jstring secret) {
+    scoped_string _path = get_string(path);
+    scoped_string _root_path = get_string(root_path);
+    scoped_string _secret = get_string(secret);
+    scoped_string result = exportRootConfig(_path, _root_path, _secret);
+    return result == NULL ? NULL : new_string(result);
 }
 
 JNIEXPORT void JNICALL

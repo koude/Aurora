@@ -42,6 +42,13 @@ object Clash {
         return Json.decodeFromString(TunnelState.serializer(), json)
     }
 
+    fun exportRootConfig(profileDirectory: File, rootProfilePath: String, secret: String): String =
+        Bridge.nativeExportRootConfig(profileDirectory.absolutePath, rootProfilePath, secret)
+            ?: error("Unable to prepare the selected profile for ROOT mode")
+
+    fun restoreRootCore(base: File, patch: File, output: File): Boolean =
+        Bridge.nativeRestoreRootCore(base.absolutePath, patch.absolutePath, output.absolutePath)
+
     fun queryTrafficNow(): Traffic {
         return Bridge.nativeQueryTrafficNow()
     }

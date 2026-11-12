@@ -3,6 +3,10 @@ import java.net.HttpURLConnection
 import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
+import java.util.Properties
+import java.util.zip.ZipFile
+import java.util.Collections
+import java.security.MessageDigest
 
 plugins {
     kotlin("android")
@@ -13,6 +17,99 @@ plugins {
 android {
     buildFeatures {
         compose = true
+    }
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
+            keepDebugSymbols.add("**/libaurora_root_patch.so")
+        }
+    }
+}
+
+val rootCoreOutput = layout.buildDirectory.dir("generated/rootExecutables")
+val localBuildProperties = rootProject.file("local.properties").takeIf { it.exists() }
+    ?.let { file -> Properties().apply { file.inputStream().use(::load) } } ?: Properties()
+val rootGoExecutable = localBuildProperties.getProperty("go.executable")
+val rootSdkDirectory = localBuildProperties.getProperty("sdk.dir") ?: System.getenv("ANDROID_HOME")
+val rootNdkDirectory = rootSdkDirectory?.let { file("$it/ndk/29.0.14206865") }
+
+val buildRootCore by tasks.registering(Exec::class) {
+    workingDir = rootProject.projectDir
+    commandLine("sh", rootProject.file("tools/build-root-core.sh").absolutePath, rootCoreOutput.get().asFile.absolutePath)
+    rootGoExecutable?.takeIf(String::isNotBlank)?.let { environment("AURORA_GO", it) }
+    rootNdkDirectory?.let { environment("AURORA_NDK_HOME", it.absolutePath) }
+    inputs.dir(rootProject.file("core/src/foss/golang/clash"))
+    inputs.file(rootProject.file("tools/build-root-core.sh"))
+    outputs.dir(rootCoreOutput)
+}
+
+androidComponents.onVariants { variant ->
+    val variantName = variant.name
+    val capitalized = variantName.replaceFirstChar { it.uppercase() }
+    val patchOutput = layout.buildDirectory.dir("generated/rootPatches/$variantName")
+    val coreJniDir = rootProject.layout.projectDirectory.dir(
+        "core/build/intermediates/library_jni/$variantName/copy${capitalized}JniLibsProjectOnly/jni"
+    )
+    val patchTask = tasks.register<Exec>("build${capitalized}RootPatches") {
+        dependsOn(buildRootCore, ":core:copy${capitalized}JniLibsProjectOnly")
+        workingDir = rootProject.projectDir
+        commandLine(
+            "sh", rootProject.file("tools/build-root-patches.sh").absolutePath,
+            patchOutput.get().asFile.absolutePath, variantName,
+            rootCoreOutput.get().asFile.absolutePath,
+            requireNotNull(rootSdkDirectory) { "Android SDK is required for ROOT patches" },
+        )
+        rootGoExecutable?.takeIf(String::isNotBlank)?.let { environment("AURORA_GO", it) }
+        inputs.dir(coreJniDir)
+        inputs.dir(rootCoreOutput)
+        inputs.file(rootProject.file("tools/build-root-patches.sh"))
+        inputs.file(rootProject.file("tools/root-patch/main.go"))
+        inputs.file(rootProject.file("tools/root-patch-stub.c"))
+        outputs.dir(patchOutput)
+    }
+    android.sourceSets.getByName(variantName).jniLibs.srcDir(patchOutput)
+    tasks.configureEach {
+        if (name == "pre${capitalized}Build") dependsOn(patchTask)
+        if (name == "merge${capitalized}JniLibFolders") {
+            dependsOn(patchTask)
+            inputs.dir(patchOutput)
+        }
+    }
+    val verifyTask = tasks.register("verify${capitalized}RootPatches") {
+        dependsOn("package${capitalized}")
+        doLast {
+            val apkDir = layout.buildDirectory.dir(
+                "outputs/apk/${variant.flavorName}/${variant.buildType}"
+            ).get().asFile
+            val apks = apkDir.listFiles { file -> file.extension == "apk" }.orEmpty()
+            check(apks.isNotEmpty()) { "No APK was produced for $variantName" }
+            var checked = 0
+            apks.forEach { apk ->
+                ZipFile(apk).use { zip ->
+                    val entries = Collections.list(zip.entries())
+                    entries.filter { it.name.endsWith("/libaurora_root_patch.so") }.forEach { entry ->
+                        val abi = entry.name.removePrefix("lib/").substringBefore('/')
+                        val patch = zip.getInputStream(entry).use { it.readBytes() }
+                        val baseEntry = checkNotNull(zip.getEntry("lib/$abi/libclash.so")) {
+                            "$apk: missing libclash.so for $abi"
+                        }
+                        val baseHash = MessageDigest.getInstance("SHA-256").digest(
+                            zip.getInputStream(baseEntry).use { it.readBytes() }
+                        )
+                        check(patch.size >= 80 && patch.copyOfRange(patch.size - 8, patch.size)
+                            .contentEquals("AURPATCH".toByteArray())) { "$apk: invalid ROOT patch for $abi" }
+                        check(baseHash.contentEquals(patch.copyOfRange(patch.size - 72, patch.size - 40))) {
+                            "$apk: ROOT patch does not match libclash.so for $abi"
+                        }
+                        checked++
+                    }
+                }
+            }
+            check(checked >= 4) { "ROOT patches are missing from $variantName APKs" }
+        }
+    }
+    tasks.configureEach {
+        if (name == "assemble$capitalized") dependsOn(verifyTask)
     }
 }
 

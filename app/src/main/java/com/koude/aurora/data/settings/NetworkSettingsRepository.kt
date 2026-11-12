@@ -2,11 +2,12 @@ package com.koude.aurora.data.settings
 
 import android.content.Context
 import android.os.Build
+import com.github.kr328.clash.common.ProxyMethod
 import com.github.kr328.clash.design.store.UiStore
 import com.github.kr328.clash.service.store.ServiceStore
 
 data class NetworkSettingsSnapshot(
-    val routeSystemTraffic: Boolean,
+    val proxyMethod: ProxyMethod,
     val bypassPrivateNetwork: Boolean,
     val dnsHijacking: Boolean,
     val allowBypass: Boolean,
@@ -18,7 +19,7 @@ data class NetworkSettingsSnapshot(
 
 interface NetworkSettingsRepository {
     fun read(): NetworkSettingsSnapshot
-    fun setRouteSystemTraffic(value: Boolean)
+    fun setProxyMethod(value: ProxyMethod)
     fun setBypassPrivateNetwork(value: Boolean)
     fun setDnsHijacking(value: Boolean)
     fun setAllowBypass(value: Boolean)
@@ -31,18 +32,24 @@ class StoredNetworkSettingsRepository(context: Context) : NetworkSettingsReposit
     private val uiStore = UiStore(context.applicationContext)
     private val serviceStore = ServiceStore(context.applicationContext)
 
-    override fun read() = NetworkSettingsSnapshot(
-        routeSystemTraffic = uiStore.enableVpn,
-        bypassPrivateNetwork = serviceStore.bypassPrivateNetwork,
-        dnsHijacking = serviceStore.dnsHijacking,
-        allowBypass = serviceStore.allowBypass,
-        allowIpv6 = serviceStore.allowIpv6,
-        systemProxy = serviceStore.systemProxy,
-        tunStack = serviceStore.tunStackMode,
-        showSystemProxy = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q,
-    )
+    override fun read(): NetworkSettingsSnapshot {
+        serviceStore.proxyMethod = uiStore.proxyMethod
+        return NetworkSettingsSnapshot(
+            proxyMethod = uiStore.proxyMethod,
+            bypassPrivateNetwork = serviceStore.bypassPrivateNetwork,
+            dnsHijacking = serviceStore.dnsHijacking,
+            allowBypass = serviceStore.allowBypass,
+            allowIpv6 = serviceStore.allowIpv6,
+            systemProxy = serviceStore.systemProxy,
+            tunStack = serviceStore.tunStackMode,
+            showSystemProxy = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q,
+        )
+    }
 
-    override fun setRouteSystemTraffic(value: Boolean) { uiStore.enableVpn = value }
+    override fun setProxyMethod(value: ProxyMethod) {
+        uiStore.proxyMethod = value
+        serviceStore.proxyMethod = value
+    }
     override fun setBypassPrivateNetwork(value: Boolean) { serviceStore.bypassPrivateNetwork = value }
     override fun setDnsHijacking(value: Boolean) { serviceStore.dnsHijacking = value }
     override fun setAllowBypass(value: Boolean) { serviceStore.allowBypass = value }

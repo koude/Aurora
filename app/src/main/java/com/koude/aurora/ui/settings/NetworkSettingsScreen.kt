@@ -18,6 +18,8 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Button
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -46,13 +48,14 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.github.kr328.clash.design.R as DesignR
+import com.github.kr328.clash.common.ProxyMethod
 import com.koude.aurora.designsystem.theme.AuroraTheme
 import com.koude.aurora.ui.components.AuroraDetailTopBar
 import com.koude.aurora.ui.components.AuroraSectionTitle
 
 data class NetworkSettingsUiState(
     val running: Boolean = false,
-    val routeSystemTraffic: Boolean = true,
+    val proxyMethod: ProxyMethod = ProxyMethod.Vpn,
     val bypassPrivateNetwork: Boolean = true,
     val dnsHijacking: Boolean = true,
     val allowBypass: Boolean = true,
@@ -60,12 +63,16 @@ data class NetworkSettingsUiState(
     val systemProxy: Boolean = true,
     val tunStack: String = "system",
     val showSystemProxy: Boolean = true,
+    val rootInstalled: Boolean = false,
+    val rootArtifactsPresent: Boolean = false,
+    val rootWorking: Boolean = false,
+    val rootMessage: String? = null,
 )
 
 @Composable
 fun NetworkSettingsScreen(
     state: NetworkSettingsUiState,
-    onRouteSystemTrafficChanged: (Boolean) -> Unit,
+    onProxyMethodChanged: (ProxyMethod) -> Unit,
     onBypassPrivateNetworkChanged: (Boolean) -> Unit,
     onDnsHijackingChanged: (Boolean) -> Unit,
     onAllowBypassChanged: (Boolean) -> Unit,
@@ -73,13 +80,16 @@ fun NetworkSettingsScreen(
     onSystemProxyChanged: (Boolean) -> Unit,
     onTunStackChanged: (String) -> Unit,
     onOpenPerAppProxy: () -> Unit,
+    onInstallRoot: () -> Unit,
+    onUninstallRoot: () -> Unit,
+    onDismissRootMessage: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var selection by remember { mutableStateOf<NetworkSettingSelection?>(null) }
     var confirmManualMode by remember { mutableStateOf(false) }
     var showDnsInfo by remember { mutableStateOf(false) }
-    val vpnSettingsEnabled = !state.running && state.routeSystemTraffic
+    val vpnSettingsEnabled = !state.running && state.proxyMethod == ProxyMethod.Vpn
 
     Scaffold(
         modifier = modifier,
@@ -102,19 +112,20 @@ fun NetworkSettingsScreen(
         ) {
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    AuroraSectionTitle(stringResource(DesignR.string.aurora_proxy_method), Modifier.padding(start = 8.dp))
                     SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
                         listOf(
-                            true to DesignR.string.aurora_network_vpn_service,
-                            false to DesignR.string.aurora_network_proxy_service,
-                        ).forEachIndexed { index, (vpn, label) ->
+                            ProxyMethod.Vpn to DesignR.string.aurora_network_vpn_short,
+                            ProxyMethod.Proxy to DesignR.string.aurora_network_proxy_short,
+                            ProxyMethod.Root to DesignR.string.aurora_network_root_service,
+                        ).forEachIndexed { index, (method, label) ->
                             SegmentedButton(
                                 modifier = Modifier.weight(1f),
-                                shape = SegmentedButtonDefaults.itemShape(index = index, count = 2),
-                                selected = state.routeSystemTraffic == vpn,
+                                shape = SegmentedButtonDefaults.itemShape(index = index, count = 3),
+                                selected = state.proxyMethod == method,
                                 onClick = {
-                                    if (state.routeSystemTraffic != vpn) {
-                                        if (vpn) onRouteSystemTrafficChanged(true) else confirmManualMode = true
+                                    if (state.proxyMethod != method) {
+                                        if (method == ProxyMethod.Proxy) confirmManualMode = true
+                                        else onProxyMethodChanged(method)
                                     }
                                 },
                                 enabled = !state.running,
@@ -135,7 +146,7 @@ fun NetworkSettingsScreen(
                     )
                 }
             }
-            if (state.routeSystemTraffic) {
+            if (state.proxyMethod == ProxyMethod.Vpn) {
                 item {
                     NetworkSection(stringResource(DesignR.string.aurora_network_app_scope)) {
                         NetworkChoiceRow(
@@ -199,7 +210,7 @@ fun NetworkSettingsScreen(
                         )
                     }
                 }
-            } else {
+            } else if (state.proxyMethod == ProxyMethod.Proxy) {
                 item {
                     Column(
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 36.dp),
@@ -216,6 +227,35 @@ fun NetworkSettingsScreen(
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
+                    }
+                }
+            } else {
+                item {
+                    Column(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 36.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Text(stringResource(DesignR.string.aurora_root_requires_permission), style = MaterialTheme.typography.titleMedium)
+                        Text(
+                            stringResource(DesignR.string.aurora_network_root_service_hint),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Text(
+                            stringResource(if (state.rootWorking) DesignR.string.aurora_root_working
+                                else if (state.rootInstalled) DesignR.string.aurora_root_installed
+                                else DesignR.string.aurora_root_not_installed),
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                        Button(
+                            onClick = onInstallRoot,
+                            enabled = !state.running && !state.rootWorking && !state.rootInstalled,
+                        ) { Text(stringResource(DesignR.string.aurora_root_install)) }
+                        OutlinedButton(
+                            onClick = onUninstallRoot,
+                            enabled = !state.rootWorking && state.rootArtifactsPresent,
+                        ) { Text(stringResource(DesignR.string.aurora_root_uninstall)) }
                     }
                 }
             }
@@ -243,7 +283,7 @@ fun NetworkSettingsScreen(
             title = { Text(stringResource(DesignR.string.aurora_proxy_method_manual_warning_title)) },
             text = { Text(stringResource(DesignR.string.aurora_proxy_method_manual_warning)) },
             confirmButton = {
-                TextButton(onClick = { confirmManualMode = false; onRouteSystemTrafficChanged(false) }) {
+                TextButton(onClick = { confirmManualMode = false; onProxyMethodChanged(ProxyMethod.Proxy) }) {
                     Text(stringResource(DesignR.string.aurora_proxy_method_manual_confirm))
                 }
             },
@@ -264,6 +304,14 @@ fun NetworkSettingsScreen(
                     Text(stringResource(DesignR.string.close))
                 }
             },
+        )
+    }
+    state.rootMessage?.let { message ->
+        AlertDialog(
+            onDismissRequest = onDismissRootMessage,
+            title = { Text(stringResource(DesignR.string.aurora_network_root_service)) },
+            text = { Text(message) },
+            confirmButton = { TextButton(onClick = onDismissRootMessage) { Text(stringResource(DesignR.string.close)) } },
         )
     }
 }
@@ -418,7 +466,7 @@ private fun NetworkSettingsScreenPreview() {
     AuroraTheme {
         NetworkSettingsScreen(
             state = NetworkSettingsUiState(),
-            onRouteSystemTrafficChanged = {},
+            onProxyMethodChanged = {},
             onBypassPrivateNetworkChanged = {},
             onDnsHijackingChanged = {},
             onAllowBypassChanged = {},
@@ -426,6 +474,9 @@ private fun NetworkSettingsScreenPreview() {
             onSystemProxyChanged = {},
             onTunStackChanged = {},
             onOpenPerAppProxy = {},
+            onInstallRoot = {},
+            onUninstallRoot = {},
+            onDismissRootMessage = {},
             onBack = {},
         )
     }

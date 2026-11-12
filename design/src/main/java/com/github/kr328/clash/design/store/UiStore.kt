@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import com.github.kr328.clash.common.store.Store
 import com.github.kr328.clash.common.store.asStoreProvider
+import com.github.kr328.clash.common.ProxyMethod
 import com.github.kr328.clash.core.model.ProxySort
 import com.github.kr328.clash.design.model.AppInfoSort
 import com.github.kr328.clash.design.model.DarkMode
@@ -20,6 +21,20 @@ class UiStore(context: Context) {
         key = "enable_vpn",
         defaultValue = true
     )
+
+    private var storedProxyMethod: String by store.string(
+        key = "proxy_method",
+        defaultValue = "",
+    )
+
+    var proxyMethod: ProxyMethod
+        get() = ProxyMethod.entries.firstOrNull { it.name == storedProxyMethod }
+            ?: if (enableVpn) ProxyMethod.Vpn else ProxyMethod.Proxy
+        set(value) {
+            storedProxyMethod = value.name
+            // Keep the legacy setting consistent while older callers are migrated.
+            enableVpn = value == ProxyMethod.Vpn
+        }
 
     var darkMode: DarkMode by store.enum(
         key = "dark_mode",

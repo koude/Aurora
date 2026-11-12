@@ -52,6 +52,8 @@ import com.github.kr328.clash.common.util.ticker
 import com.github.kr328.clash.util.fileName
 import com.github.kr328.clash.util.startClashService
 import com.github.kr328.clash.util.stopClashService
+import com.github.kr328.clash.common.ProxyMethod
+import com.github.kr328.clash.service.root.RootCore
 import com.koude.aurora.designsystem.theme.AuroraTheme
 import com.koude.aurora.ui.about.AboutScreen
 import com.koude.aurora.ui.components.AuroraBottomNavigation
@@ -64,6 +66,7 @@ import com.koude.aurora.ui.navigation.initialMainRoute
 import com.koude.aurora.ui.navigation.persistedMainRoutes
 import com.koude.aurora.ui.profiles.ProfilesScreen
 import com.koude.aurora.ui.profiles.ProfilesViewModel
+import com.koude.aurora.ui.profiles.GeoUpdateViewModel
 import com.koude.aurora.ui.proxy.ProxyScreen
 import com.koude.aurora.ui.proxy.ProxyViewModel
 import com.koude.aurora.ui.settings.SettingsScreen
@@ -88,6 +91,9 @@ class MainActivity : BaseActivity() {
     private val requestedRoute = mutableStateOf<String?>(null)
     private val profilesViewModel: ProfilesViewModel by viewModels {
         ProfilesViewModel.factory(applicationContext)
+    }
+    private val geoUpdateViewModel: GeoUpdateViewModel by viewModels {
+        GeoUpdateViewModel.factory(applicationContext)
     }
     private val homeViewModel: HomeViewModel by viewModels { HomeViewModel.Factory }
     private val proxyViewModel: ProxyViewModel by viewModels {
@@ -259,9 +265,12 @@ class MainActivity : BaseActivity() {
                 composable(ROUTE_PROFILES) {
                     val state by profilesViewModel.uiState.collectAsStateWithLifecycle()
                     val importProgress by profilesViewModel.importProgress.collectAsStateWithLifecycle()
+                    val geoUpdateState by geoUpdateViewModel.state.collectAsStateWithLifecycle()
                     ProfilesScreen(
                         state = state,
                         importProgress = importProgress,
+                        geoUpdateState = geoUpdateState,
+                        onUpdateGeo = geoUpdateViewModel::update,
                         onImportFile = { launch { importProfileFromFile() } },
                         onImportUrl = profilesViewModel::importUrl,
                         onScanQrCode = { scanLauncher.launch(null) },
@@ -335,6 +344,10 @@ class MainActivity : BaseActivity() {
     }
 
     private suspend fun startClash() {
+        if (uiStore.proxyMethod == ProxyMethod.Root && !RootCore(this).isInstalled()) {
+            Toast.makeText(this, DesignR.string.aurora_root_start_requires_install, Toast.LENGTH_LONG).show()
+            return
+        }
         when (homeViewModel.canStartConnection()) {
             true -> Unit
             false -> {
@@ -353,7 +366,7 @@ class MainActivity : BaseActivity() {
         } catch (_: Exception) {
             Toast.makeText(
                 this@MainActivity,
-                DesignR.string.unable_to_start_vpn,
+                DesignR.string.aurora_network_unable_to_start_service,
                 Toast.LENGTH_LONG,
             ).show()
         }

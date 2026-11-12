@@ -24,7 +24,7 @@ class NetworkSettingsActivity : BaseActivity() {
                 val screenState by viewModel.uiState.collectAsStateWithLifecycle()
                 NetworkSettingsScreen(
                     state = screenState,
-                    onRouteSystemTrafficChanged = viewModel::setRouteSystemTraffic,
+                    onProxyMethodChanged = viewModel::setProxyMethod,
                     onBypassPrivateNetworkChanged = viewModel::setBypassPrivateNetwork,
                     onDnsHijackingChanged = viewModel::setDnsHijacking,
                     onAllowBypassChanged = viewModel::setAllowBypass,
@@ -32,6 +32,9 @@ class NetworkSettingsActivity : BaseActivity() {
                     onSystemProxyChanged = viewModel::setSystemProxy,
                     onTunStackChanged = viewModel::setTunStack,
                     onOpenPerAppProxy = { startActivity(AccessControlActivity::class.intent) },
+                    onInstallRoot = viewModel::installRoot,
+                    onUninstallRoot = viewModel::uninstallRoot,
+                    onDismissRootMessage = viewModel::dismissRootMessage,
                     onBack = ::finish,
                 )
             }

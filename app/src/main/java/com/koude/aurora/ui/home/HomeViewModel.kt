@@ -45,7 +45,7 @@ class HomeViewModel(
         if (!running) mutableUiState.update { it.copy(running = false) }
         connectionJob = viewModelScope.launch {
             try {
-                val connection = repository.connection()
+                val connection = repository.connection(running)
                 if (generation == connectionGeneration) {
                     mutableUiState.update {
                         it.copy(running = running, mode = connection.mode, profileName = connection.profileName)
