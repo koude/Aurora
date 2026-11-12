@@ -71,7 +71,9 @@ func ExportRootConfiguration(profilePath, rootProfilePath, secret string) (strin
 	raw.Tun.AutoRedirect = true
 	raw.Tun.AutoDetectInterface = true
 	raw.Tun.IPRoute2TableIndex = 20222
-	raw.Tun.IPRoute2RuleIndex = 19000
+	// Android's own per-network rules start at 10000. Match sing-tun's
+	// default priority so app traffic reaches Aurora before those rules.
+	raw.Tun.IPRoute2RuleIndex = 9000
 	raw.Tun.DNSHijack = []string{"any:53"}
 	raw.ExternalController = "127.0.0.1:19090"
 	raw.ExternalControllerTLS = ""
